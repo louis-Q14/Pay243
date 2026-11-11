@@ -1,9 +1,10 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
-import { requireActivated, requireMerchantKey, requireUser } from '../auth.js';
+import { requireActivated, requireMerchantKey, requireUser, verifyPin } from '../auth.js';
 import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
-import { getWallet, lockWallet } from '../ledger.js';
+import { createTxn, getTxn, getWallet, lockWallet, move, serializeTxn } from '../ledger.js';
+import { checkIncoming, lockUsers } from '../limits.js';
 import { idempotent } from '../middleware.js';
 import { assertPublicUrl } from '../netguard.js';
 import { refreshPending, startPayout } from '../services/mobileMoney.js';
@@ -117,6 +118,38 @@ merchantAdminRouter.post('/merchants/me/payment-links', requireActivated, async 
 merchantAdminRouter.get('/merchants/me/payments', async (req, res) => {
   const m = await merchantOfUser(req.user);
   res.json({ data: (await q.all('SELECT * FROM payments WHERE merchant_id=? ORDER BY created_at DESC LIMIT 50', m.id)).map(serializePayment) });
+});
+
+/**
+ * Versement des ventes : du solde marchand vers le wallet personnel du titulaire (instantané, sans frais).
+ * Montant omis = tout le solde disponible. Le titulaire peut ensuite retirer, envoyer ou payer depuis son wallet.
+ */
+merchantAdminRouter.post('/merchants/me/transfer-to-wallet', requireActivated, async (req, res) => {
+  const m = await merchantOfUser(req.user);
+  if (m.suspended_at) throw new HttpError(403, 'merchant_suspended', 'Votre espace marchand est suspendu : contactez le support.');
+  const currency = assertCurrency(req.body?.currency);
+  const raw = req.body?.amount;
+  const wanted = raw == null || raw === '' ? null : assertAmount(raw);
+  await verifyPin(req.user, req.body?.pin);
+  const txn = await tx(async () => {
+    await lockUsers(req.user.id);
+    const from = await lockWallet((await getWallet('merchant', m.id, currency)).id);
+    const balance = Number(from.balance);
+    const amount = wanted ?? balance;
+    if (amount <= 0) throw new HttpError(400, 'nothing_to_transfer', 'Aucune vente disponible dans cette devise.');
+    if (balance < amount) throw new HttpError(402, 'insufficient_funds', `Solde marchand ${currency} insuffisant.`);
+    await checkIncoming(req.user, currency, amount);
+    const to = await getWallet('user', req.user.id, currency);
+    const t = await createTxn({
+      type: 'payout', status: 'succeeded', amount, currency, method: 'wallet',
+      from_wallet: from.id, to_wallet: to.id, merchant_id: m.id,
+      description: `Versement des ventes ${m.name}`, metadata: { counterparty: m.name },
+    });
+    await move(t.id, from.id, to.id, amount);
+    return t;
+  });
+  const to = await getWallet('user', req.user.id, currency);
+  res.status(201).json(serializeTxn(await getTxn(txn.id), [to.id]));
 });
 
 // =====================================================================

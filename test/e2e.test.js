@@ -311,6 +311,31 @@ test('marchand : création, paiement via wallet, webhook signé, remboursement',
   assert.equal(tooMuch.status, 400);
 });
 
+test('marchand : versement des ventes sur le wallet personnel', async () => {
+  const before = await api('GET', '/v1/merchants/me', { token: state.alice });
+  const sales = before.body.balances.find((b) => b.currency === 'USD').balance;
+  assert.ok(sales >= 400);
+  const wallet = async () => (await api('GET', '/v1/wallets', { token: state.alice })).body.data.find((w) => w.currency === 'USD').balance;
+  const w0 = await wallet();
+
+  const badPin = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'USD', amount: 400, pin: '0000' } });
+  assert.equal(badPin.status, 401);
+  const tooMuch = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'USD', amount: sales + 1, pin: '2580' } });
+  assert.equal(tooMuch.status, 402);
+  const noMerchant = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.bob, body: { currency: 'USD', amount: 100, pin: '9137' } });
+  assert.equal(noMerchant.status, 404);
+
+  const t = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'USD', amount: 400, pin: '2580' } });
+  assert.equal(t.status, 201);
+  assert.equal(t.body.type, 'payout');
+  assert.equal(t.body.direction, 'credit');
+  assert.equal(await wallet(), w0 + 400);
+  const after = await api('GET', '/v1/merchants/me', { token: state.alice });
+  assert.equal(after.body.balances.find((b) => b.currency === 'USD').balance, sales - 400);
+  const hist = await api('GET', '/v1/transactions', { token: state.alice });
+  assert.ok(hist.body.data.some((x) => x.id === t.body.id && x.description.startsWith('Versement des ventes')));
+});
+
 test('checkout invité : paiement Orange Money direct', async () => {
   const pay = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 2500000, currency: 'CDF', description: 'Sac' } });
   const r = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { body: { method: 'mobile_money', phone: '0841234567' } });

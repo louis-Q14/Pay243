@@ -79,6 +79,7 @@
       <button class="ghost" data-open="convert"><i>⇄</i>Convertir</button>
     </div>
     <div class="card hidden" id="kyc-box"></div>
+    <div class="card hidden" id="sales-box"></div>
     <div class="card">
       <h2>Historique</h2>
       <ul class="list" id="history"><li class="muted">Aucune opération pour l'instant.</li></ul>
@@ -118,6 +119,7 @@
     </div>
     <div id="m-yes" class="hidden">
       <div class="grid" id="m-bal"></div>
+      <p class="muted" id="m-bal-hint" style="margin:10px 0 0">Vos ventes arrivent ici, commission déduite. Versez-les sur votre wallet pour les retirer, les envoyer ou payer.</p>
       <div class="card" style="margin-top:16px">
         <h2>Créer un lien de paiement</h2>
         <form id="f-link">
@@ -283,11 +285,41 @@ async function loadWallets() {
   const w = await api('GET', '/v1/wallets');
   w.data.forEach((x) => $('#bal-' + x.currency).textContent = fmt(x.balance, x.currency));
   window.FX = w.fx;
+  loadSales();
+}
+
+// ---------------- Ventes du compte marchand ----------------
+let MERCHANT = null;
+const salesButtons = (m) => m.balances.filter((b) => b.balance > 0)
+  .map((b) => `<button class="full" data-sweep="${b.currency}" style="margin-top:8px">Verser ${fmt(b.balance, b.currency)} sur mon wallet</button>`).join('');
+async function loadSales() {
+  const box = $('#sales-box');
+  if (ME?.account_type !== 'business') return box.classList.add('hidden');
+  try { MERCHANT = await api('GET', '/v1/merchants/me'); } catch { MERCHANT = null; return box.classList.add('hidden'); }
+  const total = MERCHANT.balances.some((b) => b.balance > 0);
+  box.classList.remove('hidden');
+  box.innerHTML = `<h2>Ventes ${esc(MERCHANT.name)}</h2>
+    <p class="muted">${MERCHANT.balances.map((b) => `<b>${fmt(b.balance, b.currency)}</b>`).join(' · ')} disponibles${total ? '' : '. Vos prochaines ventes apparaîtront ici'}.</p>${salesButtons(MERCHANT)}`;
+  bindSweep(box);
+}
+function bindSweep(scope) {
+  scope.querySelectorAll('[data-sweep]').forEach((b) => b.onclick = () => openSweep(b.dataset.sweep));
+}
+function openSweep(currency) {
+  if (ME && !ME.activated) return toast('Activez d\'abord votre compte en vérifiant votre identité.', true);
+  const bal = MERCHANT?.balances.find((b) => b.currency === currency)?.balance || 0;
+  openModal(`<h3>Verser mes ventes sur mon wallet</h3><p class="muted">Disponible : <b>${fmt(bal, currency)}</b>. Instantané et gratuit. Vous pourrez ensuite retirer vers Mobile Money, envoyer ou payer.</p>
+    <form><label>Montant (${currency})</label><input name="amount" type="number" step="0.01" min="0.01" max="${bal / 100}" value="${bal / 100}" required>
+    ${pinInput}<button class="full">Verser sur mon wallet</button></form>`, async (d) => {
+      const t = await api('POST', '/v1/merchants/me/transfer-to-wallet', { currency, amount: toMinor(d.amount), pin: d.pin });
+      closeModal(); toast(`${fmt(t.amount, t.currency)} versés sur votre wallet`);
+      loadWallets(); loadHistory(); if (!$('#tab-merchant').classList.contains('hidden')) loadMerchant();
+    });
 }
 async function loadHistory() {
   const t = await api('GET', '/v1/transactions?limit=30');
   $('#history').innerHTML = t.data.length ? t.data.map((x) => {
-    const sign = x.direction === 'credit' ? '+' : '−';
+    const sign = x.direction === 'credit' ? '+' : x.direction === 'internal' ? '' : '−';
     const label = (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '');
     const extra = x.type === 'conversion' ? ` → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}` : '';
     return `<li><div><div><b>${label}</b> <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span></div>
@@ -479,7 +511,9 @@ async function loadMerchant() {
   let m;
   try { m = await api('GET', '/v1/merchants/me'); } catch { $('#m-none').classList.remove('hidden'); $('#m-yes').classList.add('hidden'); return; }
   $('#m-none').classList.add('hidden'); $('#m-yes').classList.remove('hidden');
-  $('#m-bal').innerHTML = m.balances.map((b) => `<div class="balance ${b.currency === 'USD' ? 'usd' : ''}"><small>${esc(m.name)} · ${b.currency}</small><div class="amt">${fmt(b.balance, b.currency)}</div></div>`).join('');
+  MERCHANT = m;
+  $('#m-bal').innerHTML = m.balances.map((b) => `<div class="balance ${b.currency === 'USD' ? 'usd' : ''}"><small>Ventes ${esc(m.name)} · ${b.currency}</small><div class="amt">${fmt(b.balance, b.currency)}</div>${b.balance > 0 ? `<button class="ghost" data-sweep="${b.currency}" style="margin-top:10px">Verser sur mon wallet</button>` : ''}</div>`).join('');
+  bindSweep($('#m-bal'));
   $('#m-keys').innerHTML = m.api_keys.map((k) => `<li><span class="mono">${k.preview}</span><span class="pill">${k.mode}</span></li>`).join('');
   $('#m-whsec').textContent = m.webhook_secret;
   $('#f-webhook').webhook_url.value = m.webhook_url || '';

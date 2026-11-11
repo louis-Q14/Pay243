@@ -81,8 +81,11 @@ export const lockTxn = (id) => q.get('SELECT * FROM transactions WHERE id=? FOR 
 
 export function serializeTxn(t, perspectiveWalletIds = []) {
   let direction = null;
-  if (perspectiveWalletIds.includes(t.to_wallet) && !perspectiveWalletIds.includes(t.from_wallet)) direction = 'credit';
-  else if (perspectiveWalletIds.includes(t.from_wallet)) direction = 'debit';
+  const fromMine = perspectiveWalletIds.includes(t.from_wallet);
+  const toMine = perspectiveWalletIds.includes(t.to_wallet);
+  if (fromMine && toMine) direction = 'internal';
+  else if (toMine) direction = 'credit';
+  else if (fromMine) direction = 'debit';
   const meta = parseJson(t.metadata, {});
   return {
     id: t.id,

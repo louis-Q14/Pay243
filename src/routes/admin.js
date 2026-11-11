@@ -128,14 +128,17 @@ const findUser = async (id) => {
 backofficeRouter.get('/admin/users/:id', can('users.view'), async (req, res) => {
   const u = await findUser(req.params.id);
   const wallets = await q.all("SELECT id, currency, balance FROM wallets WHERE owner_type='user' AND owner_id=? ORDER BY currency", u.id);
-  const ids = wallets.map((w) => w.id);
+  const merchant = await q.get('SELECT id, name, created_at, suspended_at FROM merchants WHERE owner_user_id=?', u.id);
+  // Les ventes sont créditées sur le solde marchand : il fait partie de l'argent du titulaire.
+  const merchantWallets = merchant ? await q.all("SELECT id, currency, balance FROM wallets WHERE owner_type='merchant' AND owner_id=? ORDER BY currency", merchant.id) : [];
+  const ids = [...wallets, ...merchantWallets].map((w) => w.id);
   const marks = ids.map(() => '?').join(',') || "''";
   const txns = ids.length ? await q.all(`SELECT * FROM transactions WHERE from_wallet IN (${marks}) OR to_wallet IN (${marks}) ORDER BY created_at DESC LIMIT 30`, ...ids, ...ids) : [];
-  const merchant = await q.get('SELECT id, name, created_at, suspended_at FROM merchants WHERE owner_user_id=?', u.id);
   await logAction(req, 'user.view', u.id);
   res.json({
     user: { ...userRow(u), nationality: u.nationality, timezone: u.timezone, email_verified: !!u.email_verified_at, phone_verified: !!u.phone_verified_at },
     wallets: wallets.map((w) => ({ currency: w.currency, balance: Number(w.balance) })),
+    merchant_wallets: merchantWallets.map((w) => ({ currency: w.currency, balance: Number(w.balance) })),
     transactions: txns.map((t) => serializeTxn(t, ids)),
     merchant: merchant || null,
     kyc_submissions: await q.all('SELECT id, status, document_type, created_at, reviewed_at, reviewer, review_note FROM kyc_submissions WHERE user_id=? ORDER BY created_at DESC', u.id),
