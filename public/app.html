@@ -25,6 +25,23 @@
       <div id="login-otp" class="hidden"><label id="login-otp-label">Code de vérification (nouvel appareil)</label><input name="otp_code" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code"></div>
       <button class="full">Se connecter</button>
     </form>
+    <p style="text-align:center;margin:12px 0 0"><button class="link" id="forgot-open" type="button">Mot de passe oublié ?</button></p>
+  </div>
+  <div class="card hidden" id="forgot">
+    <h2 style="margin:0 0 4px;font-size:22px">Mot de passe oublié</h2>
+    <p class="muted" id="forgot-sub" style="margin:0 0 8px">Saisissez l'adresse email de votre compte : nous vous enverrons un code pour choisir un nouveau mot de passe.</p>
+    <form id="f-forgot">
+      <label>Adresse email</label><input name="email" type="email" required autocomplete="username" placeholder="vous@exemple.com">
+      <button class="full">Recevoir un code</button>
+    </form>
+    <form id="f-reset" class="hidden">
+      <p class="notice hidden" id="reset-sandbox"></p>
+      <label>Code reçu par email</label><input name="otp_code" inputmode="numeric" maxlength="6" pattern="\d{6}" autocomplete="one-time-code" required>
+      <label>Nouveau mot de passe</label><input name="new_password" type="password" minlength="8" required autocomplete="new-password">
+      <label>Confirmez le mot de passe</label><input name="confirm" type="password" minlength="8" required autocomplete="new-password">
+      <button class="full">Changer mon mot de passe</button>
+    </form>
+    <p style="text-align:center;margin:12px 0 0"><button class="link" id="forgot-close" type="button">← Retour à la connexion</button></p>
   </div>
 </main>
 
@@ -178,6 +195,27 @@ $('#f-login').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
     toast(x.message + sandboxHint(x.details));
   }
 }); };
+// ---------------- Mot de passe oublié ----------------
+let resetEmail = null;
+const showForgot = (on) => { $('#forgot').classList.toggle('hidden', !on); $('#auth > .card:first-child').classList.toggle('hidden', on); };
+$('#forgot-open').onclick = () => { showForgot(true); const id = $('#f-login').identifier.value; if (id.includes('@')) $('#f-forgot').email.value = id; $('#f-forgot').email.focus(); };
+$('#forgot-close').onclick = () => { showForgot(false); $('#f-forgot').classList.remove('hidden'); $('#f-reset').classList.add('hidden'); };
+$('#f-forgot').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const r = await api('POST', '/v1/auth/password/forgot', { email: e.target.email.value });
+  resetEmail = r.email;
+  $('#forgot-sub').textContent = `Si un compte existe pour ${r.email}, un code vient d'y être envoyé. Pensez à regarder dans vos courriers indésirables.`;
+  $('#reset-sandbox').classList.toggle('hidden', !r.sandbox_code);
+  if (r.sandbox_code) $('#reset-sandbox').textContent = `Mode démonstration : aucun email n'est envoyé. Votre code est ${r.sandbox_code}.`;
+  $('#f-forgot').classList.add('hidden'); $('#f-reset').classList.remove('hidden'); $('#f-reset').otp_code.focus();
+}); };
+$('#f-reset').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const d = formData(e.target);
+  if (d.new_password !== d.confirm) throw new Error('Les deux mots de passe ne correspondent pas.');
+  const r = await api('POST', '/v1/auth/password/reset', { email: resetEmail, otp_code: d.otp_code, new_password: d.new_password, ...device() });
+  toast('Mot de passe modifié. Vos autres sessions ont été fermées.');
+  showForgot(false); setSession(r.token);
+}); };
+
 function setSession(t) {
   TOKEN = t; try { sessionStorage.setItem('pay243_token', t); } catch {}
   const next = new URLSearchParams(location.search).get('next');

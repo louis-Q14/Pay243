@@ -118,6 +118,7 @@ export const config = {
   email: {
     driver: env.EMAIL_DRIVER || 'mock', // mock | resend
     from: env.EMAIL_FROM || 'Pay243 <no-reply@pay243.com>',
+    replyTo: env.EMAIL_REPLY_TO || null, // ex. support@pay243.com
     resend: { apiKey: env.RESEND_API_KEY },
   },
 
@@ -139,7 +140,17 @@ export function toUsdMinor(amount, currency) {
   return currency === 'USD' ? amount : Math.round(amount / config.fx.usdToCdf);
 }
 
+/** Les codes à usage unique ne sont renvoyés dans l'API que si aucun message réel ne part (démo et tests). */
+export function exposesCodes(channel) {
+  if (config.mode === 'live') return false;
+  return (channel === 'email' ? config.email.driver : config.sms.driver) === 'mock';
+}
+
 export function assertProductionConfig() {
+  // Valable dans tous les modes : un fournisseur réel sans identifiants ferait échouer chaque inscription.
+  if (config.email.driver === 'resend' && !config.email.resend.apiKey) throw new Error('EMAIL_DRIVER=resend exige RESEND_API_KEY.');
+  if (config.email.driver !== 'mock' && !/<[^@\s]+@[^>\s]+>$|^[^@\s]+@[^@\s]+$/.test(config.email.from)) throw new Error('EMAIL_FROM invalide (ex. "Pay243 <no-reply@pay243.com>").');
+  if (config.sms.driver === 'africastalking' && !config.sms.africastalking.apiKey) throw new Error('SMS_DRIVER=africastalking exige AT_API_KEY.');
   if (config.mode !== 'live') return;
   const weak = ['dev-only-secret-change-me', 'change-me', ''];
   if (weak.includes(config.jwtSecret) || weak.includes(config.callbackSecret)) {

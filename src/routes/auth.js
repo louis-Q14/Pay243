@@ -7,7 +7,7 @@ import { describeLimits } from '../limits.js';
 import { rateLimit } from '../middleware.js';
 import { isTrustedDevice, issueOtp, normalizeDeviceId, trustDevice, verifyOtp } from '../otp.js';
 import { createMerchantAccount } from '../services/merchants.js';
-import { notificationPrefs } from '../services/notify.js';
+import { appUrl, notificationPrefs, notifyUser } from '../services/notify.js';
 import { HttpError, detectOperator, isEmail, newId, normalizeEmail, normalizePhone, now } from '../util.js';
 
 export const authRouter = Router();
@@ -98,6 +98,7 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
     throw err;
   }
   const user = await q.get('SELECT * FROM users WHERE id=?', id);
+  sendWelcome(user, merchant ? String(business_name).trim() : null);
   res.status(201).json({
     token: signToken({ sub: id }),
     user: serializeUser(user),
@@ -136,9 +137,84 @@ authRouter.post('/auth/login', limiter, async (req, res) => {
     }
     await verifyOtp(destination, 'login', otp_code);
     await trustDevice(user.id, deviceHash, device_label);
+    notifyUser(user, 'security', 'Nouvelle connexion à votre compte Pay243', 'Votre compte vient d’être ouvert depuis un nouvel appareil, désormais reconnu.', {
+      paragraphs: ['Votre compte Pay243 vient d’être ouvert depuis un nouvel appareil. Il est désormais reconnu : aucun code ne sera demandé lors des prochaines connexions depuis celui-ci.'],
+      details: [['Appareil', deviceName(device_label)], ['Date', new Date().toLocaleString('fr-FR', { timeZone: user.timezone || 'Africa/Kinshasa' })], ['Adresse IP', req.ip || 'inconnue']],
+      cta: { label: 'Voir mes appareils', url: appUrl('/settings#securite') },
+    });
   }
   res.json({ token: signToken({ sub: user.id }), user: serializeUser(user) });
 });
+
+// ---------- Mot de passe oublié ----------
+/**
+ * Étape 1 : code envoyé à l'adresse du compte. Réponse identique que le compte existe ou non
+ * (on ne révèle pas quelles adresses sont inscrites).
+ */
+authRouter.post('/auth/password/forgot', otpLimiter, async (req, res) => {
+  const e = normalizeEmail(req.body?.email);
+  const user = await q.get("SELECT id FROM users WHERE email=? AND status='active'", e);
+  let sent = null;
+  if (user) {
+    sent = await issueOtp(e, 'password_reset').catch((err) => {
+      if (err.code === 'otp_too_soon' || err.code === 'otp_rate_limited') return null;
+      throw err;
+    });
+  }
+  res.json({ sent: true, email: e, expires_in: config.otp.ttlSeconds, channel: 'email', ...(sent?.sandbox_code ? { sandbox_code: sent.sandbox_code } : {}) });
+});
+
+/** Étape 2 : nouveau mot de passe. Toutes les sessions ouvertes sont fermées ; cet appareil devient de confiance. */
+authRouter.post('/auth/password/reset', limiter, async (req, res) => {
+  const { otp_code, new_password, device_id, device_label } = req.body || {};
+  const e = normalizeEmail(req.body?.email);
+  assertNewPassword(new_password);
+  const user = await q.get("SELECT * FROM users WHERE email=? AND status='active'", e);
+  if (!user) throw new HttpError(400, 'invalid_otp', 'Code incorrect ou expiré. Demandez un nouveau code.');
+  const deviceHash = normalizeDeviceId(device_id);
+  await verifyOtp(e, 'password_reset', otp_code);
+  await q.run('UPDATE users SET password_hash=?, sessions_valid_after=? WHERE id=?', await hashSecret(new_password), Date.now(), user.id);
+  await trustDevice(user.id, deviceHash, device_label);
+  notifyUser(user, 'security', 'Votre mot de passe Pay243 a été réinitialisé', 'Le mot de passe de votre compte vient d’être réinitialisé. Toutes vos sessions ont été fermées.', {
+    paragraphs: ['Le mot de passe de votre compte Pay243 vient d’être réinitialisé avec un code envoyé à cette adresse. Toutes les sessions ouvertes ont été fermées.'],
+    details: [['Appareil', deviceName(device_label)], ['Adresse IP', req.ip || 'inconnue']],
+  });
+  const fresh = await q.get('SELECT * FROM users WHERE id=?', user.id);
+  res.json({ token: signToken({ sub: user.id }), user: serializeUser(fresh) });
+});
+
+// ---------- Emails ----------
+/** Nom lisible d'un appareil à partir de son user-agent (« Chrome sur Windows »). */
+function deviceName(label) {
+  const l = String(label || '');
+  const os = /Windows/.test(l) ? 'Windows' : /Android/.test(l) ? 'Android' : /iPhone|iPad/.test(l) ? 'iPhone / iPad' : /Mac OS/.test(l) ? 'Mac' : /Linux/.test(l) ? 'Linux' : null;
+  const br = /Edg\//.test(l) ? 'Edge' : /OPR\//.test(l) ? 'Opera' : /Chrome\//.test(l) ? 'Chrome' : /Firefox\//.test(l) ? 'Firefox' : /Safari\//.test(l) ? 'Safari' : null;
+  return os || br ? [br, os].filter(Boolean).join(' sur ') : 'Appareil inconnu';
+}
+
+function sendWelcome(user, businessName) {
+  const first = user.full_name.split(' ')[0];
+  if (businessName) {
+    notifyUser(user, 'account', `Bienvenue sur Pay243, ${businessName}`, `Votre compte entreprise ${businessName} est prêt.`, {
+      title: `Bienvenue, ${first} !`,
+      paragraphs: [
+        `Votre compte entreprise « ${businessName} » est ouvert. Vous pouvez dès maintenant créer des liens de paiement et les partager sur WhatsApp, ou intégrer l’API à votre site.`,
+        'Votre clé API secrète vous a été affichée une seule fois à l’inscription. Si vous ne l’avez pas notée, générez-en une nouvelle dans votre espace marchand.',
+      ],
+      cta: { label: 'Ouvrir mon espace marchand', url: appUrl('/app#merchant') },
+      footer: 'Pour relever vos plafonds, vérifiez votre identité depuis l’application.',
+    });
+  } else {
+    notifyUser(user, 'account', 'Bienvenue sur Pay243', 'Votre compte Pay243 est prêt.', {
+      title: `Bienvenue, ${first} !`,
+      paragraphs: [
+        'Votre compte Pay243 est ouvert. Rechargez-le avec M-Pesa, Airtel Money, Orange Money ou une carte, puis envoyez de l’argent gratuitement à vos proches, en francs congolais ou en dollars.',
+        'Astuce : choisissez un identifiant @ dans vos paramètres pour recevoir de l’argent sans communiquer votre numéro.',
+      ],
+      cta: { label: 'Ouvrir mon wallet', url: appUrl('/app') },
+    });
+  }
+}
 
 authRouter.get('/me', requireUser, (req, res) => {
   res.json({ user: serializeUser(req.user), limits: describeLimits(req.user) });

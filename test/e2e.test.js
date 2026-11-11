@@ -843,6 +843,80 @@ test('paramètres : notifications, relevé CSV, export, passage en entreprise, f
   assert.equal((await api('POST', '/v1/transfers', { token: state.bob, body: { to: '@sarah.mwamba', amount: 100, currency: 'USD', pin: '9137' } })).body.error.code, 'recipient_not_found');
 });
 
+// ---------------------------------------------------------------------
+//  Emails transactionnels et mot de passe oublié
+// ---------------------------------------------------------------------
+test('emails : bienvenue, nouvel appareil, préférences de paiement respectées', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const mails = (to) => outbox.filter((m) => m.to === to);
+  const r = await register({ email: 'nadia.kasongo@test.cd', full_name: 'Nadia Kasongo', password: 'motdepasse4', pin: '5173' });
+  assert.equal(r.status, 201);
+  const welcome = mails('nadia.kasongo@test.cd').find((m) => m.tag === 'account');
+  assert.match(welcome.subject, /Bienvenue sur Pay243/);
+  assert.match(welcome.html, /Ouvrir mon wallet/);
+  assert.match(welcome.text, /Bienvenue, Nadia/);
+  const biz = await register({ account_type: 'business', email: 'vente@kinshoes.cd', business_name: 'Kin Shoes', full_name: 'Rachel Mbala', password: 'motdepasse4', pin: '5173' });
+  const bizWelcome = mails('vente@kinshoes.cd').find((m) => m.tag === 'account');
+  assert.match(bizWelcome.subject, /Kin Shoes/);
+  assert.doesNotMatch(bizWelcome.html + bizWelcome.text, new RegExp(biz.body.merchant.secret_key)); // la clé ne part jamais par email
+
+  // Nouvel appareil : code, puis alerte de sécurité une fois l'appareil validé
+  const first = await api('POST', '/v1/auth/login', { body: { identifier: 'nadia.kasongo@test.cd', password: 'motdepasse4', device_id: 'nadia-new-laptop-0001', device_label: 'Mozilla/5.0 (Windows NT 10.0) Chrome/130' } });
+  assert.equal(first.status, 403);
+  const ok = await api('POST', '/v1/auth/login', { body: { identifier: 'nadia.kasongo@test.cd', password: 'motdepasse4', device_id: 'nadia-new-laptop-0001', device_label: 'Mozilla/5.0 (Windows NT 10.0) Chrome/130', otp_code: first.body.error.details.sandbox_code } });
+  assert.equal(ok.status, 200);
+  const alert = mails('nadia.kasongo@test.cd').find((m) => m.tag === 'security');
+  assert.match(alert.subject, /Nouvelle connexion/);
+  assert.match(alert.text, /Chrome sur Windows/);
+
+  // Argent reçu : email selon les préférences
+  await api('POST', '/v1/transfers', { token: state.bob, body: { to: 'nadia.kasongo@test.cd', amount: 100, currency: 'USD', pin: '9137', note: 'Remboursement' } });
+  const recu = mails('nadia.kasongo@test.cd').filter((m) => m.tag === 'payments');
+  assert.equal(recu.length, 1);
+  assert.match(recu[0].text, /Remboursement/);
+  await api('PUT', '/v1/me/notifications', { token: ok.body.token, body: { payments_email: false } });
+  await api('POST', '/v1/transfers', { token: state.bob, body: { to: 'nadia.kasongo@test.cd', amount: 100, currency: 'USD', pin: '9137' } });
+  assert.equal(mails('nadia.kasongo@test.cd').filter((m) => m.tag === 'payments').length, 1);
+  state.nadia = ok.body.token;
+});
+
+test('mot de passe oublié : code par email, sessions fermées, aucune fuite d\'information', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const unknown = await api('POST', '/v1/auth/password/forgot', { body: { email: 'inconnu@test.cd' } });
+  assert.equal(unknown.status, 200); // même réponse qu'un compte existant
+  assert.equal(unknown.body.sandbox_code, undefined);
+  assert.equal(outbox.filter((m) => m.to === 'inconnu@test.cd').length, 0);
+
+  const f = await api('POST', '/v1/auth/password/forgot', { body: { email: 'Nadia.Kasongo@test.cd' } });
+  assert.equal(f.status, 200);
+  assert.match(f.body.sandbox_code, /^\d{6}$/);
+  assert.match(outbox.at(-1).subject, /réinitialisation/);
+  assert.equal((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: '000000', new_password: 'nouveau-mdp-9' } })).body.error.code, 'invalid_otp');
+  assert.equal((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'court' } })).body.error.code, 'weak_password');
+  const r = await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'nouveau-mdp-9', device_id: 'nadia-phone-000000001' } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal((await api('GET', '/v1/me', { token: state.nadia })).status, 401); // ancienne session fermée
+  assert.equal((await api('GET', '/v1/me', { token: r.body.token })).status, 200);
+  assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'nadia.kasongo@test.cd', password: 'motdepasse4' } })).status, 401);
+  assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'nadia.kasongo@test.cd', password: 'nouveau-mdp-9', device_id: 'nadia-phone-000000001' } })).status, 200);
+  assert.match(outbox.filter((m) => m.to === 'nadia.kasongo@test.cd').at(-1).subject, /réinitialisé/);
+  // Le code ne sert qu'une fois
+  assert.notEqual((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'encore-un-mdp' } })).status, 200);
+});
+
+test('codes jamais renvoyés par l\'API quand un vrai fournisseur envoie les messages', async () => {
+  const { config, exposesCodes } = await import('../src/config.js');
+  assert.equal(exposesCodes('email'), true); // pilote mock : démo et tests
+  const saved = { email: config.email.driver, mode: config.mode };
+  try {
+    config.email.driver = 'resend';
+    assert.equal(exposesCodes('email'), false);
+    assert.equal(exposesCodes('sms'), true); // SMS toujours simulé
+    config.email.driver = 'mock'; config.mode = 'live';
+    assert.equal(exposesCodes('email'), false);
+  } finally { config.email.driver = saved.email; config.mode = saved.mode; }
+});
+
 test('grand livre équilibré (partie double)', async () => {
   await sleep(100);
   for (const row of await auditLedger()) assert.equal(row.total, 0, `devise ${row.currency} déséquilibrée`);

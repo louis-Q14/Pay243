@@ -8,7 +8,7 @@ import { idempotent } from '../middleware.js';
 import { cardProcessor } from '../providers/cards/index.js';
 import { listOperators } from '../providers/mobileMoney/index.js';
 import { refreshPending, startCollection, startPayout } from '../services/mobileMoney.js';
-import { notifyUser } from '../services/notify.js';
+import { appUrl, notifyUser } from '../services/notify.js';
 import { HttpError, assertAmount, assertCurrency, formatMoney, isEmail, newId, normalizeEmail, normalizePhone, now, percentFee } from '../util.js';
 
 export const walletRouter = Router();
@@ -132,7 +132,12 @@ walletRouter.post('/transfers', idem, async (req, res) => {
     return t;
   });
   notifyUser(target, 'payments', `Vous avez reçu ${formatMoney(amount, currency)}`,
-    `${req.user.full_name} vous a envoyé ${formatMoney(amount, currency)} sur Pay243${note ? ` : « ${String(note).slice(0, 140)} »` : ''}. Référence ${txn.id}.`);
+    `${req.user.full_name} vous a envoyé ${formatMoney(amount, currency)} sur Pay243${note ? ` : « ${String(note).slice(0, 140)} »` : ''}. Référence ${txn.id}.`, {
+      title: `Vous avez reçu ${formatMoney(amount, currency)}`,
+      paragraphs: [`${req.user.full_name} vous a envoyé de l'argent sur Pay243. Il est déjà disponible dans votre wallet.`],
+      details: [['Montant', formatMoney(amount, currency)], ['De', req.user.full_name], ...(note ? [['Motif', String(note).slice(0, 140)]] : []), ['Référence', txn.id]],
+      cta: { label: 'Voir mon wallet', url: appUrl('/app') },
+    });
   res.status(201).json(serializeTxn(await getTxn(txn.id), [from.id]));
 });
 

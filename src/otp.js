@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
-import { config } from './config.js';
+import { config, exposesCodes } from './config.js';
 import { q } from './db.js';
-import { codeEmailHtml, emailProvider } from './providers/email/index.js';
+import { emailProvider, layoutHtml, layoutText } from './providers/email/index.js';
 import { smsProvider } from './providers/sms/index.js';
 import { HttpError, isEmail, newId, now, safeEqual, sha256 } from './util.js';
 
-export const OTP_PURPOSES = ['register', 'login', 'email_change', 'phone_change'];
+export const OTP_PURPOSES = ['register', 'login', 'email_change', 'phone_change', 'password_reset'];
 
 const hashCode = (destination, purpose, code) =>
   crypto.createHmac('sha256', config.jwtSecret).update(`${destination}:${purpose}:${code}`).digest('hex');
@@ -14,6 +14,7 @@ const SMS = {
   register: (code) => `Pay243 : votre code de vérification est ${code}. Il expire dans 5 minutes. Ne le communiquez à personne.`,
   login: (code) => `Pay243 : code de connexion sur un nouvel appareil : ${code}. Si ce n'est pas vous, changez votre mot de passe.`,
   phone_change: (code) => `Pay243 : code pour ajouter ce numéro à votre compte : ${code}. Il expire dans 5 minutes.`,
+  password_reset: (code) => `Pay243 : code de réinitialisation du mot de passe : ${code}. Si ce n'est pas vous, ignorez ce message.`,
 };
 
 const EMAIL = {
@@ -35,14 +36,20 @@ const EMAIL = {
     intro: 'Saisissez ce code dans vos paramètres Pay243 pour utiliser cette adresse email. Il expire dans 5 minutes.',
     footer: "Vous n'avez rien demandé ? Ignorez ce message : votre adresse ne sera pas ajoutée.",
   }),
+  password_reset: (code) => ({
+    subject: `${code} : réinitialisation de votre mot de passe Pay243`,
+    title: 'Réinitialisez votre mot de passe',
+    intro: 'Vous avez demandé à réinitialiser le mot de passe de votre compte Pay243. Saisissez ce code pour en choisir un nouveau. Il expire dans 5 minutes.',
+    footer: "Vous n'avez rien demandé ? Ignorez ce message : votre mot de passe reste inchangé. Pay243 ne vous demandera jamais ce code par téléphone.",
+  }),
 };
 
 /** Envoie le code par email ou par SMS selon la destination. */
 async function deliver(destination, purpose, code) {
   if (isEmail(destination)) {
     const m = EMAIL[purpose](code);
-    const text = `${m.title}\n\n${m.intro}\n\nCode : ${code}\n\n${m.footer}`;
-    return emailProvider().send({ to: destination, subject: m.subject, text, html: codeEmailHtml({ ...m, code }) });
+    const content = { preheader: `Votre code : ${code}`, title: m.title, paragraphs: [m.intro], code, footer: m.footer };
+    return emailProvider().send({ to: destination, subject: m.subject, text: layoutText(content), html: layoutHtml(content), tag: `otp_${purpose}` });
   }
   return smsProvider().send({ to: destination, message: SMS[purpose](code) });
 }
@@ -50,7 +57,7 @@ async function deliver(destination, purpose, code) {
 /**
  * Génère et envoie un code à 6 chiffres, par email (destination contenant « @ ») ou par SMS.
  * Applique un délai entre deux envois et un plafond horaire par destination.
- * Renvoie { expires_in, channel, sandbox_code? } — le code n'est exposé qu'en sandbox, pour les tests et la démo.
+ * Renvoie { expires_in, channel, sandbox_code? } — le code n'est exposé que si l'envoi est simulé (démo, tests).
  */
 export async function issueOtp(destination, purpose) {
   if (!OTP_PURPOSES.includes(purpose)) throw new HttpError(400, 'invalid_purpose', 'purpose invalide.');
@@ -77,7 +84,8 @@ export async function issueOtp(destination, purpose) {
     await q.run('UPDATE otp_codes SET consumed_at=? WHERE id=?', now(), id);
     throw new HttpError(502, `${channel}_failed`, `Envoi du ${channel === 'email' ? 'message' : 'SMS'} impossible : ${e.message}`);
   }
-  return { expires_in: o.ttlSeconds, channel, ...(config.mode !== 'live' ? { sandbox_code: code } : {}) };
+  // Le code ne revient dans l'API que si aucun message réel n'est parti (pilote « mock », hors production).
+  return { expires_in: o.ttlSeconds, channel, ...(exposesCodes(channel) ? { sandbox_code: code } : {}) };
 }
 
 /** Vérifie et consomme le code (consommation atomique : un code ne sert qu'une fois, même en concurrence). */

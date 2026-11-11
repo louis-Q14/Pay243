@@ -138,6 +138,7 @@ Client ──POST /v1/topups──▶ Pay243 ──collect()──▶ Opérateur
 | POST | `/v1/auth/otp` | `{ email }` : envoie un code à 6 chiffres par email (valable 5 min, renvoyé dans `sandbox_code` en sandbox) |
 | POST | `/v1/auth/register` | `{ account_type: "personal" \| "business", email, otp_code, full_name, password, pin, phone?, business_name? (entreprise), device_id? }`. Un compte entreprise reçoit aussitôt son espace marchand et une clé `sk_test_` |
 | POST | `/v1/auth/login` | `{ identifier (email ou téléphone), password, device_id?, otp_code? }` → `{ token }`. Depuis un appareil inconnu : `403 otp_required`, un code est envoyé par email (ou par SMS pour un compte sans email), puis on rejoue la requête avec `otp_code` |
+| POST | `/v1/auth/password/forgot` puis `/v1/auth/password/reset` | Mot de passe oublié : `{ email }` envoie un code (même réponse si le compte n'existe pas), puis `{ email, otp_code, new_password, device_id? }` ferme toutes les sessions et renvoie un nouveau `token` |
 | GET | `/v1/me` | Profil et plafonds KYC |
 | GET | `/v1/me/settings` | Tout pour la page Paramètres : profil, adresses, appareils (en-tête `X-Device-Id` pour marquer l'appareil courant), marchand, statut KYC |
 | PATCH | `/v1/me` | `{ full_name?, handle?, timezone?, nationality? }`. Nom et nationalité verrouillés après vérification d'identité |
@@ -227,6 +228,21 @@ L'image est décrite par le [Dockerfile](Dockerfile) : Node 22, dépendances de 
 6. **Mise à jour :** à chaque `git push` sur `main`, cliquez sur **Deploy**, ou activez le déploiement automatique. Les migrations s'appliquent au démarrage.
 
 Tant que les contrats opérateurs, l'acquéreur cartes, le fournisseur d'emails et l'agrément BCC ne sont pas en place, laissez `PAY243_MODE=sandbox` : aucune somme réelle ne circule. Le passage à `live` refuse de démarrer si un pilote simulé reste actif.
+
+## Emails (Resend)
+
+Tous les emails partent par le fournisseur choisi dans `EMAIL_DRIVER` : codes de vérification (inscription, nouvel appareil, changement d'email, mot de passe oublié), bienvenue, alertes de sécurité, argent reçu et décisions KYC. Chaque email a une version HTML aux couleurs de Pay243 et une version texte.
+
+- **`EMAIL_DRIVER=mock`** (démo, tests) : rien n'est envoyé, le message s'affiche dans les logs et le code est renvoyé par l'API (`sandbox_code`) pour s'afficher à l'écran.
+- **`EMAIL_DRIVER=resend`** : envoi réel. Le code n'est **plus jamais** renvoyé par l'API, même si les paiements restent en mode démo. Le serveur refuse de démarrer sans `RESEND_API_KEY`.
+
+Mise en place :
+1. Créez un compte sur resend.com et ajoutez le domaine `pay243.com` (région conseillée : `eu-west-1`).
+2. Ajoutez chez votre registrar les enregistrements DNS indiqués par Resend (DKIM, SPF et MX sur le sous-domaine `send`), puis lancez la vérification.
+3. Définissez `EMAIL_DRIVER=resend`, `RESEND_API_KEY` (clé « Sending access » limitée au domaine), `EMAIL_FROM=Pay243 <no-reply@pay243.com>` et, si besoin, `EMAIL_REPLY_TO=support@pay243.com`.
+4. Conseillé : un enregistrement DMARC `_dmarc.pay243.com` (TXT `v=DMARC1; p=none; rua=mailto:…`) pour la délivrabilité.
+
+Les préférences de chaque utilisateur s'appliquent aux emails « argent reçu ». Les emails de sécurité et de vie du compte (bienvenue, KYC, fermeture) partent toujours.
 
 ## Brancher les vrais opérateurs
 

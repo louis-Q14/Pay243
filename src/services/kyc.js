@@ -3,8 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
-import { emailProvider } from '../providers/email/index.js';
-import { smsProvider } from '../providers/sms/index.js';
+import { appUrl, notifyUser } from './notify.js';
 import { HttpError, newId, now } from '../util.js';
 
 // =====================================================================
@@ -226,14 +225,6 @@ export async function readSubmissionFile(s, kind) {
   return { mime: f.mime, data: readDecrypted(f.storage_key, f.id) };
 }
 
-/** Prévient l'utilisateur par email (ou par SMS s'il n'a pas d'email). Ne bloque jamais la décision. */
-function notify(user, subject, message) {
-  const send = user.email
-    ? emailProvider().send({ to: user.email, subject, text: message })
-    : user.phone ? smsProvider().send({ to: user.phone, message: `Pay243 : ${message}` }) : Promise.resolve();
-  send.catch((e) => console.error('[kyc:notification]', e.message));
-}
-
 async function pendingOrThrow(id) {
   const s = await getSubmission(id);
   if (!s) throw new HttpError(404, 'submission_not_found', 'Demande introuvable.');
@@ -260,7 +251,11 @@ export async function approve(id, reviewer, { note, override_duplicates = false 
     return q.get('SELECT * FROM users WHERE id=?', s.user_id);
   });
   const lim = config.kyc[user.kyc_level];
-  notify(user, 'Votre identité est vérifiée', `Votre identité est vérifiée. Nouveaux plafonds : ${lim.perTxnUsd} $ par opération, ${lim.dailyUsd} $ par jour.`);
+  notifyUser(user, 'account', 'Votre identité est vérifiée', `Votre identité est vérifiée. Nouveaux plafonds : ${lim.perTxnUsd} $ par opération, ${lim.dailyUsd} $ par jour.`, {
+    paragraphs: ['Bonne nouvelle : votre pièce d’identité a été vérifiée par notre équipe de conformité. Vos plafonds sont relevés.'],
+    details: [['Par opération', `${lim.perTxnUsd} $`], ['Par jour', `${lim.dailyUsd} $`], ['Solde maximum', `${lim.maxBalanceUsd} $`]],
+    cta: { label: 'Ouvrir mon wallet', url: appUrl('/app') },
+  });
   return adminView(await getSubmission(s.id));
 }
 
@@ -273,7 +268,10 @@ export async function reject(id, reviewer, { reason } = {}, ip) {
     if (!res.changes) throw new HttpError(409, 'already_reviewed', 'Demande déjà traitée.');
     await audit(reviewer, 'kyc.reject', s.id, { user_id: s.user_id, reason: r }, ip);
   });
-  const u = await q.get('SELECT phone, email FROM users WHERE id=?', s.user_id);
-  notify(u, "Vérification d'identité refusée", `Vérification d'identité refusée. Motif : ${r.slice(0, 100)}. Vous pouvez soumettre une nouvelle demande depuis l'application.`);
+  const u = await q.get('SELECT * FROM users WHERE id=?', s.user_id);
+  notifyUser(u, 'account', "Vérification d'identité refusée", `Vérification d'identité refusée. Motif : ${r.slice(0, 100)}. Vous pouvez soumettre une nouvelle demande depuis l'application.`, {
+    paragraphs: ["Nous n'avons pas pu valider votre pièce d'identité.", `Motif : ${r.slice(0, 300)}`, 'Vous pouvez envoyer une nouvelle demande : photos nettes, en pleine lumière, sans reflet.'],
+    cta: { label: 'Envoyer une nouvelle demande', url: appUrl('/app#kyc') },
+  });
   return adminView(await getSubmission(s.id));
 }

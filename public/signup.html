@@ -65,6 +65,7 @@
   .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue); }
   .resend { background: none; border: 0; color: var(--blue); font: 600 14px var(--text); cursor: pointer; padding: 0; }
   .resend:disabled { color: var(--muted); cursor: default; }
+  .hint-mail { font-size: 14px; color: var(--muted); background: var(--soft); border-radius: 12px; padding: 10px 14px; margin: -8px 0 18px; }
   .alt { text-align: center; margin-top: 20px; font-size: 15px; color: var(--muted); }
   .alt a { color: var(--blue); font-weight: 600; text-decoration: none; }
   .divider { height: 1px; background: var(--line); margin: 8px 0 22px; }
@@ -168,6 +169,7 @@
       <p class="step-sub">Saisissez le code à 6 chiffres envoyé à :</p>
       <div class="who"><span id="who-email"></span><button type="button" data-back="2">Modifier</button></div>
       <div class="note" id="sandbox-note" hidden></div>
+      <p class="hint-mail" id="mail-hint" hidden>Rien reçu après une minute ? Regardez dans vos <b>courriers indésirables</b> ou <b>Promotions</b>, et vérifiez l'adresse ci-dessus. L'expéditeur est <b>no-reply@pay243.com</b>.</p>
       <div class="err" id="err3" role="alert"></div>
       <form id="f-account" novalidate>
         <div class="field">
@@ -265,6 +267,7 @@ async function sendCode() {
   const note = $('#sandbox-note');
   note.hidden = !r.sandbox_code;
   if (r.sandbox_code) note.textContent = `Mode démonstration : aucun email n'est envoyé. Votre code est ${r.sandbox_code}.`;
+  $('#mail-hint').hidden = !!r.sandbox_code;
   startResendTimer();
 }
 $('#f-email').addEventListener('submit', (e) => {
