@@ -293,12 +293,32 @@ burger.addEventListener('click', () => {
 });
 mobile.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { mobile.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); }));
 
-// Utilisateur déjà connecté : « Mon wallet » à la place de l'inscription
-let member = false;
-try { member = !!sessionStorage.getItem('pay243_token'); } catch {}
-if (member) {
-  document.querySelectorAll('[data-guest]').forEach((e) => { e.hidden = true; e.style.display = 'none'; });
-  document.querySelectorAll('[data-member]').forEach((e) => { e.hidden = false; });
+// Utilisateur déjà connecté : plus aucune invitation à créer un compte, tout renvoie vers son espace.
+const signupLinks = [...document.querySelectorAll('a[href^="/signup"]')].map((a) => ({ a, href: a.getAttribute('href'), text: a.textContent }));
+function showMember(on, user) {
+  document.querySelectorAll('[data-guest]').forEach((e) => { e.hidden = on; e.style.display = on ? 'none' : ''; });
+  document.querySelectorAll('[data-member]').forEach((e) => { e.hidden = !on; });
+  for (const { a, href, text } of signupLinks) {
+    if (a.closest('[data-guest]')) continue; // déjà masqué
+    const business = href.includes('type=business');
+    a.setAttribute('href', on ? (business ? '/app#merchant' : '/app') : href);
+    a.textContent = on
+      ? (a.closest('.ribbon') ? 'Accéder à mon wallet ›' : business ? (user?.account_type === 'business' ? 'Mon espace marchand' : 'Passer en compte entreprise') : 'Ouvrir mon wallet')
+      : text;
+    if (on && business && user && user.account_type !== 'business') a.setAttribute('href', '/settings');
+  }
+  const fine = document.querySelectorAll('.hero .fine');
+  fine.forEach((p) => { p.dataset.text ??= p.textContent; p.textContent = on ? `Connecté${user?.full_name ? ' en tant que ' + user.full_name.split(' ')[0] : ''}.` : p.dataset.text; });
+}
+let token = null;
+try { token = sessionStorage.getItem('pay243_token'); } catch {}
+if (token) {
+  showMember(true);
+  // Vérifie la session : si elle a expiré, les invitations à s'inscrire réapparaissent.
+  fetch('/v1/me', { headers: { Authorization: 'Bearer ' + token } })
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((me) => showMember(true, me.user))
+    .catch((status) => { if (status === 401) { try { sessionStorage.removeItem('pay243_token'); } catch {} showMember(false); } });
 }
 
 // Apparition au défilement

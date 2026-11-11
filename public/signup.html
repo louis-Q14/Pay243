@@ -209,6 +209,11 @@
 </div>
 
 <script>
+// Déjà connecté : pas de nouvelle inscription depuis cette session, direction le wallet.
+try {
+  const t = sessionStorage.getItem('pay243_token');
+  if (t) fetch('/v1/me', { headers: { Authorization: 'Bearer ' + t } }).then((r) => { if (r.ok) location.replace('/app'); });
+} catch {}
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const state = { type: new URLSearchParams(location.search).get('type') === 'business' ? 'business' : 'personal', email: '' };
