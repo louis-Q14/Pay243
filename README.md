@@ -215,6 +215,19 @@ En plus du jeton, filtrez les adresses IP sources des opérateurs au niveau du r
 
 ---
 
+## Déploiement (Easypanel)
+
+L'image est décrite par le [Dockerfile](Dockerfile) : Node 22, dépendances de production uniquement, utilisateur non root, contrôle de santé sur `/health`.
+
+1. **Base :** dans le projet Easypanel, ajoutez un service **Postgres** et copiez son URL de connexion interne.
+2. **Application :** ajoutez un service **App**, source GitHub `louis-Q14/Pay243`, branche `main`, construction par **Dockerfile**.
+3. **Variables d'environnement :** `PAY243_MODE`, `BASE_URL=https://pay243.com`, `DATABASE_URL`, `JWT_SECRET`, `CALLBACK_SECRET`, `KYC_ENCRYPTION_KEY`, `KYC_STORAGE_DIR=/app/data/kyc`, `ADMIN_KEYS`, `WEBHOOK_BLOCK_PRIVATE=1`. Générez chaque secret avec `openssl rand -hex 32`.
+4. **Volume :** montez un volume persistant sur `/app/data`. Les pièces d'identité chiffrées y sont stockées.
+5. **Domaines :** ajoutez `pay243.com` et `www.pay243.com` vers le port **3000**, avec HTTPS. Côté DNS, faites pointer un enregistrement `A` de chaque nom vers l'IP du serveur.
+6. **Mise à jour :** à chaque `git push` sur `main`, cliquez sur **Deploy**, ou activez le déploiement automatique. Les migrations s'appliquent au démarrage.
+
+Tant que les contrats opérateurs, l'acquéreur cartes, le fournisseur d'emails et l'agrément BCC ne sont pas en place, laissez `PAY243_MODE=sandbox` : aucune somme réelle ne circule. Le passage à `live` refuse de démarrer si un pilote simulé reste actif.
+
 ## Brancher les vrais opérateurs
 
 Chaque opérateur se configure indépendamment avec `MPESA_DRIVER`, `AIRTEL_DRIVER` et `ORANGE_DRIVER` (voir `.env.example`).

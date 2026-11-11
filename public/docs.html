@@ -52,7 +52,7 @@ Idempotency-Key: 6f1c…   (recommandé sur tous les POST)</pre>
 <pre>{
   "id": "pay_9xG…", "object": "payment", "status": "requires_payment",
   "amount": 4500, "currency": "USD", "fee": 0, "net": null,
-  "checkout_url": "https://pay243.cd/checkout/pay_9xG…",
+  "checkout_url": "https://pay243.com/checkout/pay_9xG…",
   "expires_at": "2026-11-10T16:00:00.000Z", …
 }</pre>
 <table>
@@ -103,7 +103,7 @@ if (!hash_equals($expected, $sig['v1']) || abs(time() - (int)$sig['t']) &gt; 300
 $event = json_decode($payload, true);</pre>
 
 <h2>7. Bouton de paiement (navigateur)</h2>
-<pre>&lt;script src="https://pay243.cd/sdk/pay243.js"&gt;&lt;/script&gt;
+<pre>&lt;script src="https://pay243.com/sdk/pay243.js"&gt;&lt;/script&gt;
 &lt;div id="payer"&gt;&lt;/div&gt;
 &lt;script&gt;
   Pay243.button('#payer', {

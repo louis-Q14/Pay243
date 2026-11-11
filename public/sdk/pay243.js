@@ -1,7 +1,7 @@
 /*!
  * Pay243.js — SDK navigateur
  * Usage :
- *   <script src="https://pay243.cd/sdk/pay243.js"></script>
+ *   <script src="https://pay243.com/sdk/pay243.js"></script>
  *   <div id="pay"></div>
  *   <script>
  *     Pay243.button('#pay', {

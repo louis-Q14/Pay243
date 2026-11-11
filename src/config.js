@@ -117,7 +117,7 @@ export const config = {
   // Emails transactionnels (codes de vérification à l'inscription et sur un nouvel appareil).
   email: {
     driver: env.EMAIL_DRIVER || 'mock', // mock | resend
-    from: env.EMAIL_FROM || 'Pay243 <no-reply@pay243.cd>',
+    from: env.EMAIL_FROM || 'Pay243 <no-reply@pay243.com>',
     resend: { apiKey: env.RESEND_API_KEY },
   },
 

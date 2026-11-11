@@ -1,7 +1,7 @@
 // SDK serveur Node.js pour l'API Pay243 (aucune dépendance, Node 18+).
 //
 //   import Pay243 from './pay243.js';
-//   const pay243 = new Pay243(process.env.PAY243_SECRET_KEY, { baseUrl: 'https://api.pay243.cd' });
+//   const pay243 = new Pay243(process.env.PAY243_SECRET_KEY, { baseUrl: 'https://api.pay243.com' });
 //   const payment = await pay243.payments.create({ amount: 2500, currency: 'USD', description: 'Commande #42', return_url: 'https://monsite.cd/merci' });
 //   res.redirect(payment.checkout_url);
 import crypto from 'node:crypto';
