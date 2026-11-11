@@ -41,7 +41,7 @@ DATABASE_URL=postgres://user:mdp@hote:5432/pay243 npm start
 | `http://localhost:3000/checkout/:id` | Page de paiement hébergée |
 | `http://localhost:3000/docs` | Documentation de l'API marchands |
 | `http://localhost:3000/health` | Santé et contrôle d'équilibre du grand livre |
-| `http://localhost:3000/admin` | Back-office conformité et finance : revue KYC, rapprochement, cantonnement, journal d'audit (clé affichée dans la console au démarrage en sandbox) |
+| `http://localhost:3000/admin` | Back-office de l'équipe : comptes nominatifs avec rôles (super administrateur, administrateur, conformité, finance, support, auditeur), voir [Back-office](#back-office-admin) |
 
 ### Scénario de test en 2 minutes
 
@@ -174,20 +174,20 @@ Client ──POST /v1/topups──▶ Pay243 ──collect()──▶ Opérateur
 
 Voir **`/docs`** pour le détail complet : `POST /v1/payments`, `GET /v1/payments/:id`, `POST /v1/payments/:id/refunds`, `POST /v1/payments/:id/cancel`, `GET /v1/balance`, `POST /v1/payouts`, `GET /v1/events`.
 
-### Back-office (`Authorization: Bearer <clé agent>`)
+### Back-office (`Authorization: Bearer <jeton de session de l'équipe ou clé de service>`)
 
-Clés définies dans `ADMIN_KEYS="nom:clé,nom2:clé2"`, une par agent. Chaque consultation de dossier, ouverture d'image et décision est inscrite dans `admin_audit`.
+Session : `POST /v1/admin/auth/login` `{ email, password }` (envoie un code), puis `{ email, password, otp_code }` → `{ token }`. Chaque route vérifie la permission du rôle (403 `forbidden` sinon). Autres routes : `/v1/admin/me`, `/dashboard`, `/users[/:id][/suspend|/reactivate|/unlock-pin|/revoke-sessions|/kyc-level]`, `/transactions`, `/merchants[/:id/suspend|/reactivate|/revoke-keys]`, `/staff[/:id][/reset-password]`, `/roles`, `/settings`. Chaque consultation de dossier, ouverture d'image et décision est inscrite dans `admin_audit`.
 
 | Méthode | Endpoint | Description |
 |---|---|---|
 | GET | `/v1/admin/kyc/submissions?status=pending\|approved\|rejected` | File d'attente, avec un indicateur `flagged` si la pièce ou une image est déjà utilisée sur un autre compte |
 | GET | `/v1/admin/kyc/submissions/:id` | Dossier complet, doublons, demandes précédentes |
 | GET | `/v1/admin/kyc/submissions/:id/files/:kind` | Image déchiffrée (`Cache-Control: no-store`) |
-| POST | `/v1/admin/kyc/submissions/:id/approve` | `{ note?, override_duplicates? }` → niveau 2 et SMS. Une pièce déjà validée ailleurs exige `override_duplicates` et une note |
-| POST | `/v1/admin/kyc/submissions/:id/reject` | `{ reason }` (envoyé à l'utilisateur par SMS) |
+| POST | `/v1/admin/kyc/submissions/:id/approve` | `{ note?, override_duplicates? }` → niveau 2 et email. Une pièce déjà validée ailleurs exige `override_duplicates` et une note |
+| POST | `/v1/admin/kyc/submissions/:id/reject` | `{ reason }` (envoyé à l'utilisateur par email) |
 | GET | `/v1/admin/audit` | Journal d'audit |
 
-### Rapprochement et cantonnement (back-office, même clé agent)
+### Rapprochement et cantonnement (back-office : rôles finance, administrateur)
 
 | Méthode | Endpoint | Description |
 |---|---|---|
@@ -228,6 +228,27 @@ L'image est décrite par le [Dockerfile](Dockerfile) : Node 22, dépendances de 
 6. **Mise à jour :** à chaque `git push` sur `main`, cliquez sur **Deploy**, ou activez le déploiement automatique. Les migrations s'appliquent au démarrage.
 
 Tant que les contrats opérateurs, l'acquéreur cartes, le fournisseur d'emails et l'agrément BCC ne sont pas en place, laissez `PAY243_MODE=sandbox` : aucune somme réelle ne circule. Le passage à `live` refuse de démarrer si un pilote simulé reste actif.
+
+## Back-office (`/admin`)
+
+L'équipe Pay243 se connecte avec un **compte nominatif** : email, mot de passe, puis un **code envoyé par email à chaque connexion**. Un mot de passe provisoire (invitation, réinitialisation) doit être changé à la première connexion, avec 12 caractères minimum. Après 5 erreurs de mot de passe, le compte est verrouillé 15 minutes. Chaque action est inscrite au journal d'audit.
+
+| Rôle | Accès |
+|---|---|
+| **Super administrateur** | Tout : équipe (tous rôles), paramètres de la plateforme, toutes les opérations. Il reste toujours au moins un super administrateur actif. |
+| **Administrateur** | Toutes les opérations (suspension de comptes et de marchands, niveau KYC, KYC, rapprochement, journal). Gère les membres de rang inférieur uniquement. |
+| **Conformité** | Vérification d'identité (consulter, valider, refuser), consultation des comptes, transactions et marchands. |
+| **Finance** | Rapprochement et cantonnement, transactions, marchands, lecture des paramètres. |
+| **Support** | Consultation des comptes et transactions, déblocage du PIN, déconnexion des sessions d'un utilisateur. |
+| **Auditeur** | Lecture seule de toute la plateforme, y compris le journal d'audit. |
+
+Rubriques : tableau de bord, utilisateurs (recherche, fiche, suspension, PIN, sessions, niveau KYC), transactions, marchands (suspension, révocation des clés), vérification d'identité, rapprochement, équipe, paramètres (taux de change, frais, plafonds par niveau, ouverture des inscriptions, appliqués à chaud) et journal d'audit.
+
+**Premier super administrateur** :
+- soit dans la console du service (Easypanel → web → Console) : `npm run admin:create -- --email vous@exemple.com --name "Prénom Nom"`. Le mot de passe provisoire s'affiche.
+- soit avec une clé de service `ADMIN_KEYS` : lien « Utiliser une clé de service » sur la page de connexion, puis **Équipe → Ajouter un membre**.
+
+`ADMIN_KEYS="nom:clé[:rôle]"` (rôle par défaut `super_admin`) reste disponible pour les scripts et l'accès de secours. En production, sans `ADMIN_KEYS`, aucune clé n'existe : seuls les comptes nominatifs donnent accès.
 
 ## Emails (Resend)
 
@@ -290,7 +311,8 @@ Chaque opérateur se configure indépendamment avec `MPESA_DRIVER`, `AIRTEL_DRIV
 - [ ] Adaptateurs de relevés réels (export portail M-Pesa, Airtel, agrégateur) vers le format canonique, téléchargement automatique quand l'opérateur fournit une API (SFTP, API de relevé), et rapprochement des cartes avec les fichiers de l'acquéreur.
 - [ ] Validation des codes de statut M-Pesa (`INS-*`, `queryTransactionStatus`) et du suivi des décaissements Airtel avec la documentation d'onboarding.
 - [ ] Secrets dans un coffre (Vault ou KMS), HTTPS obligatoire, filtrage IP des callbacks, journaux d'audit immuables.
-- [ ] Back-office, suite : support, gel de compte, déblocage du PIN, validation KYB des marchands, export comptable. Les comptes agents et les rôles doivent passer par une authentification forte (SSO + 2FA) plutôt que par des clés partagées.
+- [x] Back-office avec comptes nominatifs, rôles, code par email à chaque connexion, suspension de comptes et de marchands, déblocage du PIN, paramètres à chaud.
+- [ ] Back-office, suite : validation KYB des marchands, export comptable, application d'authentification (TOTP) ou clé de sécurité en plus du code par email.
 - [ ] Clés `sk_live_` distinctes avec un **grand livre séparé** entre le test et la production.
 
 **Fortement recommandé**
