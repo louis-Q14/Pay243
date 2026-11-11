@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireUser, verifyPin } from '../auth.js';
+import { requireActivated, requireUser, verifyPin } from '../auth.js';
 import { config } from '../config.js';
 import { q, tx } from '../db.js';
 import { createTxn, getTxn, getWallet, lockWallet, move, serializeTxn, systemWallet, updateTxn } from '../ledger.js';
@@ -13,6 +13,8 @@ import { HttpError, assertAmount, assertCurrency, formatMoney, isEmail, newId, n
 
 export const walletRouter = Router();
 walletRouter.use(['/wallets', '/transactions', '/topups', '/transfers', '/withdrawals', '/conversions', '/cards'], requireUser);
+// Aucune opération d'argent avant l'activation du compte (identité validée par l'équipe).
+walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], requireActivated);
 const idem = idempotent((req) => `user:${req.user.id}`);
 
 const userWalletIds = async (userId) => (await q.all("SELECT id FROM wallets WHERE owner_type='user' AND owner_id=?", userId)).map((w) => w.id);
@@ -115,6 +117,7 @@ walletRouter.post('/transfers', idem, async (req, res) => {
         : "Ce numéro n'a pas de compte Pay243. Utilisez un retrait Mobile Money pour lui envoyer de l'argent.");
   }
   if (target.id === req.user.id) throw new HttpError(400, 'self_transfer', 'Impossible de vous envoyer de l\'argent à vous-même.');
+  if (!target.activated_at) throw new HttpError(403, 'recipient_not_verified', "Ce destinataire n'a pas encore activé son compte Pay243 : il doit d'abord faire vérifier son identité.");
   await verifyPin(req.user, pin);
   const from = await getWallet('user', req.user.id, currency);
   const to = await getWallet('user', target.id, currency);
@@ -199,7 +202,7 @@ walletRouter.get('/cards', async (req, res) => {
   res.json({ data: (await q.all('SELECT * FROM cards WHERE user_id=? ORDER BY created_at DESC', req.user.id)).map(serializeCard) });
 });
 
-walletRouter.post('/cards', async (req, res) => {
+walletRouter.post('/cards', requireActivated, async (req, res) => {
   const { token } = req.body || {};
   if (!token) throw new HttpError(400, 'missing_token', 'Jeton de carte requis (obtenu via le SDK du processeur).');
   if ((await q.get('SELECT COUNT(*) AS n FROM cards WHERE user_id=?', req.user.id)).n >= 5) throw new HttpError(400, 'too_many_cards', '5 cartes maximum.');

@@ -229,6 +229,12 @@ L'image est décrite par le [Dockerfile](Dockerfile) : Node 22, dépendances de 
 
 Tant que les contrats opérateurs, l'acquéreur cartes, le fournisseur d'emails et l'agrément BCC ne sont pas en place, laissez `PAY243_MODE=sandbox` : aucune somme réelle ne circule. Le passage à `live` refuse de démarrer si un pilote simulé reste actif.
 
+## Activation des comptes
+
+Un compte nouvellement créé n'est **pas activé** : l'utilisateur peut se connecter, compléter son profil et envoyer sa pièce d'identité, mais **aucune opération d'argent** n'est possible. Sont refusés, avec l'erreur `403 account_not_verified` : recharge, envoi, retrait, conversion, ajout de carte, paiement par wallet ou carte enregistrée, création d'espace marchand, de clés et de liens de paiement, et API marchand. Un compte non activé ne peut pas non plus **recevoir** de transfert (`recipient_not_verified`).
+
+Le compte est activé quand un membre de l'équipe autorisé (super administrateur, administrateur ou conformité) **valide la vérification d'identité** dans le back-office. L'utilisateur est alors prévenu par email. Un administrateur peut aussi activer un compte en passant son niveau KYC à 2, ou le désactiver en le ramenant au niveau 1. `GET /v1/me` renvoie `user.activated` et `verification.status` : `required`, `pending`, `rejected` ou `verified`.
+
 ## Back-office (`/admin`)
 
 L'équipe Pay243 se connecte avec un **compte nominatif** : email, mot de passe, puis un **code envoyé par email à chaque connexion**. Un mot de passe provisoire (invitation, réinitialisation) doit être changé à la première connexion, avec 12 caractères minimum. Après 5 erreurs de mot de passe, le compte est verrouillé 15 minutes. Chaque action est inscrite au journal d'audit.

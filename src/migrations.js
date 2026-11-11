@@ -371,4 +371,14 @@ CREATE INDEX idx_admin_audit_created ON admin_audit (created_at);
 CREATE INDEX idx_users_created ON users (created_at);
 `,
   },
+  {
+    version: 5,
+    name: "activation du compte après vérification d'identité",
+    sql: `
+-- Un compte ne peut effectuer aucune opération tant que son identité n'a pas été validée par l'équipe.
+ALTER TABLE users ADD COLUMN activated_at TEXT;
+UPDATE users SET activated_at = created_at WHERE kyc_level >= 2;
+CREATE INDEX idx_users_not_activated ON users (created_at) WHERE activated_at IS NULL;
+`,
+  },
 ];

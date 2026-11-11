@@ -7,6 +7,20 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/assets/style.css">
+<style>
+  /* Compte non activé : les opérations sont verrouillées jusqu'à la validation de l'identité */
+  body.locked .actions button { opacity: .45; }
+  body.locked .balance { filter: saturate(.5); }
+  .gate { border: 2px solid #0b3d91; }
+  .gate h2 { font-size: 20px; }
+  .steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 6px; padding: 0; list-style: none; counter-reset: s; }
+  .steps3 li { background: #f5f7fb; border-radius: 12px; padding: 12px; font-size: 13px; color: var(--muted); counter-increment: s; }
+  .steps3 li::before { content: counter(s); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #dfe6f3; color: #0b3d91; font-weight: 800; font-size: 12px; margin-right: 6px; }
+  .steps3 li.done::before { content: "✓"; background: #138a4b; color: #fff; }
+  .steps3 li.now { background: #eef4ff; color: var(--ink); font-weight: 600; }
+  .steps3 li b { display: block; color: var(--ink); margin-top: 4px; }
+  @media (max-width: 560px) { .steps3 { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 <header class="top">
@@ -241,7 +255,11 @@ async function boot() {
     $('#who').innerHTML = `<a href="/settings" class="me" title="Paramètres du compte">${av}<span>${esc(ME.full_name)}</span></a> · <a href="/settings">Paramètres</a> · <button class="link" id="logout">Déconnexion</button>`;
     $('#logout').onclick = logout;
     const L = me.limits;
-    $('#limits').textContent = `Niveau KYC ${L.kyc_level} (${L.label}) — plafonds : ${L.perTxnUsd} $ par opération, ${L.dailyUsd} $ par jour, solde max ${L.maxBalanceUsd} $ (contre-valeur).`;
+    VERIF = me.verification?.status || (ME.activated ? 'verified' : 'required');
+    document.body.classList.toggle('locked', !ME.activated);
+    $('#limits').textContent = ME.activated
+      ? `Compte activé · niveau ${L.kyc_level} (${L.label}) — plafonds : ${L.perTxnUsd} $ par opération, ${L.dailyUsd} $ par jour, solde max ${L.maxBalanceUsd} $ (contre-valeur).`
+      : 'Compte non activé : vérification d\'identité requise avant toute opération.';
     await Promise.all([loadWallets(), loadHistory(), loadCards(), loadKyc().catch(() => {})]);
     let newKey = null;
     try { newKey = sessionStorage.getItem('pay243_new_key'); sessionStorage.removeItem('pay243_new_key'); } catch {}
@@ -254,6 +272,10 @@ async function boot() {
     } else if (location.hash === '#kyc') {
       history.replaceState(null, '', '/app');
       if (KYC?.can_submit) openKyc();
+    } else if (!ME.activated && KYC?.can_submit) {
+      // Premier passage après l'inscription : on propose directement la vérification
+      let shown = null; try { shown = sessionStorage.getItem('pay243_kyc_prompt'); sessionStorage.setItem('pay243_kyc_prompt', '1'); } catch {}
+      if (!shown) openKyc();
     }
   } catch { logout(); }
 }
@@ -277,11 +299,13 @@ const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { tim
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---------------- Vérification d'identité (KYC niveau 2) ----------------
-let KYC = null;
+let KYC = null; let VERIF = null;
 async function loadKyc() {
   KYC = await api('GET', '/v1/kyc');
   const box = $('#kyc-box');
   const last = KYC.last_submission;
+  if (!ME.activated) return renderGate(box, last);
+  box.classList.remove('gate');
   if (KYC.kyc_level >= 2) { box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
   const n = KYC.next_level;
@@ -294,6 +318,26 @@ async function loadKyc() {
       <button class="full" id="kyc-start">Vérifier mon identité</button>`;
   }
   box.innerHTML = html;
+  const b = $('#kyc-start'); if (b) b.onclick = openKyc;
+}
+
+/** Compte non activé : carte d'activation en tête de page, avec l'état de la vérification. */
+function renderGate(box, last) {
+  const pending = last?.status === 'pending';
+  const rejected = last?.status === 'rejected';
+  $('#tab-home').prepend(box);
+  box.classList.remove('hidden'); box.classList.add('gate');
+  box.innerHTML = `<h2>${pending ? 'Vérification en cours' : 'Activez votre compte'}</h2>
+    <p class="muted" style="margin:0">${pending
+      ? `Votre ${esc(last.document_label)} a été reçue le ${when(last.created_at)}. Notre équipe la vérifie, généralement sous 24 h : vous recevrez un email dès que votre compte sera activé.`
+      : 'Pour votre sécurité et celle de vos contacts, chaque compte Pay243 est vérifié par notre équipe avant la première opération : recharge, envoi, paiement ou retrait.'}</p>
+    ${rejected ? `<p class="notice"><b>Demande refusée :</b> ${esc(last.review_note || '')}<br>Envoyez une nouvelle demande avec des photos nettes, en pleine lumière.</p>` : ''}
+    <ol class="steps3">
+      <li class="done">Compte créé<b>Email vérifié</b></li>
+      <li class="${pending ? 'done' : 'now'}">Pièce d'identité<b>${pending ? 'Envoyée' : 'Photo recto, verso et selfie'}</b></li>
+      <li class="${pending ? 'now' : ''}">Validation par Pay243<b>Activation du compte</b></li>
+    </ol>
+    ${KYC.can_submit ? '<button class="full" id="kyc-start">Vérifier mon identité</button>' : ''}`;
   const b = $('#kyc-start'); if (b) b.onclick = openKyc;
 }
 
@@ -408,7 +452,14 @@ const ACTIONS = {
       });
   },
 };
-$$('[data-open]').forEach((b) => b.onclick = () => ACTIONS[b.dataset.open]());
+$$('[data-open]').forEach((b) => b.onclick = () => {
+  if (ME && !ME.activated) {
+    toast(VERIF === 'pending' ? 'Votre identité est en cours de vérification : les opérations seront disponibles dès l\'activation de votre compte.' : 'Activez d\'abord votre compte en vérifiant votre identité.', true);
+    if (KYC?.can_submit) openKyc();
+    return;
+  }
+  ACTIONS[b.dataset.open]();
+});
 
 // ---------------- Cartes ----------------
 async function loadCards() {

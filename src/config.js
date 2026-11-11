@@ -129,7 +129,7 @@ export const config = {
   },
 
   // Requêtes par minute et par adresse IP sur la connexion et l'inscription.
-  rateLimits: { auth: Number(env.RATE_LIMIT_AUTH || 20), otp: Number(env.RATE_LIMIT_OTP || 10) },
+  rateLimits: { auth: Number(env.RATE_LIMIT_AUTH || 20), otp: Number(env.RATE_LIMIT_OTP || 10), kycUpload: Number(env.RATE_LIMIT_KYC_UPLOAD || 20) },
 
   sms: {
     driver: env.SMS_DRIVER || 'mock', // mock | africastalking

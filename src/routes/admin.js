@@ -72,7 +72,8 @@ backofficeRouter.get('/admin/dashboard', can('dashboard.view'), async (_req, res
       COUNT(*) FILTER (WHERE created_at >= ?)::int AS new_7d,
       COUNT(*) FILTER (WHERE status='suspended')::int AS suspended,
       COUNT(*) FILTER (WHERE account_type='business')::int AS business,
-      COUNT(*) FILTER (WHERE kyc_level >= 2)::int AS verified FROM users`, since7);
+      COUNT(*) FILTER (WHERE kyc_level >= 2)::int AS verified,
+      COUNT(*) FILTER (WHERE activated_at IS NULL AND status='active')::int AS awaiting_activation FROM users`, since7);
   const volume = await q.all(`SELECT currency, type, COUNT(*)::int AS n, COALESCE(SUM(amount),0)::bigint AS amount
       FROM transactions WHERE status='succeeded' AND created_at >= ? GROUP BY currency, type ORDER BY currency, type`, since24);
   const signups = await q.all(`SELECT substr(created_at,1,10) AS day, COUNT(*)::int AS n FROM users WHERE created_at >= ? GROUP BY 1 ORDER BY 1`, since7);
@@ -95,7 +96,7 @@ backofficeRouter.get('/admin/dashboard', can('dashboard.view'), async (_req, res
 // =====================================================================
 const userRow = (u) => ({
   id: u.id, full_name: u.full_name, email: u.email, phone: u.phone, handle: u.handle, account_type: u.account_type,
-  kyc_level: u.kyc_level, status: u.status, pin_locked: u.pin_failures >= 5, created_at: u.created_at,
+  kyc_level: u.kyc_level, status: u.status, activated: !!u.activated_at, activated_at: u.activated_at, pin_locked: u.pin_failures >= 5, created_at: u.created_at,
   suspended_reason: u.suspended_reason, suspended_at: u.suspended_at, closed_at: u.closed_at,
 });
 
@@ -111,6 +112,8 @@ backofficeRouter.get('/admin/users', can('users.view'), async (req, res) => {
   if (['active', 'suspended', 'closed'].includes(status)) { where.push('status = ?'); args.push(status); }
   if (req.query.kyc) { where.push('kyc_level = ?'); args.push(Number(req.query.kyc)); }
   if (['personal', 'business'].includes(req.query.type)) { where.push('account_type = ?'); args.push(req.query.type); }
+  if (req.query.activation === 'pending') where.push('activated_at IS NULL');
+  if (req.query.activation === 'active') where.push('activated_at IS NOT NULL');
   const limit = Math.min(Number(req.query.limit) || 50, 200);
   const rows = await q.all(`SELECT * FROM users ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY created_at DESC LIMIT ?`, ...args, limit);
   res.json({ data: rows.map(userRow) });
@@ -192,7 +195,8 @@ backofficeRouter.post('/admin/users/:id/kyc-level', can('users.kyc_override'), a
   const level = Number(req.body?.level);
   if (![1, 2, 3].includes(level)) throw new HttpError(400, 'invalid_level', 'Niveau 1, 2 ou 3.');
   const reason = reasonOf(req.body);
-  await q.run('UPDATE users SET kyc_level=? WHERE id=?', level, u.id);
+  // Niveau 2 ou plus : compte activé ; retour au niveau 1 : compte désactivé jusqu'à une nouvelle vérification.
+  await q.run('UPDATE users SET kyc_level=?, activated_at = CASE WHEN ? >= 2 THEN COALESCE(activated_at, ?) ELSE NULL END WHERE id=?', level, level, now(), u.id);
   await logAction(req, 'user.kyc_level', u.id, { from: u.kyc_level, to: level, reason });
   res.json({ user: userRow(await findUser(u.id)) });
 });

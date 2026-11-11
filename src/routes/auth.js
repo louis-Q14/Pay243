@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { assertNewPassword, assertNewPin, hashSecret, requireUser, signToken, verifySecret } from '../auth.js';
+import { assertNewPassword, assertNewPin, hashSecret, requireUser, signToken, verificationStatus, verifySecret } from '../auth.js';
 import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
 import { getWallet } from '../ledger.js';
@@ -29,6 +29,7 @@ export function serializeUser(u) {
     phone: u.phone,
     operator: u.phone ? detectOperator(u.phone) : null,
     full_name: u.full_name,
+    activated: !!u.activated_at,
     phone_verified: !!u.phone_verified_at,
     handle: u.handle || null,
     avatar_url: u.avatar || null,
@@ -201,23 +202,23 @@ function sendWelcome(user, businessName) {
       title: `Bienvenue, ${first} !`,
       paragraphs: [
         `Votre compte entreprise « ${businessName} » est ouvert. Vous pouvez dès maintenant créer des liens de paiement et les partager sur WhatsApp, ou intégrer l’API à votre site.`,
-        'Votre clé API secrète vous a été affichée une seule fois à l’inscription. Si vous ne l’avez pas notée, générez-en une nouvelle dans votre espace marchand.',
+        'Dernière étape avant d’encaisser : vérifiez votre identité. Notre équipe valide votre pièce, puis active votre compte et votre clé API.',
       ],
-      cta: { label: 'Ouvrir mon espace marchand', url: appUrl('/app#merchant') },
-      footer: 'Pour relever vos plafonds, vérifiez votre identité depuis l’application.',
+      cta: { label: 'Vérifier mon identité', url: appUrl('/app#kyc') },
+      footer: 'Votre clé API secrète vous a été affichée une seule fois à l’inscription. Si vous ne l’avez pas notée, générez-en une nouvelle dans votre espace marchand.',
     });
   } else {
     notifyUser(user, 'account', 'Bienvenue sur Pay243', 'Votre compte Pay243 est prêt.', {
       title: `Bienvenue, ${first} !`,
       paragraphs: [
         'Votre compte Pay243 est ouvert. Rechargez-le avec M-Pesa, Airtel Money, Orange Money ou une carte, puis envoyez de l’argent gratuitement à vos proches, en francs congolais ou en dollars.',
-        'Astuce : choisissez un identifiant @ dans vos paramètres pour recevoir de l’argent sans communiquer votre numéro.',
+        'Dernière étape : vérifiez votre identité. Pour votre sécurité, votre compte est activé dès que notre équipe a validé votre pièce d’identité, généralement sous 24 h.',
       ],
-      cta: { label: 'Ouvrir mon wallet', url: appUrl('/app') },
+      cta: { label: 'Vérifier mon identité', url: appUrl('/app#kyc') },
     });
   }
 }
 
-authRouter.get('/me', requireUser, (req, res) => {
-  res.json({ user: serializeUser(req.user), limits: describeLimits(req.user) });
+authRouter.get('/me', requireUser, async (req, res) => {
+  res.json({ user: serializeUser(req.user), limits: describeLimits(req.user), verification: { status: await verificationStatus(req.user) } });
 });

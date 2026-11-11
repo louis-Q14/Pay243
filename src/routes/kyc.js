@@ -19,7 +19,7 @@ kycRouter.get('/kyc', async (req, res) => res.json(await statusFor(req.user)));
 /** Envoi d'une image brute : POST /v1/kyc/files/id_front avec Content-Type: image/jpeg. */
 kycRouter.post(
   '/kyc/files/:kind',
-  rateLimit({ name: 'kyc_upload', max: 20 }),
+  rateLimit({ name: 'kyc_upload', max: config.rateLimits.kycUpload }),
   express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: config.kycReview.maxUploadBytes }),
   async (req, res) => res.status(201).json(await uploadFile(req.user, req.params.kind, req.body)),
 );

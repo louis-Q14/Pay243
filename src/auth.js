@@ -99,6 +99,26 @@ export async function optionalUser(req, _res, next) {
   next();
 }
 
+// ---------- Activation du compte ----------
+/** Statut de vérification affiché à l'utilisateur : required | pending | rejected | verified. */
+export async function verificationStatus(user) {
+  if (user.activated_at) return 'verified';
+  const last = await q.get('SELECT status FROM kyc_submissions WHERE user_id=? ORDER BY created_at DESC LIMIT 1', user.id);
+  return last?.status === 'pending' ? 'pending' : last?.status === 'rejected' ? 'rejected' : 'required';
+}
+
+export const notVerifiedError = (status) => new HttpError(403, 'account_not_verified',
+  status === 'pending'
+    ? "Votre pièce d'identité est en cours de vérification. Vous pourrez effectuer des opérations dès que notre équipe aura activé votre compte."
+    : "Votre compte n'est pas encore activé. Vérifiez votre identité : notre équipe valide votre demande, puis votre compte est activé.",
+  { verification_status: status });
+
+/** Middleware (après requireUser) : aucune opération d'argent avant l'activation du compte. */
+export async function requireActivated(req, _res, next) {
+  if (!req.user.activated_at) throw notVerifiedError(await verificationStatus(req.user));
+  next();
+}
+
 // ---------- Clés API marchands ----------
 // Format : sk_test_<32 car.> / sk_live_<32 car.> ; seul le hash SHA-256 est stocké.
 export function generateApiKey(mode) {
@@ -117,8 +137,9 @@ export async function requireMerchantKey(req, _res, next) {
   if (!row || !safeEqual(row.key_hash, sha256(key))) throw new HttpError(401, 'invalid_api_key', 'Clé API invalide ou révoquée.');
   req.merchant = await q.get('SELECT * FROM merchants WHERE id=?', row.merchant_id);
   if (req.merchant.suspended_at) throw new HttpError(403, 'merchant_suspended', 'Compte marchand suspendu. Contactez le support Pay243.');
-  const owner = await q.get('SELECT status FROM users WHERE id=?', req.merchant.owner_user_id);
+  const owner = await q.get('SELECT status, activated_at FROM users WHERE id=?', req.merchant.owner_user_id);
   if (owner?.status !== 'active') throw new HttpError(403, 'merchant_suspended', 'Compte marchand inactif. Contactez le support Pay243.');
+  if (!owner.activated_at) throw new HttpError(403, 'account_not_verified', "Le compte de ce marchand n'est pas encore activé : son identité doit d'abord être vérifiée par Pay243.");
   req.livemode = row.mode === 'live';
   next();
 }

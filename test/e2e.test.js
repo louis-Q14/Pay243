@@ -7,6 +7,7 @@ import http from 'node:http';
 process.env.MOCK_DELAY_MS = '30';
 process.env.RATE_LIMIT_AUTH = '1000'; // la suite enchaîne beaucoup d'inscriptions et de connexions
 process.env.RATE_LIMIT_OTP = '1000';
+process.env.RATE_LIMIT_KYC_UPLOAD = '1000';
 const ADMIN_KEY = 'adm_test_0123456789abcdefghijkl';
 process.env.ADMIN_KEYS = `conformite:${ADMIN_KEY}`;
 const fs = await import('node:fs');
@@ -48,13 +49,16 @@ const DEVICE_A = 'device-alice-0001-test';
 const emailOf = (name) => `${name.toLowerCase().normalize('NFD').replace(/[^a-z]+/g, '.')}@test.cd`;
 
 /** Inscription en deux étapes : code envoyé par email (exposé en sandbox) puis création du compte. */
-async function register(body) {
+/** Par défaut, le compte est considéré comme validé par l'équipe (activate: false pour tester un compte non activé). */
+async function register({ activate = true, ...body }) {
   const email = body.email || emailOf(body.full_name);
   const otp = await api('POST', '/v1/auth/otp', { body: { email, purpose: 'register' } });
   assert.equal(otp.status, 201, JSON.stringify(otp.body));
   assert.equal(otp.body.channel, 'email');
   assert.match(otp.body.sandbox_code, /^\d{6}$/);
-  return api('POST', '/v1/auth/register', { body: { account_type: 'personal', ...body, email, otp_code: otp.body.sandbox_code } });
+  const r = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', ...body, email, otp_code: otp.body.sandbox_code } });
+  if (activate && r.status === 201) await q.run('UPDATE users SET activated_at=? WHERE id=?', new Date().toISOString(), r.body.user.id);
+  return r;
 }
 
 before(async () => {
@@ -853,7 +857,7 @@ test('emails : bienvenue, nouvel appareil, préférences de paiement respectées
   assert.equal(r.status, 201);
   const welcome = mails('nadia.kasongo@test.cd').find((m) => m.tag === 'account');
   assert.match(welcome.subject, /Bienvenue sur Pay243/);
-  assert.match(welcome.html, /Ouvrir mon wallet/);
+  assert.match(welcome.html, /Vérifier mon identité/); // l'activation passe par la vérification d'identité
   assert.match(welcome.text, /Bienvenue, Nadia/);
   const biz = await register({ account_type: 'business', email: 'vente@kinshoes.cd', business_name: 'Kin Shoes', full_name: 'Rachel Mbala', password: 'motdepasse4', pin: '5173' });
   const bizWelcome = mails('vente@kinshoes.cd').find((m) => m.tag === 'account');
@@ -1047,6 +1051,64 @@ test('back-office : toujours un super administrateur actif, verrouillage après 
   assert.equal((await bo(supToken)('GET', '/users')).status, 200);
   assert.equal((await bo(state.adminToken)('PATCH', `/staff/${sup.id}`, { status: 'suspended' })).status, 200);
   assert.equal((await bo(supToken)('GET', '/users')).status, 401);
+});
+
+// ---------------------------------------------------------------------
+//  Activation : aucune opération avant la validation de l'identité
+// ---------------------------------------------------------------------
+test('compte non activé : aucune opération avant la validation de l\'identité par l\'équipe', async () => {
+  const r = await register({ activate: false, email: 'nouveau.client@test.cd', full_name: 'Nouveau Client', password: 'motdepasse7', pin: '5926', phone: '0823456781' });
+  assert.equal(r.status, 201);
+  assert.equal(r.body.user.activated, false);
+  const tok = r.body.token;
+  const me = await api('GET', '/v1/me', { token: tok });
+  assert.equal(me.body.verification.status, 'required');
+  // Toutes les opérations sont refusées
+  for (const [path, body] of [
+    ['/v1/topups', { amount: 1000, currency: 'CDF' }],
+    ['/v1/transfers', { to: 'patrick.ilunga@test.cd', amount: 100, currency: 'USD', pin: '5926' }],
+    ['/v1/withdrawals', { amount: 100, currency: 'CDF', pin: '5926' }],
+    ['/v1/conversions', { from_currency: 'USD', to_currency: 'CDF', amount: 100, pin: '5926' }],
+    ['/v1/merchants', { name: 'Boutique Avant Activation' }],
+  ]) {
+    const x = await api('POST', path, { token: tok, body });
+    assert.equal(x.status, 403, `${path} ${JSON.stringify(x.body)}`);
+    assert.equal(x.body.error.code, 'account_not_verified');
+  }
+  // On ne peut pas non plus lui envoyer d'argent
+  const toHim = await api('POST', '/v1/transfers', { token: state.bob, body: { to: 'nouveau.client@test.cd', amount: 100, currency: 'USD', pin: '9137' } });
+  assert.equal(toHim.body.error.code, 'recipient_not_verified');
+  // Consultation, paramètres et vérification d'identité restent possibles
+  assert.equal((await api('GET', '/v1/wallets', { token: tok })).status, 200);
+  assert.equal((await api('PATCH', '/v1/me', { token: tok, body: { handle: 'nouveau.client' } })).status, 200);
+
+  // Envoi de la pièce : statut « en cours »
+  const sub = await api('POST', '/v1/kyc/submissions', { token: tok, body: { document_type: 'passport', document_number: 'OB7654321', date_of_birth: '1992-04-12', files: await uploadSet(tok) } });
+  assert.equal(sub.status, 201, JSON.stringify(sub.body));
+  assert.equal((await api('GET', '/v1/me', { token: tok })).body.verification.status, 'pending');
+  const pending = await api('POST', '/v1/topups', { token: tok, body: { amount: 1000, currency: 'CDF' } });
+  assert.match(pending.body.error.message, /en cours de vérification/);
+
+  // Un compte entreprise non activé ne peut pas encaisser par API
+  const biz = await register({ activate: false, account_type: 'business', email: 'atelier.nouveau@test.cd', business_name: 'Atelier Nouveau', full_name: 'Joseph Mutombo', password: 'motdepasse7', pin: '5926' });
+  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
+
+  // Validation par l'équipe : le compte est activé et l'utilisateur prévenu
+  const { outbox } = await import('../src/providers/email/index.js');
+  const ok = await api('POST', `/v1/admin/kyc/submissions/${sub.body.id}/approve`, { token: ADMIN_KEY, body: {} });
+  assert.equal(ok.status, 200, JSON.stringify(ok.body));
+  const after = await api('GET', '/v1/me', { token: tok });
+  assert.equal(after.body.user.activated, true);
+  assert.equal(after.body.verification.status, 'verified');
+  assert.match(outbox.filter((m) => m.to === 'nouveau.client@test.cd').at(-1).subject, /activé/);
+  assert.equal((await api('POST', '/v1/topups', { token: tok, body: { amount: 1000, currency: 'CDF' } })).status, 202);
+
+  // Activation manuelle par un administrateur (niveau KYC 2), et retrait de l'activation
+  const bizId = biz.body.user.id;
+  assert.equal((await api('POST', `/v1/admin/users/${bizId}/kyc-level`, { token: ADMIN_KEY, body: { level: 2, reason: 'Dossier vérifié en agence' } })).body.user.activated, true);
+  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 500, currency: 'USD' } })).status, 201);
+  assert.equal((await api('POST', `/v1/admin/users/${bizId}/kyc-level`, { token: ADMIN_KEY, body: { level: 1, reason: 'Pièce expirée, nouvelle vérification requise' } })).body.user.activated, false);
+  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
 });
 
 test('grand livre équilibré (partie double)', async () => {

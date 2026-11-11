@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
-import { requireMerchantKey, requireUser } from '../auth.js';
+import { requireActivated, requireMerchantKey, requireUser } from '../auth.js';
 import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
 import { getWallet, lockWallet } from '../ledger.js';
@@ -58,7 +58,7 @@ async function serializeMerchant(m, { withSecret = false } = {}) {
 
 const merchantExists = () => new HttpError(409, 'merchant_exists', 'Vous avez déjà un compte marchand.');
 
-merchantAdminRouter.post('/merchants', async (req, res) => {
+merchantAdminRouter.post('/merchants', requireActivated, async (req, res) => {
   const { name, webhook_url } = req.body || {};
   if (!name || String(name).trim().length < 2) throw new HttpError(400, 'invalid_name', 'Nom commercial requis.');
   if (await q.get('SELECT id FROM merchants WHERE owner_user_id=?', req.user.id)) throw merchantExists();
@@ -87,7 +87,7 @@ merchantAdminRouter.patch('/merchants/me', async (req, res) => {
   res.json(await serializeMerchant(await q.get('SELECT * FROM merchants WHERE id=?', m.id), { withSecret: true }));
 });
 
-merchantAdminRouter.post('/merchants/me/keys', async (req, res) => {
+merchantAdminRouter.post('/merchants/me/keys', requireActivated, async (req, res) => {
   const m = await merchantOfUser(req.user);
   const mode = req.body?.mode === 'live' ? 'live' : 'test';
   res.status(201).json({ secret_key: await issueKey(m.id, mode), notice: 'Conservez cette clé secrète : elle ne sera plus affichée.' });
@@ -108,7 +108,7 @@ merchantAdminRouter.post('/merchants/me/webhook-secret', async (req, res) => {
 });
 
 /** Lien de paiement sans code (à partager par WhatsApp, SMS...). */
-merchantAdminRouter.post('/merchants/me/payment-links', async (req, res) => {
+merchantAdminRouter.post('/merchants/me/payment-links', requireActivated, async (req, res) => {
   const m = await merchantOfUser(req.user);
   const p = await createPayment(m, config.mode === 'live', { ...req.body, expires_in_minutes: req.body?.expires_in_minutes || 7 * 24 * 60 });
   res.status(201).json(serializePayment(p));

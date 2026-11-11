@@ -343,6 +343,7 @@ async function renderDashboard() {
       <div class="kpi"><small>Utilisateurs</small><b>${d.users.total}</b><span>+${d.users.new_7d} sur 7 jours</span></div>
       <div class="kpi"><small>Identités vérifiées</small><b>${d.users.verified}</b><span>niveau 2 ou plus</span></div>
       <div class="kpi"><small>Comptes entreprise</small><b>${d.users.business}</b><span>${d.merchants} espaces marchands</span></div>
+      <div class="kpi ${d.users.awaiting_activation ? 'alert' : ''}"><small>Comptes à activer</small><b>${d.users.awaiting_activation}</b><span>identité non encore validée</span></div>
       <div class="kpi ${d.kyc_pending ? 'alert' : ''}"><small>KYC à examiner</small><b>${d.kyc_pending}</b><span>demandes en attente</span></div>
       <div class="kpi ${d.recon_open ? 'alert' : ''}"><small>Écarts de rapprochement</small><b>${d.recon_open}</b><span>à traiter</span></div>
       <div class="kpi"><small>Opérations en attente</small><b>${d.pending_transactions}</b><span>Mobile Money</span></div>
@@ -360,7 +361,7 @@ async function renderDashboard() {
 // =====================================================================
 //  Utilisateurs
 // =====================================================================
-let USER_FILTER = { q: '', status: '', kyc: '', type: '' };
+let USER_FILTER = { q: '', status: '', kyc: '', type: '', activation: '' };
 async function renderUsers() {
   $('#view').innerHTML = `
     <form class="toolbar" id="f-users">
@@ -368,18 +369,19 @@ async function renderUsers() {
       <select name="status"><option value="">Tous les statuts</option><option value="active">Actifs</option><option value="suspended">Suspendus</option><option value="closed">Fermés</option></select>
       <select name="kyc"><option value="">Tous niveaux</option><option value="1">Niveau 1</option><option value="2">Niveau 2</option><option value="3">Niveau 3</option></select>
       <select name="type"><option value="">Tous types</option><option value="personal">Particuliers</option><option value="business">Entreprises</option></select>
+      <select name="activation"><option value="">Activés ou non</option><option value="pending">À activer</option><option value="active">Activés</option></select>
       <button class="btn">Rechercher</button>
     </form>
     <div class="split"><div class="card tbl" id="users-list"></div><div id="user-detail"><div class="card muted">Sélectionnez un utilisateur.</div></div></div>`;
   const f = $('#f-users');
-  for (const k of ['status', 'kyc', 'type']) f[k].value = USER_FILTER[k];
+  for (const k of ['status', 'kyc', 'type', 'activation']) f[k].value = USER_FILTER[k];
   f.onsubmit = (e) => { e.preventDefault(); USER_FILTER = Object.fromEntries(new FormData(f)); loadUsers().catch((x) => toast(x.message, true)); };
   await loadUsers();
 }
 async function loadUsers() {
   const qs = new URLSearchParams(Object.entries(USER_FILTER).filter(([, v]) => v));
   const r = await api('GET', '/users?' + qs);
-  $('#users-list').innerHTML = r.data.length ? `<table><tbody>${r.data.map((u) => `<tr class="click" data-uid="${esc(u.id)}"><td><b>${esc(u.full_name)}</b> ${u.status !== 'active' ? pill(u.status) : ''}${u.pin_locked ? ' <span class="pill warn">PIN bloqué</span>' : ''}
+  $('#users-list').innerHTML = r.data.length ? `<table><tbody>${r.data.map((u) => `<tr class="click" data-uid="${esc(u.id)}"><td><b>${esc(u.full_name)}</b> ${u.status !== 'active' ? pill(u.status) : ''}${u.status === 'active' && !u.activated ? ' <span class="pill warn">À activer</span>' : ''}${u.pin_locked ? ' <span class="pill warn">PIN bloqué</span>' : ''}
       <div class="muted">${esc(u.email || u.phone || '')} · ${u.account_type === 'business' ? 'Entreprise' : 'Particulier'} · KYC ${u.kyc_level}</div></td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucun résultat.</p>';
   $$('[data-uid]').forEach((r) => r.onclick = () => openUser(r.dataset.uid).catch((x) => toast(x.message, true)));
 }
@@ -402,6 +404,7 @@ async function openUser(id) {
         <dt>Téléphone</dt><dd>${esc(u.phone || '—')} ${u.phone ? (u.phone_verified ? '<span class="pill ok">vérifié</span>' : '<span class="pill warn">non vérifié</span>') : ''}</dd>
         <dt>Identifiant @</dt><dd>${u.handle ? '@' + esc(u.handle) : '—'}</dd>
         <dt>Type</dt><dd>${u.account_type === 'business' ? 'Entreprise' : 'Particulier'}</dd>
+        <dt>Activation</dt><dd>${u.activated ? `<span class="pill ok">activé</span> le ${dt(u.activated_at)}` : '<span class="pill warn">en attente de vérification d’identité</span>'}</dd>
         <dt>Niveau KYC</dt><dd>${u.kyc_level}</dd>
         <dt>Nationalité · fuseau</dt><dd>${esc(u.nationality)} · ${esc(u.timezone)}</dd>
         <dt>Inscrit le</dt><dd>${dt(u.created_at)}</dd>
@@ -421,7 +424,7 @@ async function openUser(id) {
     if (a === 'reactivate') { const v = await dialog({ title: `Réactiver ${u.full_name} ?`, fields: [reasonField()], confirm: 'Réactiver' }); if (v) run(b, async () => { await api('POST', `/users/${id}/reactivate`, v); await after('Compte réactivé.'); }); }
     if (a === 'unlock') { const v = await dialog({ title: 'Débloquer le PIN ?', text: 'Vérifiez d’abord l’identité de la personne (questions de sécurité, appel au numéro enregistré).', fields: [reasonField('Vérification effectuée')], confirm: 'Débloquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/unlock-pin`, v); await after('PIN débloqué.'); }); }
     if (a === 'sessions') { const v = await dialog({ title: 'Déconnecter toutes les sessions ?', text: 'Toutes les sessions sont fermées et les appareils de confiance oubliés : un code sera demandé à la prochaine connexion.', fields: [reasonField()], confirm: 'Déconnecter' }); if (v) run(b, async () => { await api('POST', `/users/${id}/revoke-sessions`, v); await after('Sessions fermées.'); }); }
-    if (a === 'kyc') { const v = await dialog({ title: 'Changer le niveau KYC', text: 'À utiliser exceptionnellement : la voie normale est la vérification d’identité.', fields: [{ name: 'level', label: 'Niveau', type: 'select', value: String(u.kyc_level), options: [1, 2, 3].map((n) => ({ value: String(n), label: `Niveau ${n}` })) }, reasonField()], confirm: 'Appliquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/kyc-level`, { level: Number(v.level), reason: v.reason }); await after('Niveau KYC modifié.'); }); }
+    if (a === 'kyc') { const v = await dialog({ title: 'Changer le niveau KYC', text: 'À utiliser exceptionnellement : la voie normale est la vérification d’identité. Niveau 2 ou plus : le compte est activé. Niveau 1 : le compte est désactivé jusqu’à une nouvelle vérification.', fields: [{ name: 'level', label: 'Niveau', type: 'select', value: String(u.kyc_level), options: [1, 2, 3].map((n) => ({ value: String(n), label: `Niveau ${n}` })) }, reasonField()], confirm: 'Appliquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/kyc-level`, { level: Number(v.level), reason: v.reason }); await after('Niveau KYC modifié.'); }); }
   });
 }
 
@@ -513,14 +516,14 @@ async function openKyc(id) {
       <label>Note interne / motif du refus (le motif est envoyé à l'utilisateur)</label><textarea id="k-note" maxlength="300"></textarea>
       <div class="actions" style="margin-top:8px">${['Photo floue ou illisible', 'Pièce expirée', 'Le selfie ne correspond pas à la pièce', 'Le nom ne correspond pas au compte'].map((r) => `<button class="btn light sm" data-reason="${esc(r)}">${esc(r)}</button>`).join('')}</div>
       ${d.same_document_number.some((x) => x.status === 'approved') ? '<label class="switch" style="margin-top:12px"><input type="checkbox" id="k-override"> Passer outre le doublon (note justificative obligatoire)</label>' : ''}
-      <div class="actions" style="margin-top:14px"><button class="btn ok" id="k-approve">Valider → niveau 2</button><button class="btn danger" id="k-reject">Refuser</button></div></div>` : ''}`;
+      <div class="actions" style="margin-top:14px"><button class="btn ok" id="k-approve">Valider et activer le compte</button><button class="btn danger" id="k-reject">Refuser</button></div></div>` : ''}`;
   for (const img of $$('#docs img')) {
     image(`/kyc/submissions/${id}/files/${img.dataset.kind}`).then((u) => { img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
     img.onclick = () => { $('#zoom').innerHTML = `<img src="${img.src}" alt="">`; $('#zoom').hidden = false; };
   }
   $$('[data-reason]').forEach((b) => b.onclick = () => { $('#k-note').value = b.dataset.reason; });
   const done = async (msg) => { toast(msg); await loadKyc(); await openKyc(id); };
-  if ($('#k-approve')) $('#k-approve').onclick = (e) => run(e.currentTarget, async () => { await api('POST', `/kyc/submissions/${id}/approve`, { note: $('#k-note').value || undefined, override_duplicates: !!$('#k-override')?.checked }); await done('Identité validée. L’utilisateur est prévenu par email.'); });
+  if ($('#k-approve')) $('#k-approve').onclick = (e) => run(e.currentTarget, async () => { await api('POST', `/kyc/submissions/${id}/approve`, { note: $('#k-note').value || undefined, override_duplicates: !!$('#k-override')?.checked }); await done('Identité validée : le compte est activé et l’utilisateur prévenu par email.'); });
   if ($('#k-reject')) $('#k-reject').onclick = (e) => run(e.currentTarget, async () => { await api('POST', `/kyc/submissions/${id}/reject`, { reason: $('#k-note').value }); await done('Demande refusée. L’utilisateur est prévenu par email.'); });
 }
 $('#zoom').onclick = () => { $('#zoom').hidden = true; };

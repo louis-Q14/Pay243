@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { optionalUser } from '../auth.js';
+import { notVerifiedError, optionalUser, verificationStatus } from '../auth.js';
 import { config } from '../config.js';
 import { q } from '../db.js';
 import { getWallet } from '../ledger.js';
@@ -36,6 +36,7 @@ checkoutRouter.get('/checkout/:id', optionalUser, async (req, res) => {
 checkoutRouter.post('/checkout/:id/pay', rateLimit({ name: 'checkout_pay', max: 15 }), optionalUser, async (req, res) => {
   const { method, pin, phone, operator, card_id, token } = req.body || {};
   const id = req.params.id;
+  if (req.user && !req.user.activated_at && (method === 'wallet' || req.body?.card_id)) throw notVerifiedError(await verificationStatus(req.user));
   if (method === 'wallet') {
     if (!req.user) throw new HttpError(401, 'unauthorized', 'Connectez-vous à Pay243 pour payer avec votre wallet.');
     await payWithWallet(id, req.user, pin);
@@ -83,7 +84,7 @@ sandboxRouter.post('/sandbox/cards/tokenize', publicCors, (req, res) => {
 sandboxRouter.post('/sandbox/users/:phone/kyc', async (req, res) => {
   const level = Number(req.body?.level);
   if (![1, 2, 3].includes(level)) throw new HttpError(400, 'invalid_level', 'level doit valoir 1, 2 ou 3.');
-  const r = await q.run('UPDATE users SET kyc_level=? WHERE phone=?', level, `+243${String(req.params.phone).replace(/\D/g, '').slice(-9)}`);
+  const r = await q.run('UPDATE users SET kyc_level=?, activated_at = CASE WHEN ? >= 2 THEN COALESCE(activated_at, ?) ELSE activated_at END WHERE phone=?', level, level, new Date().toISOString(), `+243${String(req.params.phone).replace(/\D/g, '').slice(-9)}`);
   if (!r.changes) throw new HttpError(404, 'not_found', 'Utilisateur introuvable.');
   res.json({ ok: true, kyc_level: level });
 });

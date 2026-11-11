@@ -246,13 +246,13 @@ export async function approve(id, reviewer, { note, override_duplicates = false 
     // Décision conditionnelle : deux agents qui valident en même temps ne traitent la demande qu'une fois.
     const r = await q.run("UPDATE kyc_submissions SET status='approved', reviewer=?, review_note=?, reviewed_at=? WHERE id=? AND status='pending'", reviewer, note || null, now(), s.id);
     if (!r.changes) throw new HttpError(409, 'already_reviewed', 'Demande déjà traitée.');
-    await q.run('UPDATE users SET kyc_level = GREATEST(kyc_level, ?) WHERE id=?', s.level, s.user_id);
+    await q.run('UPDATE users SET kyc_level = GREATEST(kyc_level, ?), activated_at = COALESCE(activated_at, ?) WHERE id=?', s.level, now(), s.user_id);
     await audit(reviewer, 'kyc.approve', s.id, { user_id: s.user_id, override_duplicates: !!override_duplicates, note }, ip);
     return q.get('SELECT * FROM users WHERE id=?', s.user_id);
   });
   const lim = config.kyc[user.kyc_level];
-  notifyUser(user, 'account', 'Votre identité est vérifiée', `Votre identité est vérifiée. Nouveaux plafonds : ${lim.perTxnUsd} $ par opération, ${lim.dailyUsd} $ par jour.`, {
-    paragraphs: ['Bonne nouvelle : votre pièce d’identité a été vérifiée par notre équipe de conformité. Vos plafonds sont relevés.'],
+  notifyUser(user, 'account', 'Votre compte Pay243 est activé', `Votre identité est vérifiée. Nouveaux plafonds : ${lim.perTxnUsd} $ par opération, ${lim.dailyUsd} $ par jour.`, {
+    paragraphs: ['Bonne nouvelle : votre pièce d’identité a été vérifiée par notre équipe. Votre compte est activé : vous pouvez maintenant recharger, envoyer, payer et retirer.'],
     details: [['Par opération', `${lim.perTxnUsd} $`], ['Par jour', `${lim.dailyUsd} $`], ['Solde maximum', `${lim.maxBalanceUsd} $`]],
     cta: { label: 'Ouvrir mon wallet', url: appUrl('/app') },
   });
