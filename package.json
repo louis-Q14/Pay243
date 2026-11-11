@@ -13,7 +13,8 @@
     "test": "node --test test/*.test.js",
     "test:pg": "node -e \"if(!process.env.TEST_DATABASE_URL){console.error('Définissez TEST_DATABASE_URL=postgres://user:mdp@hote:5432/pay243_test');process.exit(1)}\" && node --test test/*.test.js",
     "test:load": "node test/load/two-instances.mjs",
-    "demo:boutique": "node examples/boutique-demo/server.js"
+    "demo:boutique": "node examples/boutique-demo/server.js",
+    "admin:create": "node scripts/create-staff.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {

@@ -4,303 +4,684 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Pay243 — Back-office</title>
+<title>Back-office — Pay243</title>
 <link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/style.css">
 <style>
-  main { max-width: 1180px; }
-  .split { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
-  .list li.sel { background: #eef5ff; margin: 0 -20px; padding: 12px 20px; }
-  .list li { cursor: pointer; }
-  .docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-  .docs figure { margin: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1b2d; }
-  .docs img { width: 100%; height: 240px; object-fit: contain; display: block; cursor: zoom-in; }
-  .docs figcaption { background: #fff; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
-  dl { display: grid; grid-template-columns: 170px 1fr; gap: 6px 12px; margin: 0; }
-  dt { color: var(--muted); font-size: 13px; } dd { margin: 0; font-weight: 600; }
-  .flag { background: #fde8e9; border: 1px solid #f3b7ba; color: var(--err); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
-  .btn-ok { background: var(--ok); } .btn-ko { background: var(--err); }
-  textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; min-height: 70px; }
-  #zoom img { max-width: 96vw; max-height: 92vh; }
-  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } dl { grid-template-columns: 1fr; } }
+  :root {
+    --ink: #0b1424; --ink-2: #2a3547; --muted: #5d6879; --line: #e4e8ef; --soft: #f4f6fa; --bg: #eef2f8; --card: #fff;
+    --blue: #0057d9; --navy: #0a2a66; --side: #0b1424; --side-2: #1a2436;
+    --ok: #12804a; --ok-bg: #e3f5ea; --warn: #8a5a00; --warn-bg: #fff1cc; --err: #b3121f; --err-bg: #fde8ea;
+    --r: 14px; --font: "Segoe UI Variable Text", -apple-system, "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 var(--font); color: var(--ink); background: var(--bg); }
+  [hidden] { display: none !important; }
+  a { color: var(--blue); }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: var(--ink); width: 100%; padding: 10px 12px; border: 1.5px solid #d6dce6; border-radius: 10px; background: #fff; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 87, 217, .12); }
+  textarea { min-height: 76px; resize: vertical; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 12px 0 5px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 14px; background: var(--ink); color: #fff; white-space: nowrap; }
+  .btn:hover { filter: brightness(1.15); }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .btn.light { background: var(--soft); color: var(--ink); }
+  .btn.blue { background: var(--blue); }
+  .btn.ok { background: var(--ok); } .btn.danger { background: var(--err); }
+  .btn.sm { padding: 6px 12px; font-size: 13px; }
+  .btn.full { width: 100%; margin-top: 16px; padding: 12px; }
+  .lk { border: 0; background: none; color: var(--blue); font-weight: 600; padding: 2px 0; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--soft); color: var(--ink-2); white-space: nowrap; }
+  .pill.ok, .pill.succeeded, .pill.active, .pill.approved { background: var(--ok-bg); color: var(--ok); }
+  .pill.warn, .pill.pending, .pill.processing { background: var(--warn-bg); color: var(--warn); }
+  .pill.err, .pill.failed, .pill.suspended, .pill.rejected, .pill.closed, .pill.canceled, .pill.expired { background: var(--err-bg); color: var(--err); }
+  .pill.role { background: #e9efff; color: #1d3f9e; }
+  .pill.role.super_admin { background: #0b1424; color: #f7d618; }
+  .card { background: var(--card); border-radius: var(--r); padding: 20px; box-shadow: 0 1px 2px rgba(11, 20, 36, .04); margin-bottom: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 17px; }
+  .card h3 { margin: 0 0 8px; font-size: 15px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; z-index: 90; max-width: 92vw; box-shadow: 0 12px 30px rgba(0, 0, 0, .25); }
+  .toast.bad { background: var(--err); }
+  .notice { background: var(--warn-bg); color: #5c4a00; border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 10px 0; }
+  .flag { background: var(--err-bg); color: var(--err); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+  .secret { background: var(--ink); color: #f7d618; border-radius: 10px; padding: 12px; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+
+  /* ---------- Connexion ---------- */
+  #login { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: radial-gradient(120% 90% at 100% 0, #12357d 0, #0b1424 60%); }
+  .login-card { background: #fff; border-radius: 22px; padding: 32px; width: 100%; max-width: 420px; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
+  .login-card img { height: 34px; display: block; }
+  .login-card h1 { font-size: 24px; margin: 22px 0 4px; letter-spacing: -.02em; }
+  .login-card .sub { color: var(--muted); margin: 0 0 8px; font-size: 14px; }
+  .err { background: var(--err-bg); color: var(--err); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-top: 12px; }
+
+  /* ---------- Coque ---------- */
+  .shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+  aside { background: var(--side); color: #c9d1de; padding: 18px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+  aside .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; color: #fff; font-weight: 700; }
+  aside .brand img { height: 28px; outline: 2px solid #fff; }
+  aside nav { display: grid; gap: 2px; }
+  aside nav button { display: flex; align-items: center; gap: 10px; text-align: left; border: 0; background: none; color: #c9d1de; padding: 9px 10px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+  aside nav button:hover { background: var(--side-2); color: #fff; }
+  aside nav button.on { background: #fff; color: var(--ink); }
+  aside nav svg { width: 18px; height: 18px; flex: none; }
+  aside nav .count { margin-left: auto; background: #f7d618; color: var(--ink); border-radius: 99px; font-size: 11px; padding: 0 7px; font-weight: 800; }
+  aside .me { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid var(--side-2); font-size: 13px; }
+  aside .me b { color: #fff; display: block; }
+  aside .me button { border: 0; background: none; color: #9fb0c8; padding: 6px 0 0; font-weight: 600; }
+  main { padding: 26px 30px 60px; min-width: 0; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .mode { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--warn-bg); color: var(--warn); }
+  .mode.live { background: var(--ok-bg); color: var(--ok); }
+
+  /* ---------- Composants ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .kpi { background: #fff; border-radius: var(--r); padding: 16px 18px; box-shadow: 0 1px 2px rgba(11, 20, 36, .04); }
+  .kpi small { color: var(--muted); font-size: 13px; display: block; }
+  .kpi b { font-size: 28px; letter-spacing: -.02em; display: block; margin-top: 2px; }
+  .kpi span { font-size: 12px; color: var(--muted); }
+  .kpi.alert b { color: var(--err); }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .split { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar input { flex: 1 1 260px; width: auto; }
+  .toolbar select { width: auto; flex: 0 0 auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr.click { cursor: pointer; } tr.click:hover td { background: #f8faff; } tr.sel td { background: #eef4ff; }
+  .tbl { overflow-x: auto; }
+  .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  dl.kv { display: grid; grid-template-columns: 170px 1fr; gap: 6px 14px; margin: 0; }
+  dl.kv dt { color: var(--muted); font-size: 13px; } dl.kv dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; padding-top: 8px; }
+  .bars div { flex: 1; background: #cfdcf5; border-radius: 6px 6px 0 0; position: relative; min-height: 3px; }
+  .bars div span { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); }
+  .bars div b { position: absolute; top: -18px; left: 0; right: 0; text-align: center; font-size: 11px; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { padding: 11px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; }
+  .list li:last-child { border-bottom: 0; }
+  .list li.click { cursor: pointer; } .list li.sel { background: #eef4ff; margin: 0 -20px; padding: 11px 20px; }
+  .docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .docs figure { margin: 0; border-radius: 10px; overflow: hidden; background: var(--ink); }
+  .docs img { width: 100%; height: 220px; object-fit: contain; display: block; cursor: zoom-in; }
+  .docs figcaption { background: #fff; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-top: 0; }
+  .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .setting { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .setting label { margin-top: 0; }
+  .setting .row { display: flex; gap: 8px; align-items: center; }
+  .setting .row input { flex: 1; }
+  .setting small { color: var(--muted); font-size: 12px; display: block; margin-top: 4px; }
+  .switch { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .switch input { width: 20px; height: 20px; accent-color: var(--blue); }
+  .modal-bg { position: fixed; inset: 0; background: rgba(11, 20, 36, .55); display: grid; place-items: center; padding: 16px; z-index: 80; }
+  .modal { background: #fff; border-radius: 18px; padding: 24px; width: 100%; max-width: 480px; max-height: 92vh; overflow: auto; }
+  .modal h3 { margin: 0 0 6px; font-size: 20px; }
+  .modal .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  #zoom { cursor: zoom-out; } #zoom img { max-width: 96vw; max-height: 92vh; }
+  .burger { display: none; }
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: 1fr; }
+    aside { position: fixed; inset: 0 auto 0 0; width: 260px; z-index: 70; transform: translateX(-100%); transition: transform .2s; }
+    aside.open { transform: none; }
+    .burger { display: inline-flex; }
+    main { padding: 18px 16px 50px; }
+    .grid2, .split { grid-template-columns: 1fr; }
+    dl.kv { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="brand"><img src="/assets/logo.png" alt="Pay243" class="logo-img"><span>Back-office</span></div>
-  <div id="who" class="muted"></div>
-</header>
 
-<main id="login" class="center">
-  <div class="card">
-    <h2>Accès conformité</h2>
-    <p class="muted">Saisissez votre clé personnelle d'agent. Toutes vos actions sont journalisées.</p>
-    <form id="f-login"><label>Clé back-office</label><input name="key" type="password" autocomplete="off" required><button class="full">Se connecter</button></form>
+<!-- ======================= Connexion ======================= -->
+<section id="login">
+  <div class="login-card">
+    <img src="/assets/logo.png" alt="Pay243">
+    <h1 id="login-title">Back-office</h1>
+    <p class="sub" id="login-sub">Accès réservé à l'équipe Pay243. Toutes les actions sont journalisées.</p>
+    <form id="f-cred">
+      <label for="l-email">Email professionnel</label><input id="l-email" name="email" type="email" autocomplete="username" required>
+      <label for="l-pass">Mot de passe</label><input id="l-pass" name="password" type="password" autocomplete="current-password" required>
+      <button class="btn full">Continuer</button>
+    </form>
+    <form id="f-code" hidden>
+      <div class="notice" id="code-sandbox" hidden></div>
+      <label for="l-code">Code reçu par email</label><input id="l-code" name="otp_code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+      <button class="btn full">Se connecter</button>
+      <p style="text-align:center;margin:12px 0 0"><button type="button" class="lk" data-back>← Retour</button></p>
+    </form>
+    <form id="f-newpass" hidden>
+      <p class="notice">Première connexion : choisissez votre mot de passe personnel (12 caractères minimum).</p>
+      <label>Mot de passe provisoire</label><input name="current_password" type="password" autocomplete="current-password" required>
+      <label>Nouveau mot de passe</label><input name="new_password" type="password" minlength="12" autocomplete="new-password" required>
+      <label>Confirmation</label><input name="confirm" type="password" minlength="12" autocomplete="new-password" required>
+      <button class="btn full">Enregistrer et continuer</button>
+    </form>
+    <form id="f-key" hidden>
+      <label for="l-key">Clé de service (ADMIN_KEYS)</label><input id="l-key" name="key" type="password" autocomplete="off" required>
+      <button class="btn full">Se connecter avec la clé</button>
+      <p style="text-align:center;margin:12px 0 0"><button type="button" class="lk" data-back>← Connexion par email</button></p>
+    </form>
+    <div class="err" id="login-err" hidden></div>
+    <p style="text-align:center;margin:16px 0 0" id="key-link"><button type="button" class="lk" id="use-key" style="font-size:13px;color:var(--muted)">Utiliser une clé de service</button></p>
   </div>
-</main>
+</section>
 
-<main id="app" class="hidden">
-  <div class="tabs">
-    <button class="on" data-st="pending">À examiner</button>
-    <button data-st="approved">Validées</button>
-    <button data-st="rejected">Refusées</button>
-    <button data-st="recon">Rapprochement</button>
-    <button data-st="audit">Journal d'audit</button>
-  </div>
-  <div class="split" id="kyc-view">
-    <div class="card"><h2 id="list-title">Demandes</h2><ul class="list" id="list"></ul></div>
-    <div id="detail"><div class="card muted">Sélectionnez une demande.</div></div>
-  </div>
-  <div class="hidden" id="recon-view">
-    <div class="card">
-      <h2>Cantonnement — monnaie électronique en circulation</h2>
-      <form id="f-trust" class="row" style="align-items:end">
-        <div><label>Solde du compte de cantonnement CDF</label><input name="trust_CDF" type="number" step="0.01" placeholder="ex. 25000000"></div>
-        <div><label>Solde du compte de cantonnement USD</label><input name="trust_USD" type="number" step="0.01" placeholder="ex. 120000"></div>
-        <button style="flex:0 0 auto">Calculer la couverture</button>
-      </form>
-      <div id="safeguard" style="margin-top:12px"></div>
+<!-- ======================= Application ======================= -->
+<div class="shell" id="shell" hidden>
+  <aside id="side">
+    <div class="brand"><img src="/assets/logo.png" alt="Pay243"><span>Back-office</span></div>
+    <nav id="nav"></nav>
+    <div class="me"><b id="me-name"></b><span id="me-role" class="muted" style="color:#9fb0c8"></span><br><button id="logout">Se déconnecter</button></div>
+  </aside>
+  <main>
+    <div class="page-head">
+      <div style="display:flex;align-items:center;gap:12px"><button class="btn light sm burger" id="burger">☰</button><h1 id="page-title"></h1></div>
+      <span class="mode" id="mode"></span>
     </div>
-    <div class="split">
-      <div class="card">
-        <h2>Importer un relevé opérateur</h2>
-        <form id="f-stmt">
-          <label>Opérateur</label><select name="operator" id="stmt-op"></select>
-          <label>Journée comptable (heure de Kinshasa)</label><input name="date" type="date" id="stmt-date" required>
-          <label>Relevé CSV</label><input name="file" type="file" accept=".csv,text/csv" required>
-          <label><input type="checkbox" name="replace" style="width:auto"> Remplacer un import existant</label>
-          <button class="full">Rapprocher</button>
-        </form>
-        <p class="muted">Colonnes : <code>provider_ref, reference, type (collect|disburse), amount, currency, status, timestamp</code>.</p>
-        <button class="ghost full" id="sweep">Vérifier maintenant les transactions en attente</button>
-        <h2 style="margin-top:18px">Derniers rapprochements</h2><ul class="list" id="runs"></ul>
-      </div>
-      <div class="card"><h2 id="exc-title">Écarts à traiter</h2><div id="exceptions"></div></div>
-    </div>
-  </div>
-  <div class="card hidden" id="audit-view"><h2>Journal d'audit</h2><ul class="list" id="audit"></ul></div>
-</main>
-
-<div id="zoom" class="modal-bg hidden"></div>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="zoom" class="modal-bg" hidden></div>
 
 <script>
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const dt = (s) => (s ? new Date(s).toLocaleString('fr-FR') : '—');
-const KIND = { id_front: 'Recto', id_back: 'Verso', selfie: 'Selfie' };
-const ST = { pending: ['processing', 'À examiner'], approved: ['succeeded', 'Validée'], rejected: ['failed', 'Refusée'] };
-let KEY = null; let STATUS = 'pending'; let CURRENT = null; const blobs = [];
+const dt = (s) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
+const fmt = (minor, cur) => (minor == null ? '—' : (Number(minor) / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 }) + (cur === 'USD' ? ' $' : ' FC'));
+const TYPE = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
+const STATUS = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré', active: 'Actif', suspended: 'Suspendu', closed: 'Fermé', approved: 'Validée', rejected: 'Refusée' };
+const pill = (st) => `<span class="pill ${esc(st)}">${esc(STATUS[st] || st)}</span>`;
+let TOKEN = null; let ME = null; let PENDING = null; const blobs = [];
+try { TOKEN = sessionStorage.getItem('pay243_admin'); } catch {}
 
-function toast(msg, err) {
-  $$('.toast').forEach((x) => x.remove());
-  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
-  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
-}
-async function api(method, path, body) {
-  const r = await fetch('/v1' + path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + KEY }, body: body ? JSON.stringify(body) : undefined });
+function toast(msg, bad) { $$('.toast').forEach((t) => t.remove()); const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 4500); }
+async function api(method, path, body, raw) {
+  const r = await fetch('/v1/admin' + path, { method, headers: { ...(raw ? { 'Content-Type': 'text/csv' } : { 'Content-Type': 'application/json' }), ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) }, body: raw ?? (body ? JSON.stringify(body) : undefined) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
-    if (r.status === 401) logout();
-    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code, details: j.error?.details });
+    if (r.status === 401 && TOKEN) { logout(); }
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code, status: r.status });
   }
   return j;
 }
 async function image(path) {
-  const r = await fetch('/v1' + path, { headers: { Authorization: 'Bearer ' + KEY } });
+  const r = await fetch('/v1/admin' + path, { headers: { Authorization: 'Bearer ' + TOKEN } });
   if (!r.ok) throw new Error('Image indisponible');
   const u = URL.createObjectURL(await r.blob()); blobs.push(u); return u;
 }
-function freeBlobs() { while (blobs.length) URL.revokeObjectURL(blobs.pop()); }
+const freeBlobs = () => { while (blobs.length) URL.revokeObjectURL(blobs.pop()); };
+const can = (p) => !!ME?.permissions.includes(p);
+async function run(btn, fn) { if (btn) btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { if (btn) btn.disabled = false; } }
 
-$('#f-login').onsubmit = async (e) => {
-  e.preventDefault(); KEY = new FormData(e.target).get('key');
-  try { await start(); } catch (x) { toast(x.message, true); }
+/** Fenêtre de saisie (motif obligatoire, choix…). Renvoie les valeurs ou null. */
+function dialog({ title, text = '', fields = [], confirm = 'Confirmer', danger = false }) {
+  return new Promise((resolve) => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<form class="modal"><h3>${esc(title)}</h3>${text ? `<p class="muted" style="font-size:14px">${text}</p>` : ''}
+      ${fields.map((f) => `<label>${esc(f.label)}</label>${f.type === 'select' ? `<select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}" ${o.value === f.value ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`
+        : f.type === 'textarea' ? `<textarea name="${f.name}" ${f.required ? 'required minlength="5"' : ''} placeholder="${esc(f.placeholder || '')}"></textarea>`
+        : `<input name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} placeholder="${esc(f.placeholder || '')}">`}`).join('')}
+      <div class="foot"><button type="button" class="btn light" data-x>Annuler</button><button class="btn ${danger ? 'danger' : ''}">${esc(confirm)}</button></div></form>`;
+    document.body.appendChild(bg);
+    const close = (v) => { bg.remove(); resolve(v); };
+    bg.onclick = (e) => { if (e.target === bg || e.target.closest('[data-x]')) close(null); };
+    $('form', bg).onsubmit = (e) => { e.preventDefault(); close(Object.fromEntries(new FormData(e.target))); };
+    setTimeout(() => $('input, textarea, select', bg)?.focus(), 30);
+  });
+}
+const reasonField = (label = 'Motif (journalisé)') => ({ name: 'reason', label, type: 'textarea', required: true });
+
+// =====================================================================
+//  Connexion
+// =====================================================================
+const loginErr = (m) => { $('#login-err').hidden = !m; $('#login-err').textContent = m || ''; };
+const loginStep = (id) => { ['#f-cred', '#f-code', '#f-newpass', '#f-key'].forEach((f) => { $(f).hidden = f !== id; }); $('#key-link').hidden = id !== '#f-cred'; loginErr(); setTimeout(() => $(`${id} input`)?.focus(), 30); };
+let CRED = null;
+$('#f-cred').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => {
+  try {
+    CRED = Object.fromEntries(new FormData(e.target));
+    const r = await api('POST', '/auth/login', CRED);
+    $('#login-sub').textContent = r.message || 'Code envoyé par email.';
+    $('#code-sandbox').hidden = !r.sandbox_code; if (r.sandbox_code) $('#code-sandbox').textContent = `Mode démonstration : votre code est ${r.sandbox_code}.`;
+    loginStep('#f-code');
+  } catch (x) { loginErr(x.message); }
+}); };
+$('#f-code').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => {
+  try {
+    const r = await api('POST', '/auth/login', { ...CRED, otp_code: $('#l-code').value });
+    setToken(r.token);
+    if (r.must_change_password) { $('#login-title').textContent = 'Choisissez votre mot de passe'; $('#login-sub').textContent = `Bienvenue, ${r.staff.full_name}.`; $('#f-newpass').current_password.value = CRED.password; return loginStep('#f-newpass'); }
+    await start();
+  } catch (x) { loginErr(x.message); }
+}); };
+$('#f-newpass').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => {
+  try {
+    const d = Object.fromEntries(new FormData(e.target));
+    if (d.new_password !== d.confirm) throw new Error('Les deux mots de passe ne correspondent pas.');
+    const r = await api('POST', '/auth/password', { current_password: d.current_password, new_password: d.new_password });
+    setToken(r.token); CRED = null; await start(); toast('Mot de passe enregistré.');
+  } catch (x) { loginErr(x.message); }
+}); };
+$('#use-key').onclick = () => { $('#login-sub').textContent = 'Clé de service : réservée aux scripts et à l’accès de secours.'; loginStep('#f-key'); };
+$('#f-key').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => { try { setToken($('#l-key').value.trim()); await start(); } catch (x) { TOKEN = null; loginErr(x.message); } }); };
+$$('[data-back]').forEach((b) => b.onclick = () => { $('#login-sub').textContent = 'Accès réservé à l’équipe Pay243. Toutes les actions sont journalisées.'; loginStep('#f-cred'); });
+function setToken(t) { TOKEN = t; try { sessionStorage.setItem('pay243_admin', t); } catch {} }
+function logout() {
+  TOKEN = null; ME = null; freeBlobs(); try { sessionStorage.removeItem('pay243_admin'); } catch {}
+  $('#shell').hidden = true; $('#login').hidden = false; $('#login-title').textContent = 'Back-office'; loginStep('#f-cred');
+}
+$('#logout').onclick = logout;
+
+// =====================================================================
+//  Navigation
+// =====================================================================
+const IC = {
+  dashboard: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5.5 6.5-5.5s5.7 2.1 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c1.9.8 3.1 2.6 3.5 5.4"/>',
+  transactions: '<path d="M4 7h14l-3-3M20 17H6l3 3"/>',
+  merchants: '<path d="M3 9l1.5-5h15L21 9M4 9v11h16V9M3 9h18M9 20v-6h6v6"/>',
+  kyc: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.5 1.8-2.3 3.2-2.3s2.6.8 3.2 2.3M14.5 10h4M14.5 13.5h3"/>',
+  recon: '<path d="M4 4h16v16H4zM4 9h16M9 9v11"/>',
+  staff: '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  audit: '<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/>',
 };
+const SECTIONS = [
+  { id: 'dashboard', label: 'Tableau de bord', perm: 'dashboard.view', render: renderDashboard },
+  { id: 'users', label: 'Utilisateurs', perm: 'users.view', render: renderUsers },
+  { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions },
+  { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants },
+  { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
+  { id: 'recon', label: 'Rapprochement', perm: 'recon.view', render: renderRecon },
+  { id: 'staff', label: 'Équipe', perm: 'staff.view', render: renderStaff },
+  { id: 'settings', label: 'Paramètres', perm: 'settings.view', render: renderSettings },
+  { id: 'audit', label: 'Journal d’audit', perm: 'audit.view', render: renderAudit },
+];
+let CURRENT = null;
+function go(id) {
+  const s = SECTIONS.find((x) => x.id === id && can(x.perm)) || SECTIONS.find((x) => can(x.perm));
+  CURRENT = s.id; freeBlobs();
+  $$('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.go === s.id));
+  $('#page-title').textContent = s.label;
+  $('#view').innerHTML = '<p class="muted">Chargement…</p>';
+  history.replaceState(null, '', '#' + s.id);
+  $('#side').classList.remove('open');
+  s.render().catch((e) => { $('#view').innerHTML = `<div class="card flag">${esc(e.message)}</div>`; });
+}
+$('#burger').onclick = () => $('#side').classList.toggle('open');
+
 async function start() {
-  const me = await api('GET', '/admin/me');
-  try { sessionStorage.setItem('pay243_admin', KEY); } catch {}
-  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
-  $('#who').innerHTML = `Agent <b>${esc(me.name)}</b> · ${esc(me.mode)} · <button class="link" id="logout">Déconnexion</button>`;
-  $('#logout').onclick = logout;
-  await loadList();
-}
-function logout() { KEY = null; freeBlobs(); try { sessionStorage.removeItem('pay243_admin'); } catch {} $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#who').textContent = ''; }
-
-$$('[data-st]').forEach((b) => b.onclick = () => {
-  $$('[data-st]').forEach((x) => x.classList.toggle('on', x === b));
-  STATUS = b.dataset.st;
-  $('#kyc-view').classList.toggle('hidden', ['audit', 'recon'].includes(STATUS));
-  $('#audit-view').classList.toggle('hidden', STATUS !== 'audit');
-  $('#recon-view').classList.toggle('hidden', STATUS !== 'recon');
-  (STATUS === 'audit' ? loadAudit() : STATUS === 'recon' ? loadRecon() : loadList()).catch((x) => toast(x.message, true));
-});
-
-async function loadList() {
-  const r = await api('GET', '/admin/kyc/submissions?status=' + STATUS);
-  $('#list-title').textContent = `${ST[STATUS][1]} (${r.data.length})`;
-  $('#list').innerHTML = r.data.length ? r.data.map((s) => `<li data-id="${s.id}" class="${CURRENT === s.id ? 'sel' : ''}"><div>
-      <div><b>${esc(s.user.full_name)}</b> ${s.flagged ? '<span class="pill failed">Doublon</span>' : ''}</div>
-      <div class="muted">${esc(s.user.email || s.user.phone || '')} · ${esc(s.document_label)}<br>${dt(s.created_at)}</div></div></li>`).join('')
-    : '<li class="muted">Aucune demande.</li>';
-  $$('#list li[data-id]').forEach((li) => li.onclick = () => openDetail(li.dataset.id).catch((x) => toast(x.message, true)));
-  if (!r.data.some((s) => s.id === CURRENT)) { CURRENT = null; $('#detail').innerHTML = '<div class="card muted">Sélectionnez une demande.</div>'; }
+  ME = await api('GET', '/me');
+  if (ME.must_change_password) { $('#login').hidden = false; $('#shell').hidden = true; return loginStep('#f-newpass'); }
+  $('#login').hidden = true; $('#shell').hidden = false;
+  $('#me-name').textContent = ME.name + (ME.via === 'key' ? ' (clé)' : '');
+  $('#me-role').textContent = ME.role_label;
+  $('#mode').textContent = ME.mode === 'live' ? 'PRODUCTION' : 'MODE DÉMO'; $('#mode').classList.toggle('live', ME.mode === 'live');
+  $('#nav').innerHTML = SECTIONS.filter((s) => can(s.perm)).map((s) => `<button data-go="${s.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s.id]}</svg>${s.label}<span class="count" data-count="${s.id}" hidden></span></button>`).join('');
+  $$('#nav button').forEach((b) => b.onclick = () => go(b.dataset.go));
+  go(location.hash.slice(1) || 'dashboard');
 }
 
-async function openDetail(id) {
-  CURRENT = id; freeBlobs();
-  $$('#list li').forEach((li) => li.classList.toggle('sel', li.dataset.id === id));
-  const s = await api('GET', '/admin/kyc/submissions/' + id);
-  const d = s.duplicates;
-  const dups = [
-    ...d.same_document_number.map((x) => `Même n° de pièce : <b>${esc(x.full_name)}</b> (${esc(x.phone)}) — demande ${esc(ST[x.status]?.[1] || x.status)}`),
-    ...d.same_image.map((x) => `Image identique déjà envoyée par <b>${esc(x.full_name)}</b> (${esc(x.phone)})`),
-  ];
-  const [cls, label] = ST[s.status];
-  $('#detail').innerHTML = `<div class="card">
-      <h2>${esc(s.user.full_name)} <span class="pill ${cls}">${label}</span></h2>
-      ${dups.length ? `<div class="flag"><b>Alerte fraude</b><br>${dups.join('<br>')}</div>` : ''}
-      <dl style="margin-top:12px">
-        <dt>Email</dt><dd>${esc(s.user.email || '—')}</dd>
-        <dt>Téléphone</dt><dd>${esc(s.user.phone || '—')}</dd>
-        <dt>Type de compte</dt><dd>${s.user.account_type === 'business' ? 'Entreprise' : 'Particulier'}</dd>
-        <dt>Nom du compte</dt><dd>${esc(s.user.full_name)}</dd>
-        <dt>Pièce</dt><dd>${esc(s.document_label)}</dd>
-        <dt>Numéro</dt><dd class="mono">${esc(s.document_number)}</dd>
-        <dt>Date de naissance</dt><dd>${esc(s.date_of_birth)}</dd>
-        <dt>Niveau KYC actuel</dt><dd>${s.user.kyc_level}</dd>
-        <dt>Compte créé le</dt><dd>${dt(s.user.created_at)}</dd>
-        <dt>Demande reçue le</dt><dd>${dt(s.created_at)}</dd>
-        ${s.reviewer ? `<dt>Traitée par</dt><dd>${esc(s.reviewer)} le ${dt(s.reviewed_at)}</dd>` : ''}
-        ${s.review_note ? `<dt>Note</dt><dd>${esc(s.review_note)}</dd>` : ''}
-        ${s.previous_submissions.length ? `<dt>Demandes précédentes</dt><dd>${s.previous_submissions.map((p) => `${esc(ST[p.status]?.[1] || p.status)} le ${dt(p.created_at)}${p.review_note ? ' — ' + esc(p.review_note) : ''}`).join('<br>')}</dd>` : ''}
-      </dl>
+// =====================================================================
+//  Tableau de bord
+// =====================================================================
+async function renderDashboard() {
+  const d = await api('GET', '/dashboard');
+  const badge = (id, n) => { const el = $(`[data-count="${id}"]`); if (el) { el.hidden = !n; el.textContent = n; } };
+  badge('kyc', d.kyc_pending); badge('recon', d.recon_open);
+  const days = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 864e5).toISOString().slice(0, 10));
+  const counts = days.map((day) => d.signups_7d.find((x) => x.day === day)?.n || 0);
+  const max = Math.max(1, ...counts);
+  const balanced = d.ledger.every((l) => Number(l.total) === 0);
+  $('#view').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><small>Utilisateurs</small><b>${d.users.total}</b><span>+${d.users.new_7d} sur 7 jours</span></div>
+      <div class="kpi"><small>Identités vérifiées</small><b>${d.users.verified}</b><span>niveau 2 ou plus</span></div>
+      <div class="kpi"><small>Comptes entreprise</small><b>${d.users.business}</b><span>${d.merchants} espaces marchands</span></div>
+      <div class="kpi ${d.kyc_pending ? 'alert' : ''}"><small>KYC à examiner</small><b>${d.kyc_pending}</b><span>demandes en attente</span></div>
+      <div class="kpi ${d.recon_open ? 'alert' : ''}"><small>Écarts de rapprochement</small><b>${d.recon_open}</b><span>à traiter</span></div>
+      <div class="kpi"><small>Opérations en attente</small><b>${d.pending_transactions}</b><span>Mobile Money</span></div>
+      <div class="kpi ${d.users.suspended ? 'alert' : ''}"><small>Comptes suspendus</small><b>${d.users.suspended}</b><span>par l'équipe</span></div>
+      <div class="kpi ${balanced ? '' : 'alert'}"><small>Grand livre</small><b style="font-size:20px;margin-top:8px">${balanced ? '✓ Équilibré' : '⚠ Déséquilibré'}</b><span>partie double</span></div>
     </div>
-    <div class="card"><h2>Documents</h2><div class="docs" id="docs">${s.files.map((f) => `<figure><img data-kind="${f.kind}" alt="${KIND[f.kind]}"><figcaption>${KIND[f.kind]} · ${Math.round(f.size / 1024)} Ko</figcaption></figure>`).join('')}</div>
-      <p class="muted">Contrôles : la photo du visage correspond au selfie, le nom correspond au compte, la pièce n'est ni expirée ni retouchée, l'âge est cohérent.</p></div>
-    ${s.status === 'pending' ? `<div class="card"><h2>Décision</h2>
-      <label>Note interne / motif du refus (le motif est envoyé à l'utilisateur)</label><textarea id="note" maxlength="300"></textarea>
-      ${d.same_document_number.some((x) => x.status === 'approved') ? '<label><input type="checkbox" id="override" style="width:auto"> Passer outre le doublon (note justificative obligatoire)</label>' : ''}
-      <div class="row" style="margin-top:12px"><button class="btn-ok" id="approve">Valider → niveau 2</button><button class="btn-ko" id="reject">Refuser</button></div>
-      <div class="row" style="margin-top:8px">${['Photo floue ou illisible', 'Pièce expirée', 'Le selfie ne correspond pas à la pièce', 'Le nom ne correspond pas au compte'].map((r) => `<button class="ghost" data-reason="${esc(r)}" style="font-size:12px">${esc(r)}</button>`).join('')}</div>
-    </div>` : ''}`;
+    <div class="grid2">
+      <div class="card"><h2>Inscriptions (7 jours)</h2><div class="bars" style="margin-bottom:24px">${counts.map((n, i) => `<div style="height:${Math.max(3, (n / max) * 100)}%"><b>${n || ''}</b><span>${new Date(days[i]).toLocaleDateString('fr-FR', { weekday: 'short' })}</span></div>`).join('')}</div></div>
+      <div class="card"><h2>Volume des dernières 24 h</h2>${d.volume_24h.length ? `<table><thead><tr><th>Type</th><th>Devise</th><th class="num">Opérations</th><th class="num">Montant</th></tr></thead><tbody>${d.volume_24h.map((v) => `<tr><td>${esc(TYPE[v.type] || v.type)}</td><td>${v.currency}</td><td class="num">${v.n}</td><td class="num">${fmt(v.amount, v.currency)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune opération sur les dernières 24 h.</p>'}</div>
+    </div>
+    <div class="card"><h2>Dernières inscriptions</h2><table><tbody>${d.recent_users.map((u) => `<tr class="${can('users.view') ? 'click' : ''}" data-user="${esc(u.id)}"><td><b>${esc(u.full_name)}</b><div class="muted">${esc(u.email || '')}</div></td><td>${u.account_type === 'business' ? 'Entreprise' : 'Particulier'}</td><td class="num muted">${dt(u.created_at)}</td></tr>`).join('') || '<tr><td class="muted">Aucun utilisateur.</td></tr>'}</tbody></table></div>`;
+  $$('[data-user]').forEach((r) => r.onclick = () => { if (can('users.view')) { go('users'); setTimeout(() => openUser(r.dataset.user), 50); } });
+}
 
-  for (const img of $$('#docs img')) {
-    image(`/admin/kyc/submissions/${id}/files/${img.dataset.kind}`).then((u) => { img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
-    img.onclick = () => { $('#zoom').innerHTML = `<img src="${img.src}" alt="">`; $('#zoom').classList.remove('hidden'); };
-  }
-  $$('[data-reason]').forEach((b) => b.onclick = () => { $('#note').value = b.dataset.reason; });
-  const act = async (btn, fn) => { btn.disabled = true; try { await fn(); await loadList(); await openDetail(id); } catch (x) { toast(x.message, true); } finally { btn.disabled = false; } };
-  if ($('#approve')) $('#approve').onclick = (e) => act(e.currentTarget, async () => {
-    await api('POST', `/admin/kyc/submissions/${id}/approve`, { note: $('#note').value || undefined, override_duplicates: !!$('#override')?.checked });
-    toast('Identité validée. L\'utilisateur est prévenu par SMS.');
-  });
-  if ($('#reject')) $('#reject').onclick = (e) => act(e.currentTarget, async () => {
-    await api('POST', `/admin/kyc/submissions/${id}/reject`, { reason: $('#note').value });
-    toast('Demande refusée. L\'utilisateur est prévenu par SMS.');
+// =====================================================================
+//  Utilisateurs
+// =====================================================================
+let USER_FILTER = { q: '', status: '', kyc: '', type: '' };
+async function renderUsers() {
+  $('#view').innerHTML = `
+    <form class="toolbar" id="f-users">
+      <input name="q" placeholder="Nom, email, téléphone, @identifiant ou identifiant usr_…" value="${esc(USER_FILTER.q)}">
+      <select name="status"><option value="">Tous les statuts</option><option value="active">Actifs</option><option value="suspended">Suspendus</option><option value="closed">Fermés</option></select>
+      <select name="kyc"><option value="">Tous niveaux</option><option value="1">Niveau 1</option><option value="2">Niveau 2</option><option value="3">Niveau 3</option></select>
+      <select name="type"><option value="">Tous types</option><option value="personal">Particuliers</option><option value="business">Entreprises</option></select>
+      <button class="btn">Rechercher</button>
+    </form>
+    <div class="split"><div class="card tbl" id="users-list"></div><div id="user-detail"><div class="card muted">Sélectionnez un utilisateur.</div></div></div>`;
+  const f = $('#f-users');
+  for (const k of ['status', 'kyc', 'type']) f[k].value = USER_FILTER[k];
+  f.onsubmit = (e) => { e.preventDefault(); USER_FILTER = Object.fromEntries(new FormData(f)); loadUsers().catch((x) => toast(x.message, true)); };
+  await loadUsers();
+}
+async function loadUsers() {
+  const qs = new URLSearchParams(Object.entries(USER_FILTER).filter(([, v]) => v));
+  const r = await api('GET', '/users?' + qs);
+  $('#users-list').innerHTML = r.data.length ? `<table><tbody>${r.data.map((u) => `<tr class="click" data-uid="${esc(u.id)}"><td><b>${esc(u.full_name)}</b> ${u.status !== 'active' ? pill(u.status) : ''}${u.pin_locked ? ' <span class="pill warn">PIN bloqué</span>' : ''}
+      <div class="muted">${esc(u.email || u.phone || '')} · ${u.account_type === 'business' ? 'Entreprise' : 'Particulier'} · KYC ${u.kyc_level}</div></td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucun résultat.</p>';
+  $$('[data-uid]').forEach((r) => r.onclick = () => openUser(r.dataset.uid).catch((x) => toast(x.message, true)));
+}
+async function openUser(id) {
+  $$('[data-uid]').forEach((r) => r.classList.toggle('sel', r.dataset.uid === id));
+  const d = await api('GET', '/users/' + id);
+  const u = d.user;
+  const acts = [];
+  if (can('users.suspend') && u.status === 'active') acts.push('<button class="btn danger sm" data-ua="suspend">Suspendre</button>');
+  if (can('users.suspend') && u.status === 'suspended') acts.push('<button class="btn ok sm" data-ua="reactivate">Réactiver</button>');
+  if (can('users.support') && u.pin_locked) acts.push('<button class="btn light sm" data-ua="unlock">Débloquer le PIN</button>');
+  if (can('users.support')) acts.push('<button class="btn light sm" data-ua="sessions">Déconnecter partout</button>');
+  if (can('users.kyc_override')) acts.push('<button class="btn light sm" data-ua="kyc">Changer le niveau KYC</button>');
+  $('#user-detail').innerHTML = `
+    <div class="card"><h2>${esc(u.full_name)} ${pill(u.status)}</h2>
+      ${u.status === 'suspended' ? `<div class="flag">Suspendu le ${dt(u.suspended_at)} — ${esc(u.suspended_reason || '')}</div>` : ''}
+      <dl class="kv" style="margin-top:12px">
+        <dt>Identifiant</dt><dd class="mono">${esc(u.id)}</dd>
+        <dt>Email</dt><dd>${esc(u.email || '—')} ${u.email ? (u.email_verified ? '<span class="pill ok">vérifié</span>' : '<span class="pill warn">non vérifié</span>') : ''}</dd>
+        <dt>Téléphone</dt><dd>${esc(u.phone || '—')} ${u.phone ? (u.phone_verified ? '<span class="pill ok">vérifié</span>' : '<span class="pill warn">non vérifié</span>') : ''}</dd>
+        <dt>Identifiant @</dt><dd>${u.handle ? '@' + esc(u.handle) : '—'}</dd>
+        <dt>Type</dt><dd>${u.account_type === 'business' ? 'Entreprise' : 'Particulier'}</dd>
+        <dt>Niveau KYC</dt><dd>${u.kyc_level}</dd>
+        <dt>Nationalité · fuseau</dt><dd>${esc(u.nationality)} · ${esc(u.timezone)}</dd>
+        <dt>Inscrit le</dt><dd>${dt(u.created_at)}</dd>
+        <dt>Appareils · cartes</dt><dd>${d.devices} appareil(s) de confiance · ${d.cards} carte(s)</dd>
+        ${d.merchant ? `<dt>Espace marchand</dt><dd>${esc(d.merchant.name)} <span class="mono muted">${esc(d.merchant.id)}</span> ${d.merchant.suspended_at ? '<span class="pill err">suspendu</span>' : ''}</dd>` : ''}
+        ${d.addresses[0] ? `<dt>Adresse</dt><dd>${esc(d.addresses[0].line1)}, ${esc(d.addresses[0].city)} (${esc(d.addresses[0].country)})</dd>` : ''}
+      </dl>
+      ${acts.length ? `<div class="actions" style="margin-top:16px">${acts.join('')}</div>` : ''}
+    </div>
+    <div class="card"><h2>Soldes</h2><div class="kpis" style="margin:0">${d.wallets.map((w) => `<div class="kpi" style="background:var(--soft)"><small>${w.currency}</small><b style="font-size:22px">${fmt(w.balance, w.currency)}</b></div>`).join('')}</div></div>
+    <div class="card tbl"><h2>Dernières opérations</h2>${d.transactions.length ? `<table><tbody>${d.transactions.map((t) => `<tr><td>${esc(TYPE[t.type] || t.type)} ${pill(t.status)}<div class="muted">${esc(t.description || '')}${t.counterparty ? ' — ' + esc(t.counterparty) : ''}</div><div class="muted mono">${esc(t.id)} · ${dt(t.created_at)}</div></td><td class="num"><b>${t.direction === 'credit' ? '+' : '−'}${fmt(t.amount, t.currency)}</b></td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune opération.</p>'}</div>
+    ${d.kyc_submissions.length ? `<div class="card"><h2>Vérifications d'identité</h2><ul class="list">${d.kyc_submissions.map((k) => `<li><span>${pill(k.status)} ${esc(k.document_type)}</span><span class="muted">${dt(k.created_at)}${k.reviewer ? ' · ' + esc(k.reviewer) : ''}${k.review_note ? ' · ' + esc(k.review_note) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
+  const after = async (msg) => { toast(msg); await loadUsers(); await openUser(id); };
+  $$('[data-ua]').forEach((b) => b.onclick = async () => {
+    const a = b.dataset.ua;
+    if (a === 'suspend') { const v = await dialog({ title: `Suspendre ${u.full_name} ?`, text: 'Le compte ne pourra plus se connecter ni effectuer d’opérations, et son espace marchand sera bloqué. L’utilisateur est prévenu par email.', fields: [reasonField()], confirm: 'Suspendre', danger: true }); if (v) run(b, async () => { await api('POST', `/users/${id}/suspend`, v); await after('Compte suspendu.'); }); }
+    if (a === 'reactivate') { const v = await dialog({ title: `Réactiver ${u.full_name} ?`, fields: [reasonField()], confirm: 'Réactiver' }); if (v) run(b, async () => { await api('POST', `/users/${id}/reactivate`, v); await after('Compte réactivé.'); }); }
+    if (a === 'unlock') { const v = await dialog({ title: 'Débloquer le PIN ?', text: 'Vérifiez d’abord l’identité de la personne (questions de sécurité, appel au numéro enregistré).', fields: [reasonField('Vérification effectuée')], confirm: 'Débloquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/unlock-pin`, v); await after('PIN débloqué.'); }); }
+    if (a === 'sessions') { const v = await dialog({ title: 'Déconnecter toutes les sessions ?', text: 'Toutes les sessions sont fermées et les appareils de confiance oubliés : un code sera demandé à la prochaine connexion.', fields: [reasonField()], confirm: 'Déconnecter' }); if (v) run(b, async () => { await api('POST', `/users/${id}/revoke-sessions`, v); await after('Sessions fermées.'); }); }
+    if (a === 'kyc') { const v = await dialog({ title: 'Changer le niveau KYC', text: 'À utiliser exceptionnellement : la voie normale est la vérification d’identité.', fields: [{ name: 'level', label: 'Niveau', type: 'select', value: String(u.kyc_level), options: [1, 2, 3].map((n) => ({ value: String(n), label: `Niveau ${n}` })) }, reasonField()], confirm: 'Appliquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/kyc-level`, { level: Number(v.level), reason: v.reason }); await after('Niveau KYC modifié.'); }); }
   });
 }
-$('#zoom').onclick = () => $('#zoom').classList.add('hidden');
 
-// ---------------- Rapprochement ----------------
-const fmt = (minor, cur) => (minor == null ? '—' : (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 }) + (cur === 'USD' ? ' $' : ' FC'));
-const TYPE = { topup: 'Recharge', payment: 'Paiement', withdrawal: 'Retrait', payout: 'Versement', refund: 'Remboursement' };
+// =====================================================================
+//  Transactions
+// =====================================================================
+async function renderTransactions() {
+  $('#view').innerHTML = `
+    <form class="toolbar" id="f-tx">
+      <input name="q" placeholder="Référence txn_…, réf. opérateur, téléphone, paiement pay_…">
+      <select name="type"><option value="">Tous types</option>${Object.entries(TYPE).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      <select name="status"><option value="">Tous statuts</option>${['succeeded', 'pending', 'failed', 'refunded'].map((k) => `<option value="${k}">${STATUS[k]}</option>`).join('')}</select>
+      <select name="currency"><option value="">CDF et USD</option><option>CDF</option><option>USD</option></select>
+      <button class="btn">Filtrer</button>
+    </form><div class="card tbl" id="tx-list"></div>`;
+  const load = async () => {
+    const qs = new URLSearchParams([...new FormData($('#f-tx'))].filter(([, v]) => v)); qs.set('limit', '100');
+    const r = await api('GET', '/transactions?' + qs);
+    $('#tx-list').innerHTML = r.data.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>De → À</th><th>Statut</th><th class="num">Montant</th></tr></thead><tbody>${r.data.map((t) => `<tr>
+      <td class="muted" style="white-space:nowrap">${dt(t.created_at)}</td>
+      <td>${esc(TYPE[t.type] || t.type)}${t.operator ? `<div class="muted">${esc(t.operator)}${t.phone ? ' · ' + esc(t.phone) : ''}</div>` : ''}<div class="muted mono">${esc(t.id)}</div></td>
+      <td>${esc(t.from_name || '—')} → ${esc(t.to_name || '—')}${t.failure_reason ? `<div class="muted" style="color:var(--err)">${esc(t.failure_reason)}</div>` : ''}</td>
+      <td>${pill(t.status)}</td><td class="num"><b>${fmt(t.amount, t.currency)}</b>${t.fee ? `<div class="muted">frais ${fmt(t.fee, t.currency)}</div>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune transaction.</p>';
+  };
+  $('#f-tx').onsubmit = (e) => { e.preventDefault(); load().catch((x) => toast(x.message, true)); };
+  await load();
+}
+
+// =====================================================================
+//  Marchands
+// =====================================================================
+async function renderMerchants() {
+  $('#view').innerHTML = `<form class="toolbar" id="f-m"><input name="q" placeholder="Nom commercial, email du titulaire ou identifiant mch_…"><button class="btn">Rechercher</button></form><div class="card tbl" id="m-list"></div>`;
+  const load = async () => {
+    const r = await api('GET', '/merchants?' + new URLSearchParams([...new FormData($('#f-m'))].filter(([, v]) => v)));
+    $('#m-list').innerHTML = r.data.length ? `<table><thead><tr><th>Marchand</th><th>Titulaire</th><th class="num">Soldes</th><th>Clés · paiements</th><th></th></tr></thead><tbody>${r.data.map((m) => `<tr>
+      <td><b>${esc(m.name)}</b> ${m.suspended_at ? '<span class="pill err">suspendu</span>' : ''}<div class="muted mono">${esc(m.id)}</div><div class="muted">créé le ${dt(m.created_at)}</div></td>
+      <td>${esc(m.owner_name)}<div class="muted">${esc(m.owner_email || '')}</div></td>
+      <td class="num">${m.balances.map((b) => fmt(b.balance, b.currency)).join('<br>') || '—'}</td>
+      <td>${m.active_keys} clé(s) active(s)<div class="muted">${m.paid_payments} paiement(s) reçu(s)</div>${m.webhook_url ? `<div class="muted">${esc(m.webhook_url)}</div>` : ''}</td>
+      <td>${can('merchants.manage') ? `<div class="actions">${m.suspended_at ? `<button class="btn ok sm" data-ma="reactivate" data-id="${esc(m.id)}">Réactiver</button>` : `<button class="btn danger sm" data-ma="suspend" data-id="${esc(m.id)}">Suspendre</button>`}${m.active_keys ? `<button class="btn light sm" data-ma="revoke-keys" data-id="${esc(m.id)}">Révoquer les clés</button>` : ''}</div>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucun marchand.</p>';
+    $$('[data-ma]').forEach((b) => b.onclick = async () => {
+      const titles = { suspend: 'Suspendre ce marchand ?', reactivate: 'Réactiver ce marchand ?', 'revoke-keys': 'Révoquer toutes les clés API ?' };
+      const texts = { suspend: 'Ses appels API seront refusés tant qu’il est suspendu.', 'revoke-keys': 'Le marchand devra générer de nouvelles clés depuis son espace.' };
+      const v = await dialog({ title: titles[b.dataset.ma], text: texts[b.dataset.ma] || '', fields: [reasonField()], confirm: 'Confirmer', danger: b.dataset.ma !== 'reactivate' });
+      if (v) run(b, async () => { await api('POST', `/merchants/${b.dataset.id}/${b.dataset.ma}`, v); toast('Fait.'); await load(); });
+    });
+  };
+  $('#f-m').onsubmit = (e) => { e.preventDefault(); load().catch((x) => toast(x.message, true)); };
+  await load();
+}
+
+// =====================================================================
+//  Vérification d'identité (KYC)
+// =====================================================================
+const KIND = { id_front: 'Recto', id_back: 'Verso', selfie: 'Selfie' };
+let KYC_STATUS = 'pending'; let KYC_CURRENT = null;
+async function renderKyc() {
+  $('#view').innerHTML = `<div class="toolbar">${[['pending', 'À examiner'], ['approved', 'Validées'], ['rejected', 'Refusées']].map(([k, v]) => `<button class="btn ${k === KYC_STATUS ? '' : 'light'} sm" data-ks="${k}">${v}</button>`).join('')}</div>
+    <div class="split"><div class="card"><h2 id="kyc-title">Demandes</h2><ul class="list" id="kyc-list"></ul></div><div id="kyc-detail"><div class="card muted">Sélectionnez une demande.</div></div></div>`;
+  $$('[data-ks]').forEach((b) => b.onclick = () => { KYC_STATUS = b.dataset.ks; KYC_CURRENT = null; renderKyc(); });
+  await loadKyc();
+}
+async function loadKyc() {
+  const r = await api('GET', '/kyc/submissions?status=' + KYC_STATUS);
+  $('#kyc-title').textContent = `Demandes (${r.data.length})`;
+  $('#kyc-list').innerHTML = r.data.length ? r.data.map((s) => `<li class="click ${KYC_CURRENT === s.id ? 'sel' : ''}" data-kid="${s.id}"><div><b>${esc(s.user.full_name)}</b> ${s.flagged ? '<span class="pill err">Doublon</span>' : ''}<div class="muted">${esc(s.user.email || s.user.phone || '')} · ${esc(s.document_label)}<br>${dt(s.created_at)}</div></div></li>`).join('') : '<li class="muted">Aucune demande.</li>';
+  $$('[data-kid]').forEach((li) => li.onclick = () => openKyc(li.dataset.kid).catch((x) => toast(x.message, true)));
+}
+async function openKyc(id) {
+  KYC_CURRENT = id; freeBlobs();
+  $$('[data-kid]').forEach((li) => li.classList.toggle('sel', li.dataset.kid === id));
+  const s = await api('GET', '/kyc/submissions/' + id);
+  const d = s.duplicates;
+  const dups = [...d.same_document_number.map((x) => `Même n° de pièce : <b>${esc(x.full_name)}</b> (${esc(x.phone || '')}) — ${esc(STATUS[x.status] || x.status)}`), ...d.same_image.map((x) => `Image identique déjà envoyée par <b>${esc(x.full_name)}</b>`)];
+  $('#kyc-detail').innerHTML = `<div class="card"><h2>${esc(s.user.full_name)} ${pill(s.status)}</h2>
+      ${dups.length ? `<div class="flag"><b>Alerte fraude</b><br>${dups.join('<br>')}</div>` : ''}
+      <dl class="kv" style="margin-top:12px">
+        <dt>Email</dt><dd>${esc(s.user.email || '—')}</dd><dt>Téléphone</dt><dd>${esc(s.user.phone || '—')}</dd>
+        <dt>Type de compte</dt><dd>${s.user.account_type === 'business' ? 'Entreprise' : 'Particulier'}</dd>
+        <dt>Pièce</dt><dd>${esc(s.document_label)}</dd><dt>Numéro</dt><dd class="mono">${esc(s.document_number)}</dd>
+        <dt>Date de naissance</dt><dd>${esc(s.date_of_birth)}</dd><dt>Niveau actuel</dt><dd>${s.user.kyc_level}</dd>
+        <dt>Demande reçue le</dt><dd>${dt(s.created_at)}</dd>
+        ${s.reviewer ? `<dt>Traitée par</dt><dd>${esc(s.reviewer)} le ${dt(s.reviewed_at)}</dd>` : ''}${s.review_note ? `<dt>Note</dt><dd>${esc(s.review_note)}</dd>` : ''}
+      </dl></div>
+    <div class="card"><h2>Documents</h2><div class="docs" id="docs">${s.files.map((f) => `<figure><img data-kind="${f.kind}" alt="${KIND[f.kind]}"><figcaption>${KIND[f.kind]} · ${Math.round(f.size / 1024)} Ko</figcaption></figure>`).join('')}</div>
+      <p class="muted">Contrôles : visage identique au selfie, nom identique au compte, pièce ni expirée ni retouchée, âge cohérent.</p></div>
+    ${s.status === 'pending' && can('kyc.review') ? `<div class="card"><h2>Décision</h2>
+      <label>Note interne / motif du refus (le motif est envoyé à l'utilisateur)</label><textarea id="k-note" maxlength="300"></textarea>
+      <div class="actions" style="margin-top:8px">${['Photo floue ou illisible', 'Pièce expirée', 'Le selfie ne correspond pas à la pièce', 'Le nom ne correspond pas au compte'].map((r) => `<button class="btn light sm" data-reason="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+      ${d.same_document_number.some((x) => x.status === 'approved') ? '<label class="switch" style="margin-top:12px"><input type="checkbox" id="k-override"> Passer outre le doublon (note justificative obligatoire)</label>' : ''}
+      <div class="actions" style="margin-top:14px"><button class="btn ok" id="k-approve">Valider → niveau 2</button><button class="btn danger" id="k-reject">Refuser</button></div></div>` : ''}`;
+  for (const img of $$('#docs img')) {
+    image(`/kyc/submissions/${id}/files/${img.dataset.kind}`).then((u) => { img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
+    img.onclick = () => { $('#zoom').innerHTML = `<img src="${img.src}" alt="">`; $('#zoom').hidden = false; };
+  }
+  $$('[data-reason]').forEach((b) => b.onclick = () => { $('#k-note').value = b.dataset.reason; });
+  const done = async (msg) => { toast(msg); await loadKyc(); await openKyc(id); };
+  if ($('#k-approve')) $('#k-approve').onclick = (e) => run(e.currentTarget, async () => { await api('POST', `/kyc/submissions/${id}/approve`, { note: $('#k-note').value || undefined, override_duplicates: !!$('#k-override')?.checked }); await done('Identité validée. L’utilisateur est prévenu par email.'); });
+  if ($('#k-reject')) $('#k-reject').onclick = (e) => run(e.currentTarget, async () => { await api('POST', `/kyc/submissions/${id}/reject`, { reason: $('#k-note').value }); await done('Demande refusée. L’utilisateur est prévenu par email.'); });
+}
+$('#zoom').onclick = () => { $('#zoom').hidden = true; };
+
+// =====================================================================
+//  Rapprochement et cantonnement
+// =====================================================================
 let TRUST = '';
-
+async function renderRecon() {
+  const manage = can('recon.manage');
+  $('#view').innerHTML = `
+    <div class="card"><h2>Cantonnement — monnaie électronique en circulation</h2>
+      <form class="toolbar" id="f-trust" style="align-items:end"><div style="flex:1"><label>Compte de cantonnement CDF</label><input name="trust_CDF" type="number" step="0.01" placeholder="ex. 25000000"></div><div style="flex:1"><label>Compte de cantonnement USD</label><input name="trust_USD" type="number" step="0.01" placeholder="ex. 120000"></div><button class="btn">Calculer la couverture</button></form>
+      <div id="safeguard"></div></div>
+    <div class="grid2">
+      <div class="card">${manage ? `<h2>Importer un relevé opérateur</h2>
+        <form id="f-stmt"><label>Opérateur</label><select name="operator" id="stmt-op"></select>
+          <label>Journée comptable (heure de Kinshasa)</label><input name="date" type="date" id="stmt-date" required>
+          <label>Relevé CSV</label><input name="file" type="file" accept=".csv,text/csv" required>
+          <label class="switch"><input type="checkbox" name="replace"> Remplacer un import existant</label>
+          <button class="btn full">Rapprocher</button></form>
+        <p class="muted">Colonnes : <code>provider_ref, reference, type (collect|disburse), amount, currency, status, timestamp</code>.</p>
+        <button class="btn light full" id="sweep">Vérifier maintenant les transactions en attente</button>` : ''}
+        <h2 style="margin-top:18px">Derniers rapprochements</h2><ul class="list" id="runs"></ul></div>
+      <div class="card"><h2 id="exc-title">Écarts à traiter</h2><div id="exceptions"></div></div>
+    </div>`;
+  $('#f-trust').onsubmit = (e) => {
+    e.preventDefault(); const d = new FormData(e.target); const qs = new URLSearchParams();
+    for (const c of ['CDF', 'USD']) { const v = d.get('trust_' + c); if (v) qs.set('trust_' + c, Math.round(parseFloat(v) * 100)); }
+    TRUST = qs.toString() ? '?' + qs : ''; loadSafeguarding().catch((x) => toast(x.message, true));
+  };
+  if (manage) {
+    $('#f-stmt').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => {
+      const d = new FormData(e.target);
+      const qs = new URLSearchParams({ operator: d.get('operator'), date: d.get('date'), ...(d.get('replace') ? { replace: '1' } : {}) });
+      const j = await api('POST', '/reconciliation/statements?' + qs, null, await d.get('file').text());
+      toast(`${j.rows} lignes · ${j.matched} concordantes · ${j.exceptions} écart(s)`); await loadRecon();
+    }); };
+    $('#sweep').onclick = (e) => run(e.currentTarget, async () => { const r = await api('POST', '/reconciliation/sweep'); toast(`${r.checked ?? 0} vérifiée(s) · ${r.resolved ?? 0} dénouée(s) · ${r.expired ?? 0} expirée(s) · ${r.flagged ?? 0} signalée(s)`); await loadRecon(); });
+  }
+  await loadRecon();
+}
 async function loadRecon() {
-  const o = await api('GET', '/admin/reconciliation/overview');
-  if (!$('#stmt-op').options.length) $('#stmt-op').innerHTML = o.operators.map((x) => `<option value="${x.id}">${esc(x.label)}</option>`).join('');
-  if (!$('#stmt-date').value) $('#stmt-date').value = o.business_date;
-  $('#runs').innerHTML = o.runs.length ? o.runs.map((r) => {
-    const d = r.summary.totals || {};
-    const diffs = Object.entries(d).map(([c, v]) => `${c} : écart ${fmt(v.difference, c)}`).join(' · ');
-    return `<li style="cursor:default"><div><b>${esc(r.operator)} · ${esc(r.business_date)}</b> ${r.status === 'superseded' ? '<span class="pill">remplacé</span>' : ''}
-      <div class="muted">${r.rows} lignes · ${r.matched} concordantes · <b>${r.exceptions}</b> écart(s)<br>${esc(diffs)}<br>par ${esc(r.imported_by)} le ${dt(r.created_at)}</div></div></li>`;
-  }).join('') : '<li class="muted">Aucun relevé importé.</li>';
+  const o = await api('GET', '/reconciliation/overview');
+  if ($('#stmt-op') && !$('#stmt-op').options.length) { $('#stmt-op').innerHTML = o.operators.map((x) => `<option value="${x.id}">${esc(x.label)}</option>`).join(''); $('#stmt-date').value = o.business_date; }
+  $('#runs').innerHTML = o.runs.length ? o.runs.map((r) => `<li><div><b>${esc(r.operator)} · ${esc(r.business_date)}</b> ${r.status === 'superseded' ? '<span class="pill">remplacé</span>' : ''}<div class="muted">${r.rows} lignes · ${r.matched} concordantes · <b>${r.exceptions}</b> écart(s) · par ${esc(r.imported_by)} le ${dt(r.created_at)}</div></div></li>`).join('') : '<li class="muted">Aucun relevé importé.</li>';
   await Promise.all([loadSafeguarding(), loadExceptions()]);
 }
-
 async function loadSafeguarding() {
-  const r = await api('GET', '/admin/reconciliation/safeguarding' + TRUST);
-  $('#safeguard').innerHTML = `<div class="grid">${r.data.map((c) => `<div class="card" style="margin:0">
-      <h2>${c.currency}</h2>
-      <dl><dt>En circulation</dt><dd>${fmt(c.e_money_outstanding, c.currency)}</dd>
-        <dt>dont clients</dt><dd>${fmt(c.breakdown.users, c.currency)}</dd>
-        <dt>dont marchands</dt><dd>${fmt(c.breakdown.merchants, c.currency)}</dd>
-        <dt>dont retraits en cours</dt><dd>${fmt(c.breakdown.payouts_in_flight, c.currency)}</dd>
-        <dt>Commissions</dt><dd>${fmt(c.platform.fees, c.currency)}</dd>
-        ${Object.entries(c.held_at_partners).map(([k, v]) => `<dt>Position ${esc(k)}</dt><dd>${fmt(v, c.currency)}</dd>`).join('')}
-        <dt>Compte de cantonnement</dt><dd>${fmt(c.trust_account, c.currency)}</dd>
-        <dt>Couverture</dt><dd>${c.covered == null ? '<span class="muted">saisir le solde bancaire</span>' : `<span class="pill ${c.covered ? 'succeeded' : 'failed'}">${c.covered ? 'Couvert' : 'INSUFFISANT'}</span> ${fmt(c.coverage, c.currency)}`}</dd></dl>
-    </div>`).join('')}</div>`;
+  const r = await api('GET', '/reconciliation/safeguarding' + TRUST);
+  $('#safeguard').innerHTML = `<div class="grid2">${r.data.map((c) => `<div class="setting"><h3>${c.currency}</h3><dl class="kv">
+    <dt>En circulation</dt><dd>${fmt(c.e_money_outstanding, c.currency)}</dd><dt>dont clients</dt><dd>${fmt(c.breakdown.users, c.currency)}</dd>
+    <dt>dont marchands</dt><dd>${fmt(c.breakdown.merchants, c.currency)}</dd><dt>dont retraits en cours</dt><dd>${fmt(c.breakdown.payouts_in_flight, c.currency)}</dd>
+    <dt>Commissions</dt><dd>${fmt(c.platform.fees, c.currency)}</dd>${Object.entries(c.held_at_partners).map(([k, v]) => `<dt>Position ${esc(k)}</dt><dd>${fmt(v, c.currency)}</dd>`).join('')}
+    <dt>Compte de cantonnement</dt><dd>${fmt(c.trust_account, c.currency)}</dd>
+    <dt>Couverture</dt><dd>${c.covered == null ? '<span class="muted">saisir le solde bancaire</span>' : `<span class="pill ${c.covered ? 'ok' : 'err'}">${c.covered ? 'Couvert' : 'INSUFFISANT'}</span> ${fmt(c.coverage, c.currency)}`}</dd></dl></div>`).join('')}</div>`;
 }
-
 async function loadExceptions() {
-  const r = await api('GET', '/admin/reconciliation/exceptions?status=open');
+  const r = await api('GET', '/reconciliation/exceptions?status=open');
   $('#exc-title').textContent = `Écarts à traiter (${r.data.length})`;
+  const manage = can('recon.manage');
   $('#exceptions').innerHTML = r.data.length ? r.data.map((e) => {
-    const t = e.transaction;
-    const st = e.details?.statement;
+    const t = e.transaction; const st = e.details?.statement;
     const canApply = t && ['pending', 'failed'].includes(t.status) && e.kind !== 'amount_mismatch';
-    return `<div class="card" style="margin-bottom:10px" data-exc="${e.id}">
-      <div><span class="pill failed">${esc(e.label)}</span> <span class="muted">${esc(e.operator || '')} · ${dt(e.created_at)}</span></div>
-      <dl style="margin-top:8px">
-        ${t ? `<dt>Transaction</dt><dd>${esc(TYPE[t.type] || t.type)} ${fmt(t.amount, t.currency)} · ${esc(t.status)}<br><span class="muted mono">${esc(t.id)} · ${esc(t.phone || '')}</span></dd>` : ''}
+    return `<div class="setting" style="margin-bottom:10px" data-exc="${e.id}"><div><span class="pill err">${esc(e.label)}</span> <span class="muted">${esc(e.operator || '')} · ${dt(e.created_at)}</span></div>
+      <dl class="kv" style="margin-top:8px">${t ? `<dt>Transaction</dt><dd>${esc(TYPE[t.type] || t.type)} ${fmt(t.amount, t.currency)} · ${esc(t.status)}<br><span class="muted mono">${esc(t.id)}</span></dd>` : ''}
         ${st ? `<dt>Relevé opérateur</dt><dd>${st.type === 'collect' ? 'Encaissement' : 'Décaissement'} ${fmt(st.amount, st.currency)} · ${esc(st.status)}<br><span class="muted mono">${esc(st.provider_ref)} (ligne ${st.line})</span></dd>` : ''}
-        ${e.details?.age_minutes != null ? `<dt>En attente depuis</dt><dd>${e.details.age_minutes} min</dd>` : ''}
-        ${e.details?.reason ? `<dt>Détail</dt><dd>${esc(e.details.reason)}</dd>` : ''}
-      </dl>
-      <label>Note (obligatoire, journalisée)</label><input data-note placeholder="Ex. : confirmé sur le portail opérateur, réf. …">
-      <div class="row" style="margin-top:8px">
-        ${canApply ? '<button class="btn-ok" data-act="apply_success">Valider l\'opération</button>' : ''}
-        ${t?.status === 'pending' ? '<button class="btn-ko" data-act="apply_failure">Déclarer échouée</button>' : ''}
-        <button class="ghost" data-act="acknowledge">Traité hors système</button>
-      </div></div>`;
+        ${e.details?.age_minutes != null ? `<dt>En attente depuis</dt><dd>${e.details.age_minutes} min</dd>` : ''}${e.details?.reason ? `<dt>Détail</dt><dd>${esc(e.details.reason)}</dd>` : ''}</dl>
+      ${manage ? `<label>Note (obligatoire, journalisée)</label><input data-note placeholder="Ex. : confirmé sur le portail opérateur, réf. …">
+      <div class="actions" style="margin-top:8px">${canApply ? '<button class="btn ok sm" data-act="apply_success">Valider l’opération</button>' : ''}${t?.status === 'pending' ? '<button class="btn danger sm" data-act="apply_failure">Déclarer échouée</button>' : ''}<button class="btn light sm" data-act="acknowledge">Traité hors système</button></div>` : ''}</div>`;
   }).join('') : '<p class="muted">Aucun écart ouvert.</p>';
-  $$('[data-exc]').forEach((box) => box.querySelectorAll('[data-act]').forEach((b) => b.onclick = async () => {
-    b.disabled = true;
-    try {
-      await api('POST', `/admin/reconciliation/exceptions/${box.dataset.exc}/resolve`, { action: b.dataset.act, note: box.querySelector('[data-note]').value });
-      toast('Écart traité.'); await loadRecon();
-    } catch (x) { toast(x.message, true); b.disabled = false; }
-  }));
+  $$('[data-exc]').forEach((box) => $$('[data-act]', box).forEach((b) => b.onclick = () => run(b, async () => {
+    await api('POST', `/reconciliation/exceptions/${box.dataset.exc}/resolve`, { action: b.dataset.act, note: $('[data-note]', box).value });
+    toast('Écart traité.'); await loadRecon();
+  })));
 }
 
-$('#f-trust').onsubmit = (e) => {
-  e.preventDefault();
-  const d = new FormData(e.target); const qs = new URLSearchParams();
-  for (const c of ['CDF', 'USD']) { const v = d.get('trust_' + c); if (v) qs.set('trust_' + c, Math.round(parseFloat(v) * 100)); }
-  TRUST = qs.toString() ? '?' + qs : '';
-  loadSafeguarding().catch((x) => toast(x.message, true));
-};
-$('#f-stmt').onsubmit = async (e) => {
-  e.preventDefault(); const btn = e.submitter; btn.disabled = true;
-  try {
-    const d = new FormData(e.target);
-    const qs = new URLSearchParams({ operator: d.get('operator'), date: d.get('date'), ...(d.get('replace') ? { replace: '1' } : {}) });
-    const r = await fetch('/v1/admin/reconciliation/statements?' + qs, { method: 'POST', headers: { 'Content-Type': 'text/csv', Authorization: 'Bearer ' + KEY }, body: await d.get('file').text() });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error?.message || 'Import impossible');
-    toast(`${j.rows} lignes · ${j.matched} concordantes · ${j.exceptions} écart(s)`);
-    e.target.reset(); $('#stmt-date').value = j.business_date; await loadRecon();
-  } catch (x) { toast(x.message, true); } finally { btn.disabled = false; }
-};
-$('#sweep').onclick = async (e) => {
-  e.currentTarget.disabled = true;
-  try { const r = await api('POST', '/admin/reconciliation/sweep'); toast(`${r.checked ?? 0} vérifiée(s) · ${r.resolved ?? 0} dénouée(s) · ${r.expired ?? 0} expirée(s) · ${r.flagged ?? 0} signalée(s)`); await loadRecon(); }
-  catch (x) { toast(x.message, true); } finally { e.currentTarget.disabled = false; }
-};
-
-async function loadAudit() {
-  const r = await api('GET', '/admin/audit?limit=200');
-  $('#audit').innerHTML = r.data.length ? r.data.map((a) => `<li style="cursor:default"><div><b>${esc(a.action)}</b> · ${esc(a.actor)} <span class="muted">${esc(a.target || '')}</span>
-      <div class="muted">${dt(a.created_at)} · IP ${esc(a.ip || '—')}${a.details ? ' · ' + esc(JSON.stringify(a.details)) : ''}</div></div></li>`).join('')
-    : '<li class="muted">Journal vide.</li>';
+// =====================================================================
+//  Équipe
+// =====================================================================
+async function renderStaff() {
+  const [staff, roles] = await Promise.all([api('GET', '/staff'), api('GET', '/roles')]);
+  const assignable = roles.data.filter((r) => r.assignable);
+  const manage = can('staff.manage');
+  $('#view').innerHTML = `
+    <div class="card"><div class="page-head" style="margin:0 0 10px"><h2 style="margin:0">Membres (${staff.data.length})</h2>${manage && assignable.length ? '<button class="btn blue" id="add-staff">Ajouter un membre</button>' : ''}</div>
+      <div class="tbl"><table><thead><tr><th>Membre</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead><tbody>${staff.data.map((s) => {
+        const mine = s.id === ME.id; const editable = manage && !mine && roles.data.find((r) => r.id === s.role)?.assignable;
+        return `<tr><td><b>${esc(s.full_name)}</b>${mine ? ' <span class="pill">vous</span>' : ''}<div class="muted">${esc(s.email)}</div></td>
+          <td><span class="pill role ${s.role}">${esc(s.role_label)}</span></td>
+          <td>${pill(s.status)}${s.must_change_password ? '<div class="muted">mot de passe provisoire</div>' : ''}</td>
+          <td class="muted">${dt(s.last_login_at)}</td>
+          <td>${editable ? `<div class="actions"><button class="btn light sm" data-sa="role" data-id="${s.id}">Rôle</button><button class="btn light sm" data-sa="reset" data-id="${s.id}">Réinitialiser le mot de passe</button>${s.status === 'active' ? `<button class="btn danger sm" data-sa="suspend" data-id="${s.id}">Désactiver</button>` : `<button class="btn ok sm" data-sa="activate" data-id="${s.id}">Réactiver</button>`}</div>` : ''}</td></tr>`;
+      }).join('')}</tbody></table></div></div>
+    <div class="card"><h2>Rôles et permissions</h2><div class="settings-grid">${roles.data.map((r) => `<div class="setting"><span class="pill role ${r.id}">${esc(r.label)}</span><p class="muted" style="margin:8px 0 0">${esc(r.description)}</p></div>`).join('')}</div></div>`;
+  const showPassword = (title, s, pwd) => dialog({ title, text: `Mot de passe provisoire de <b>${esc(s.full_name || s.email)}</b>, également envoyé à ${esc(s.email)}. Il ne sera plus affiché. Un changement est imposé à la première connexion.<div class="secret" style="margin-top:12px">${esc(pwd)}</div>`, confirm: 'J’ai noté' });
+  if ($('#add-staff')) $('#add-staff').onclick = async () => {
+    const v = await dialog({ title: 'Ajouter un membre', text: 'Une invitation avec un mot de passe provisoire est envoyée par email.', fields: [{ name: 'full_name', label: 'Nom complet', required: true }, { name: 'email', label: 'Email professionnel', type: 'email', required: true }, { name: 'role', label: 'Rôle', type: 'select', value: assignable.at(-1).id, options: assignable.map((r) => ({ value: r.id, label: `${r.label} — ${r.description}` })) }], confirm: 'Créer l’accès' });
+    if (v) run(null, async () => { const r = await api('POST', '/staff', v); await renderStaff(); await showPassword('Accès créé', r.staff, r.temporary_password); });
+  };
+  $$('[data-sa]').forEach((b) => b.onclick = async () => {
+    const s = staff.data.find((x) => x.id === b.dataset.id);
+    if (b.dataset.sa === 'role') { const v = await dialog({ title: `Rôle de ${s.full_name}`, text: 'Le changement de rôle ferme ses sessions en cours.', fields: [{ name: 'role', label: 'Rôle', type: 'select', value: s.role, options: assignable.map((r) => ({ value: r.id, label: r.label })) }], confirm: 'Appliquer' }); if (v) run(b, async () => { await api('PATCH', `/staff/${s.id}`, { role: v.role }); toast('Rôle modifié.'); await renderStaff(); }); }
+    if (b.dataset.sa === 'suspend') { const v = await dialog({ title: `Désactiver ${s.full_name} ?`, text: 'Ses sessions sont fermées immédiatement.', confirm: 'Désactiver', danger: true }); if (v) run(b, async () => { await api('PATCH', `/staff/${s.id}`, { status: 'suspended' }); toast('Accès désactivé.'); await renderStaff(); }); }
+    if (b.dataset.sa === 'activate') run(b, async () => { await api('PATCH', `/staff/${s.id}`, { status: 'active' }); toast('Accès réactivé.'); await renderStaff(); });
+    if (b.dataset.sa === 'reset') { const v = await dialog({ title: `Réinitialiser le mot de passe de ${s.full_name} ?`, text: 'Un nouveau mot de passe provisoire lui est envoyé ; ses sessions sont fermées.', confirm: 'Réinitialiser' }); if (v) run(b, async () => { const r = await api('POST', `/staff/${s.id}/reset-password`); await showPassword('Mot de passe réinitialisé', s, r.temporary_password); }); }
+  });
 }
 
-try { KEY = sessionStorage.getItem('pay243_admin'); } catch {}
-if (KEY) start().catch(() => logout());
+// =====================================================================
+//  Paramètres de la plateforme
+// =====================================================================
+async function renderSettings() {
+  const r = await api('GET', '/settings');
+  const manage = can('settings.manage');
+  const by = (prefix) => r.data.filter((s) => s.key.startsWith(prefix));
+  const field = (s) => s.key === 'signup.enabled'
+    ? `<div class="setting"><label class="switch"><input type="checkbox" data-key="${s.key}" ${s.value ? 'checked' : ''} ${manage ? '' : 'disabled'}> ${esc(s.label)}</label><small>${s.overridden ? `Modifié par ${esc(s.updated_by)} le ${dt(s.updated_at)}` : 'Valeur par défaut'}</small></div>`
+    : `<div class="setting"><label>${esc(s.label)}</label><div class="row"><input type="number" step="any" data-key="${s.key}" value="${s.value}" ${manage ? '' : 'disabled'}><span class="muted">${esc(s.unit)}</span>${manage && s.overridden ? `<button class="lk" data-reset="${s.key}" title="Revenir à ${s.default}">↺</button>` : ''}</div>
+       <small>${s.overridden ? `Modifié par ${esc(s.updated_by)} le ${dt(s.updated_at)} · défaut ${s.default}` : 'Valeur par défaut (variables d’environnement)'}</small></div>`;
+  const env = r.environment;
+  $('#view').innerHTML = `
+    ${manage ? '' : '<div class="notice">Lecture seule : seul un super administrateur peut modifier ces paramètres.</div>'}
+    <div class="card"><h2>Change et frais</h2><div class="settings-grid">${[...by('fx.'), ...by('fees.')].map(field).join('')}</div></div>
+    <div class="card"><h2>Plafonds par niveau de vérification</h2>${[1, 2, 3].map((l) => `<h3 style="margin-top:${l > 1 ? 14 : 0}px">Niveau ${l}</h3><div class="settings-grid">${by(`kyc.${l}.`).map(field).join('')}</div>`).join('')}</div>
+    <div class="card"><h2>Inscriptions</h2><div class="settings-grid">${by('signup.').map(field).join('')}</div></div>
+    ${manage ? '<div class="actions" style="margin-bottom:16px"><button class="btn blue" id="save-settings">Enregistrer les modifications</button></div>' : ''}
+    <div class="card"><h2>Environnement</h2><dl class="kv"><dt>Mode</dt><dd>${env.mode === 'live' ? 'Production' : 'Démonstration (sandbox)'}</dd><dt>Adresse</dt><dd>${esc(env.base_url)}</dd>
+      ${Object.entries(env.drivers).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v === 'mock' ? '<span class="pill warn">simulé</span>' : `<span class="pill ok">${esc(v)}</span>`}</dd>`).join('')}</dl>
+      <p class="muted">Ces réglages se font dans les variables d'environnement du serveur (Easypanel).</p></div>`;
+  if (!manage) return;
+  $$('[data-reset]').forEach((b) => b.onclick = () => run(b, async () => { await api('PUT', '/settings', { [b.dataset.reset]: null }); toast('Valeur par défaut rétablie.'); await renderSettings(); }));
+  $('#save-settings').onclick = async (e) => {
+    const patch = {};
+    for (const el of $$('[data-key]')) {
+      const s = r.data.find((x) => x.key === el.dataset.key);
+      const v = el.type === 'checkbox' ? el.checked : Number(el.value);
+      if (v !== s.value) patch[s.key] = v;
+    }
+    if (!Object.keys(patch).length) return toast('Aucune modification.');
+    const ok = await dialog({ title: 'Appliquer ces changements ?', text: `${Object.keys(patch).length} paramètre(s) modifié(s), appliqué(s) immédiatement à toute la plateforme et journalisé(s).`, confirm: 'Appliquer' });
+    if (ok) run(e.currentTarget, async () => { await api('PUT', '/settings', patch); toast('Paramètres enregistrés.'); await renderSettings(); });
+  };
+}
+
+// =====================================================================
+//  Journal d'audit
+// =====================================================================
+const ACTIONS = { 'staff.login': 'Connexion', 'staff.create': 'Membre ajouté', 'staff.update': 'Membre modifié', 'staff.reset_password': 'Mot de passe réinitialisé', 'staff.password_change': 'Mot de passe changé', 'user.view': 'Fiche consultée', 'user.suspend': 'Compte suspendu', 'user.reactivate': 'Compte réactivé', 'user.unlock_pin': 'PIN débloqué', 'user.revoke_sessions': 'Sessions fermées', 'user.kyc_level': 'Niveau KYC modifié', 'merchant.suspend': 'Marchand suspendu', 'merchant.reactivate': 'Marchand réactivé', 'merchant.revoke_keys': 'Clés révoquées', 'settings.update': 'Paramètres modifiés', 'kyc.view': 'Demande KYC consultée', 'kyc.view_file': 'Pièce consultée', 'kyc.approve': 'KYC validé', 'kyc.reject': 'KYC refusé' };
+async function renderAudit() {
+  $('#view').innerHTML = `<form class="toolbar" id="f-audit"><input name="actor" placeholder="Auteur (nom ou email)"><select name="action"><option value="">Toutes les actions</option><option value="staff.">Équipe</option><option value="user.">Utilisateurs</option><option value="merchant.">Marchands</option><option value="kyc.">KYC</option><option value="recon">Rapprochement</option><option value="settings.">Paramètres</option></select><input name="target" placeholder="Cible (usr_…, mch_…)"><button class="btn">Filtrer</button></form><div class="card tbl" id="audit-list"></div>`;
+  const load = async () => {
+    const qs = new URLSearchParams([...new FormData($('#f-audit'))].filter(([, v]) => v)); qs.set('limit', '300');
+    const r = await api('GET', '/audit?' + qs);
+    $('#audit-list').innerHTML = r.data.length ? `<table><thead><tr><th>Date</th><th>Action</th><th>Auteur</th><th>Cible</th><th>Détails</th></tr></thead><tbody>${r.data.map((a) => `<tr><td class="muted" style="white-space:nowrap">${dt(a.created_at)}</td><td><b>${esc(ACTIONS[a.action] || a.action)}</b><div class="muted mono">${esc(a.action)}</div></td><td>${esc(a.actor)}<div class="muted">IP ${esc(a.ip || '—')}</div></td><td class="mono">${esc(a.target || '')}</td><td class="muted" style="max-width:340px;overflow-wrap:anywhere">${a.details ? esc(JSON.stringify(a.details)) : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune entrée.</p>';
+  };
+  $('#f-audit').onsubmit = (e) => { e.preventDefault(); load().catch((x) => toast(x.message, true)); };
+  await load();
+}
+
+if (TOKEN) start().catch(() => logout()); else loginStep('#f-cred');
 </script>
 </body>
 </html>

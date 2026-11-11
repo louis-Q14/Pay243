@@ -12,6 +12,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY src ./src
 COPY public ./public
 COPY sdk ./sdk
+COPY scripts ./scripts
 
 # Pièces d'identité chiffrées : à monter sur un volume persistant (/app/data)
 RUN mkdir -p /app/data && chown -R node:node /app/data

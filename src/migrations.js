@@ -331,4 +331,44 @@ CREATE INDEX idx_addresses_user ON addresses (user_id);
 CREATE UNIQUE INDEX uq_addresses_primary ON addresses (user_id) WHERE is_primary;
 `,
   },
+  {
+    version: 4,
+    name: 'back-office : équipe, rôles et paramètres de la plateforme',
+    sql: `
+-- Membres de l'équipe Pay243 (distincts des utilisateurs du wallet).
+CREATE TABLE staff (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'compliance', 'finance', 'support', 'auditor')),
+  password_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
+  must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+  failed_logins INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT,
+  sessions_valid_after BIGINT NOT NULL DEFAULT 0,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  last_login_at TEXT
+);
+CREATE UNIQUE INDEX uq_staff_email ON staff (email);
+
+-- Paramètres modifiables à chaud par un super administrateur (taux, frais, plafonds…).
+CREATE TABLE platform_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_by TEXT,
+  updated_at TEXT NOT NULL
+);
+
+-- Suspension des comptes utilisateurs et marchands par le back-office.
+ALTER TABLE users ADD COLUMN suspended_reason TEXT;
+ALTER TABLE users ADD COLUMN suspended_at TEXT;
+ALTER TABLE merchants ADD COLUMN suspended_at TEXT;
+
+ALTER TABLE admin_audit ADD COLUMN staff_id TEXT;
+CREATE INDEX idx_admin_audit_created ON admin_audit (created_at);
+CREATE INDEX idx_users_created ON users (created_at);
+`,
+  },
 ];

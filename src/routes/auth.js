@@ -54,6 +54,7 @@ function mask(dest) {
 
 /** Étape 1 de l'inscription : envoi d'un code de vérification à l'adresse email. */
 authRouter.post('/auth/otp', otpLimiter, async (req, res) => {
+  if (config.registrationsEnabled === false) throw new HttpError(503, 'signup_closed', 'Les inscriptions sont momentanément fermées. Réessayez plus tard.');
   const { email, purpose = 'register' } = req.body || {};
   if (purpose !== 'register') throw new HttpError(400, 'invalid_purpose', 'Pour la connexion, le code est envoyé automatiquement par /v1/auth/login.');
   const e = normalizeEmail(email);
@@ -64,6 +65,7 @@ authRouter.post('/auth/otp', otpLimiter, async (req, res) => {
 
 /** Étape 2 : création du compte (particulier ou entreprise) avec le code reçu par email. */
 authRouter.post('/auth/register', limiter, async (req, res) => {
+  if (config.registrationsEnabled === false) throw new HttpError(503, 'signup_closed', 'Les inscriptions sont momentanément fermées. Réessayez plus tard.');
   const { account_type, email, otp_code, full_name, password, pin, phone, business_name, device_id, device_label } = req.body || {};
   if (!ACCOUNT_TYPES.includes(account_type)) {
     throw new HttpError(400, 'invalid_account_type', 'Choisissez un type de compte : "personal" (particulier) ou "business" (entreprise).');

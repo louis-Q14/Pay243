@@ -116,17 +116,11 @@ export async function requireMerchantKey(req, _res, next) {
   const row = await q.get('SELECT * FROM api_keys WHERE prefix=? AND revoked_at IS NULL', key.slice(0, 16));
   if (!row || !safeEqual(row.key_hash, sha256(key))) throw new HttpError(401, 'invalid_api_key', 'Clé API invalide ou révoquée.');
   req.merchant = await q.get('SELECT * FROM merchants WHERE id=?', row.merchant_id);
+  if (req.merchant.suspended_at) throw new HttpError(403, 'merchant_suspended', 'Compte marchand suspendu. Contactez le support Pay243.');
+  const owner = await q.get('SELECT status FROM users WHERE id=?', req.merchant.owner_user_id);
+  if (owner?.status !== 'active') throw new HttpError(403, 'merchant_suspended', 'Compte marchand inactif. Contactez le support Pay243.');
   req.livemode = row.mode === 'live';
   next();
 }
 
-// ---------- Back-office (agents Pay243) ----------
-/** Middleware : agent du back-office, authentifié par une clé personnelle (ADMIN_KEYS). */
-export function requireAdmin(req, _res, next) {
-  const key = bearer(req);
-  const digest = key ? sha256(key) : '';
-  const agent = key && config.admin.keys.find((a) => safeEqual(sha256(a.key), digest));
-  if (!agent) throw new HttpError(401, 'invalid_admin_key', 'Clé back-office invalide.');
-  req.admin = { name: agent.name };
-  next();
-}
+// Back-office : voir src/staff.js (rôles, permissions, sessions de l'équipe).

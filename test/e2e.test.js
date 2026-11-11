@@ -460,7 +460,7 @@ test('KYC : envoi des pièces, chiffrement, refus puis validation au back-office
   assert.equal((await admin('POST', `/kyc/submissions/${sub.body.id}/reject`, {})).body.error.code, 'reason_required');
   const rej = await admin('POST', `/kyc/submissions/${sub.body.id}/reject`, { reason: 'Photo floue ou illisible' });
   assert.equal(rej.body.status, 'rejected');
-  assert.equal(rej.body.reviewer, 'conformite');
+  assert.equal(rej.body.reviewer, 'conformite (clé)'); // clé de service : distinguée des comptes nominatifs
   const st2 = await api('GET', '/v1/kyc', { token: state.bob });
   assert.equal(st2.body.last_submission.review_note, 'Photo floue ou illisible');
   assert.equal(st2.body.can_submit, true);
@@ -915,6 +915,138 @@ test('codes jamais renvoyés par l\'API quand un vrai fournisseur envoie les mes
     config.email.driver = 'mock'; config.mode = 'live';
     assert.equal(exposesCodes('email'), false);
   } finally { config.email.driver = saved.email; config.mode = saved.mode; }
+});
+
+// ---------------------------------------------------------------------
+//  Back-office : équipe, rôles et permissions
+// ---------------------------------------------------------------------
+const bo = (token) => (method, path, body) => api(method, `/v1/admin${path}`, { token, body });
+
+/** Connexion d'un membre : mot de passe, puis code envoyé par email. */
+async function staffLogin(email, password) {
+  const step1 = await api('POST', '/v1/admin/auth/login', { body: { email, password } });
+  assert.equal(step1.status, 200, JSON.stringify(step1.body));
+  assert.equal(step1.body.otp_required, true);
+  const step2 = await api('POST', '/v1/admin/auth/login', { body: { email, password, otp_code: step1.body.sandbox_code } });
+  assert.equal(step2.status, 200, JSON.stringify(step2.body));
+  return step2.body;
+}
+
+test('back-office : super administrateur, code à chaque connexion, mot de passe provisoire à changer', async () => {
+  const { createStaff } = await import('../src/staff.js');
+  await createStaff({ email: 'chef@pay243.com', full_name: 'Chef Plateforme', role: 'super_admin', password: 'provisoire-2026' });
+  assert.equal((await api('POST', '/v1/admin/auth/login', { body: { email: 'chef@pay243.com', password: 'mauvais' } })).status, 401);
+  const s = await staffLogin('chef@pay243.com', 'provisoire-2026');
+  assert.equal(s.must_change_password, true);
+  const sa = bo(s.token);
+  assert.equal((await sa('GET', '/dashboard')).body.error.code, 'password_change_required');
+  assert.equal((await sa('GET', '/me')).body.role, 'super_admin');
+  assert.equal((await sa('POST', '/auth/password', { current_password: 'provisoire-2026', new_password: 'court-123' })).body.error.code, 'weak_password');
+  const ch = await sa('POST', '/auth/password', { current_password: 'provisoire-2026', new_password: 'Chef-Pay243-2026!' });
+  assert.equal(ch.status, 200);
+  assert.equal((await sa('GET', '/dashboard')).status, 401); // ancienne session fermée
+  state.superToken = ch.body.token;
+  const dash = await bo(state.superToken)('GET', '/dashboard');
+  assert.equal(dash.status, 200);
+  assert.ok(dash.body.users.total >= 1);
+  assert.equal(dash.body.mode, 'sandbox');
+  // Jetons cloisonnés : un jeton de l'équipe n'ouvre pas le wallet, et inversement
+  assert.equal((await api('GET', '/v1/me', { token: state.superToken })).status, 401);
+  assert.equal((await api('GET', '/v1/admin/me', { token: state.bob })).status, 401);
+});
+
+test('back-office : hiérarchie des rôles et permissions', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const sa = bo(state.superToken);
+  const adm = await sa('POST', '/staff', { email: 'admin@pay243.com', full_name: 'Amani Admin', role: 'admin' });
+  assert.equal(adm.status, 201, JSON.stringify(adm.body));
+  const invite = outbox.filter((m) => m.to === 'admin@pay243.com' && m.tag === 'staff').at(-1);
+  assert.match(invite.text, new RegExp(adm.body.temporary_password));
+  const sup = await sa('POST', '/staff', { email: 'support@pay243.com', full_name: 'Sam Support', role: 'support' });
+  assert.equal(sup.status, 201);
+  assert.equal((await sa('POST', '/staff', { email: 'admin@pay243.com', full_name: 'Doublon', role: 'support' })).body.error.code, 'staff_exists');
+
+  // Administrateur : gère les rangs inférieurs, pas les administrateurs ni le super administrateur
+  const a1 = await staffLogin('admin@pay243.com', adm.body.temporary_password);
+  state.adminToken = (await bo(a1.token)('POST', '/auth/password', { current_password: adm.body.temporary_password, new_password: 'Amani-Admin-2026!' })).body.token;
+  const a = bo(state.adminToken);
+  assert.equal((await a('POST', '/staff', { email: 'admin2@pay243.com', full_name: 'Autre Admin', role: 'admin' })).status, 403);
+  assert.equal((await a('POST', '/staff', { email: 'kyc@pay243.com', full_name: 'Clara Conformité', role: 'compliance' })).status, 201);
+  const chef = (await sa('GET', '/staff')).body.data.find((x) => x.email === 'chef@pay243.com');
+  assert.equal((await a('PATCH', `/staff/${chef.id}`, { status: 'suspended' })).status, 403);
+  assert.equal((await a('PUT', '/settings', { 'fx.usd_to_cdf': 3000 })).status, 403); // paramètres : super administrateur uniquement
+  const roles = (await a('GET', '/roles')).body.data;
+  assert.equal(roles.find((r) => r.id === 'admin').assignable, false);
+  assert.equal(roles.find((r) => r.id === 'support').assignable, true);
+
+  // Support : consultation et aide, sans suspension, KYC ni équipe
+  const s1 = await staffLogin('support@pay243.com', sup.body.temporary_password);
+  state.supportToken = (await bo(s1.token)('POST', '/auth/password', { current_password: sup.body.temporary_password, new_password: 'Sam-Support-2026!' })).body.token;
+  const s = bo(state.supportToken);
+  const found = await s('GET', '/users?q=patrick.ilunga');
+  assert.equal(found.status, 200);
+  const patrick = found.body.data[0];
+  assert.equal(patrick.email, 'patrick.ilunga@test.cd');
+  assert.equal((await s('GET', `/users/${patrick.id}`)).body.wallets.length, 2);
+  assert.equal((await s('POST', `/users/${patrick.id}/unlock-pin`, {})).status, 200);
+  assert.equal((await s('POST', `/users/${patrick.id}/suspend`, { reason: 'Test de permission' })).status, 403);
+  assert.equal((await s('GET', '/kyc/submissions')).status, 403);
+  assert.equal((await s('GET', '/staff')).status, 403);
+  assert.equal((await s('GET', '/audit')).status, 403);
+  assert.ok((await s('GET', '/transactions?limit=5')).body.data.length > 0);
+});
+
+test('back-office : suspension d\'un compte et de son espace marchand', async () => {
+  const a = bo(state.adminToken);
+  const biz = await register({ account_type: 'business', email: 'boutique.suspendue@test.cd', business_name: 'Boutique Suspendue', full_name: 'Paul Kabeya', password: 'motdepasse6', pin: '3816', device_id: 'paul-device-000000001' });
+  const uid = biz.body.user.id;
+  assert.equal((await a('POST', `/users/${uid}/suspend`, { reason: 'x' })).body.error.code, 'reason_required');
+  assert.equal((await a('POST', `/users/${uid}/suspend`, { reason: 'Activité suspecte signalée' })).status, 200);
+  assert.equal((await api('GET', '/v1/me', { token: biz.body.token })).status, 401);
+  assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'boutique.suspendue@test.cd', password: 'motdepasse6', device_id: 'paul-device-000000001' } })).body.error.code, 'account_disabled');
+  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).body.error.code, 'merchant_suspended');
+  assert.equal((await api('POST', '/v1/transfers', { token: state.bob, body: { to: 'boutique.suspendue@test.cd', amount: 100, currency: 'USD', pin: '9137' } })).body.error.code, 'recipient_not_found');
+  assert.equal((await a('POST', `/users/${uid}/reactivate`, { reason: 'Vérification faite, rien à signaler' })).status, 200);
+  assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'boutique.suspendue@test.cd', password: 'motdepasse6', device_id: 'paul-device-000000001' } })).status, 200);
+  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).status, 201);
+  const m = (await a('GET', '/merchants?q=Boutique Suspendue')).body.data[0];
+  assert.equal((await a('POST', `/merchants/${m.id}/revoke-keys`, { reason: 'Clé exposée publiquement' })).body.revoked, 1);
+  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).status, 401);
+  const audit = (await bo(state.superToken)('GET', '/audit?action=user.')).body.data;
+  assert.ok(audit.some((x) => x.action === 'user.suspend' && x.actor === 'Amani Admin <admin@pay243.com>' && x.details.reason === 'Activité suspecte signalée'));
+});
+
+test('back-office : paramètres de la plateforme appliqués à chaud (super administrateur)', async () => {
+  const sa = bo(state.superToken);
+  const before = (await api('GET', '/v1/wallets', { token: state.bob })).body.fx.usd_to_cdf;
+  const up = await sa('PUT', '/settings', { 'fx.usd_to_cdf': 3100, 'fees.withdrawal_percent': 1.5 });
+  assert.equal(up.status, 200, JSON.stringify(up.body));
+  assert.equal((await api('GET', '/v1/wallets', { token: state.bob })).body.fx.usd_to_cdf, 3100);
+  assert.equal((await sa('PUT', '/settings', { 'kyc.1.per_txn_usd': 999999 })).body.error.code, 'invalid_setting'); // > plafond journalier
+  assert.equal((await sa('PUT', '/settings', { 'inconnu': 1 })).body.error.code, 'unknown_setting');
+  assert.equal((await sa('PUT', '/settings', { 'signup.enabled': false })).status, 200);
+  assert.equal((await api('POST', '/v1/auth/otp', { body: { email: 'ferme@test.cd' } })).body.error.code, 'signup_closed');
+  // Retour aux valeurs par défaut
+  await sa('PUT', '/settings', { 'fx.usd_to_cdf': null, 'fees.withdrawal_percent': null, 'signup.enabled': null });
+  assert.equal((await api('GET', '/v1/wallets', { token: state.bob })).body.fx.usd_to_cdf, before);
+  assert.equal((await api('POST', '/v1/auth/otp', { body: { email: 'ouvert@test.cd' } })).status, 201);
+  const audit = (await sa('GET', '/audit?action=settings')).body.data;
+  assert.ok(audit.length >= 2);
+});
+
+test('back-office : toujours un super administrateur actif, verrouillage après 5 erreurs', async () => {
+  const key = bo(ADMIN_KEY); // clé de service (super administrateur)
+  const chef = (await key('GET', '/staff')).body.data.find((x) => x.email === 'chef@pay243.com');
+  assert.equal((await key('PATCH', `/staff/${chef.id}`, { role: 'admin' })).body.error.code, 'last_super_admin');
+  assert.equal((await bo(state.superToken)('PATCH', `/staff/${chef.id}`, { status: 'suspended' })).body.error.code, 'self_edit');
+  for (let i = 0; i < 5; i++) await api('POST', '/v1/admin/auth/login', { body: { email: 'kyc@pay243.com', password: 'faux-mot-de-passe' } });
+  assert.equal((await api('POST', '/v1/admin/auth/login', { body: { email: 'kyc@pay243.com', password: 'faux-mot-de-passe' } })).body.error.code, 'staff_locked');
+  // Un membre suspendu perd immédiatement l'accès
+  const sup = (await key('GET', '/staff')).body.data.find((x) => x.email === 'support@pay243.com');
+  const supToken = state.supportToken;
+  assert.equal((await bo(supToken)('GET', '/users')).status, 200);
+  assert.equal((await bo(state.adminToken)('PATCH', `/staff/${sup.id}`, { status: 'suspended' })).status, 200);
+  assert.equal((await bo(supToken)('GET', '/users')).status, 401);
 });
 
 test('grand livre équilibré (partie double)', async () => {

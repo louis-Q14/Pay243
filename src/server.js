@@ -2,11 +2,14 @@ import { assertProductionConfig, config } from './config.js';
 import { closeDb, openDb } from './db.js';
 import { createApp } from './app.js';
 import { purgeTechnicalTables } from './middleware.js';
+import { loadPlatformSettings } from './services/platformSettings.js';
 import { startReconWorker } from './services/reconciliation.js';
 import { startWebhookWorker } from './services/webhooks.js';
 
 assertProductionConfig();
 const engine = await openDb(config.db.url ? { url: config.db.url } : { dataDir: config.db.pgliteDir });
+await loadPlatformSettings();
+setInterval(() => loadPlatformSettings().catch((e) => console.error('[settings]', e.message)), 30_000).unref();
 startWebhookWorker();
 startReconWorker();
 setInterval(() => purgeTechnicalTables().catch((e) => console.error('[maintenance]', e.message)), 10 * 60_000).unref();

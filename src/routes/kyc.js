@@ -1,12 +1,12 @@
 import express, { Router } from 'express';
-import { requireAdmin, requireUser } from '../auth.js';
+import { requireUser } from '../auth.js';
+import { actorLabel, can, requireStaff } from '../staff.js';
 import { config } from '../config.js';
-import { q } from '../db.js';
 import { rateLimit } from '../middleware.js';
 import {
   approve, adminView, audit, getSubmission, listSubmissions, readSubmissionFile, reject, statusFor, submit, uploadFile,
 } from '../services/kyc.js';
-import { HttpError, parseJson } from '../util.js';
+import { HttpError } from '../util.js';
 
 // =====================================================================
 //  Côté utilisateur : vérification d'identité (KYC niveau 2)
@@ -30,7 +30,7 @@ kycRouter.post('/kyc/submissions', async (req, res) => res.status(201).json(awai
 //  Back-office : revue manuelle des demandes (interface : /admin)
 // =====================================================================
 export const adminRouter = Router();
-adminRouter.use('/admin', requireAdmin);
+adminRouter.use('/admin/kyc', requireStaff);
 
 const ownSubmission = async (req) => {
   const s = await getSubmission(req.params.id);
@@ -38,35 +38,29 @@ const ownSubmission = async (req) => {
   return s;
 };
 
-adminRouter.get('/admin/me', (req, res) => res.json({ name: req.admin.name, mode: config.mode }));
 
-adminRouter.get('/admin/kyc/submissions', async (req, res) => {
+adminRouter.get('/admin/kyc/submissions', can('kyc.view'), async (req, res) => {
   res.json({ data: await listSubmissions(String(req.query.status || 'pending'), Number(req.query.limit) || 50) });
 });
 
-adminRouter.get('/admin/kyc/submissions/:id', async (req, res) => {
+adminRouter.get('/admin/kyc/submissions/:id', can('kyc.view'), async (req, res) => {
   const s = await ownSubmission(req);
-  await audit(req.admin.name, 'kyc.view', s.id, null, req.ip);
+  await audit(actorLabel(req.admin), 'kyc.view', s.id, null, req.ip);
   res.json(await adminView(s));
 });
 
-adminRouter.get('/admin/kyc/submissions/:id/files/:kind', async (req, res) => {
+adminRouter.get('/admin/kyc/submissions/:id/files/:kind', can('kyc.view'), async (req, res) => {
   const s = await ownSubmission(req);
   const f = await readSubmissionFile(s, req.params.kind);
-  await audit(req.admin.name, 'kyc.view_file', s.id, { kind: req.params.kind }, req.ip);
+  await audit(actorLabel(req.admin), 'kyc.view_file', s.id, { kind: req.params.kind }, req.ip);
   res.set({ 'Content-Type': f.mime, 'Cache-Control': 'no-store', 'Content-Disposition': 'inline' });
   res.send(f.data);
 });
 
-adminRouter.post('/admin/kyc/submissions/:id/approve', async (req, res) => {
-  res.json(await approve(req.params.id, req.admin.name, req.body || {}, req.ip));
+adminRouter.post('/admin/kyc/submissions/:id/approve', can('kyc.review'), async (req, res) => {
+  res.json(await approve(req.params.id, actorLabel(req.admin), req.body || {}, req.ip));
 });
 
-adminRouter.post('/admin/kyc/submissions/:id/reject', async (req, res) => {
-  res.json(await reject(req.params.id, req.admin.name, req.body || {}, req.ip));
-});
-
-adminRouter.get('/admin/audit', async (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 100, 500);
-  res.json({ data: (await q.all('SELECT * FROM admin_audit ORDER BY id DESC LIMIT ?', limit)).map((a) => ({ ...a, details: parseJson(a.details) })) });
+adminRouter.post('/admin/kyc/submissions/:id/reject', can('kyc.review'), async (req, res) => {
+  res.json(await reject(req.params.id, actorLabel(req.admin), req.body || {}, req.ip));
 });

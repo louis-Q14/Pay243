@@ -6,6 +6,7 @@ import { q } from './db.js';
 import { auditLedger } from './ledger.js';
 import { securityHeaders } from './middleware.js';
 import { providerEvents } from './providers/mobileMoney/index.js';
+import { backofficeRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
 import { callbackRouter, checkoutRouter, sandboxRouter } from './routes/checkout.js';
 import { adminRouter, kycRouter } from './routes/kyc.js';
@@ -39,7 +40,7 @@ export function createApp() {
     res.json({ status: 'ok', mode: config.mode, ledger: await auditLedger() });
   });
 
-  app.use('/v1', authRouter, settingsRouter, walletRouter, kycRouter, adminRouter, reconRouter, merchantAdminRouter, merchantApiRouter, checkoutRouter);
+  app.use('/v1', authRouter, settingsRouter, walletRouter, kycRouter, backofficeRouter, adminRouter, reconRouter, merchantAdminRouter, merchantApiRouter, checkoutRouter);
   app.use(callbackRouter, sandboxRouter);
 
   app.get('/checkout/:id', (_req, res) => res.sendFile(path.join(publicDir, 'checkout.html')));

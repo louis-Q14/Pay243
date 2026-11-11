@@ -5,7 +5,7 @@ import { emailProvider, layoutHtml, layoutText } from './providers/email/index.j
 import { smsProvider } from './providers/sms/index.js';
 import { HttpError, isEmail, newId, now, safeEqual, sha256 } from './util.js';
 
-export const OTP_PURPOSES = ['register', 'login', 'email_change', 'phone_change', 'password_reset'];
+export const OTP_PURPOSES = ['register', 'login', 'email_change', 'phone_change', 'password_reset', 'staff_login'];
 
 const hashCode = (destination, purpose, code) =>
   crypto.createHmac('sha256', config.jwtSecret).update(`${destination}:${purpose}:${code}`).digest('hex');
@@ -35,6 +35,12 @@ const EMAIL = {
     title: 'Confirmez votre nouvelle adresse',
     intro: 'Saisissez ce code dans vos paramètres Pay243 pour utiliser cette adresse email. Il expire dans 5 minutes.',
     footer: "Vous n'avez rien demandé ? Ignorez ce message : votre adresse ne sera pas ajoutée.",
+  }),
+  staff_login: (code) => ({
+    subject: `${code} : connexion au back-office Pay243`,
+    title: 'Connexion au back-office',
+    intro: 'Saisissez ce code pour terminer votre connexion au back-office Pay243. Il expire dans 5 minutes.',
+    footer: "Si vous n'êtes pas à l'origine de cette connexion, votre mot de passe est compromis : prévenez immédiatement un administrateur.",
   }),
   password_reset: (code) => ({
     subject: `${code} : réinitialisation de votre mot de passe Pay243`,

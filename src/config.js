@@ -9,12 +9,13 @@ const databaseUrl = env.DATABASE_URL || null;
 const pgliteDir = env.PGLITE_DIR || './data/pglite';
 const DEV_KYC_KEY = crypto.createHash('sha256').update('kongowallet-dev-kyc-key') /* ancien nom conservé : clé des fichiers déjà chiffrés */.digest('hex');
 
-/** ADMIN_KEYS="nom:clé,nom2:clé2" — chaque agent du back-office a sa propre clé (traçabilité). */
+/** ADMIN_KEYS="nom:clé[:rôle],…" — clés de service du back-office (scripts, accès de secours). Rôle par défaut : super_admin. */
 function parseAdminKeys(raw) {
   if (!raw) return null;
   return raw.split(',').map((s) => s.trim()).filter(Boolean).map((entry) => {
-    const i = entry.indexOf(':');
-    return { name: entry.slice(0, i).trim(), key: entry.slice(i + 1).trim() };
+    const parts = entry.split(':').map((x) => x.trim());
+    const role = parts.length > 2 ? parts.pop() : 'super_admin';
+    return { name: parts[0], key: parts.slice(1).join(':'), role };
   }).filter((a) => a.name && a.key.length >= 24);
 }
 
@@ -50,6 +51,9 @@ export const config = {
   },
 
   paymentExpiryMinutes: 60,
+
+  // Modifiable à chaud depuis le back-office (paramètres de la plateforme).
+  registrationsEnabled: true,
 
   providers: {
     mpesa: {
@@ -109,9 +113,11 @@ export const config = {
     tzOffsetMinutes: Number(env.RECON_TZ_OFFSET_MINUTES ?? 60), // journée comptable : heure de Kinshasa (UTC+1)
   },
 
-  // Agents du back-office. En sandbox, sans ADMIN_KEYS, une clé aléatoire est générée et affichée au démarrage.
+  // Clés de service du back-office. En sandbox, sans ADMIN_KEYS, une clé aléatoire est générée et affichée au démarrage.
   admin: {
-    keys: parseAdminKeys(env.ADMIN_KEYS) || [{ name: 'sandbox', key: `adm_${crypto.randomBytes(18).toString('base64url')}`, generated: true }],
+    // En production, sans ADMIN_KEYS : aucune clé de service, l'accès se fait par les comptes nominatifs de l'équipe.
+    keys: parseAdminKeys(env.ADMIN_KEYS)
+      || ((env.PAY243_MODE || env.KONGO_MODE) === 'live' ? [] : [{ name: 'sandbox', key: `adm_${crypto.randomBytes(18).toString('base64url')}`, role: 'super_admin', generated: true }]),
   },
 
   // Emails transactionnels (codes de vérification à l'inscription et sur un nouvel appareil).
@@ -166,5 +172,4 @@ export function assertProductionConfig() {
   if (!/^[0-9a-f]{64}$/i.test(config.kycReview.encryptionKey) || config.kycReview.encryptionKey === config.kycReview.devKey) {
     throw new Error('KYC_ENCRYPTION_KEY (64 caractères hexadécimaux) doit être défini en mode live.');
   }
-  if (config.admin.keys.some((a) => a.generated)) throw new Error('ADMIN_KEYS doit être défini en mode live (format nom:clé, clé de 24 caractères min.).');
 }
