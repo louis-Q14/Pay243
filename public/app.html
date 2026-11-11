@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon wallet — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="top">
+  <a href="/" class="brand" style="text-decoration:none;color:inherit"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+  <div id="who" class="muted"></div>
+</header>
+
+<!-- ======================= Connexion / Inscription ======================= -->
+<main id="auth" class="center">
+  <div class="card">
+    <h2 style="margin:0 0 4px;font-size:22px">Connexion</h2>
+    <p class="muted" style="margin:0 0 8px">Pas encore de compte ? <a href="/signup">Créer un compte</a></p>
+    <form id="f-login">
+      <label>Adresse email ou numéro de téléphone</label><input name="identifier" placeholder="vous@exemple.com" required autocomplete="username">
+      <label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password">
+      <div id="login-otp" class="hidden"><label id="login-otp-label">Code de vérification (nouvel appareil)</label><input name="otp_code" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code"></div>
+      <button class="full">Se connecter</button>
+    </form>
+  </div>
+</main>
+
+<!-- ======================= Application ======================= -->
+<main id="app" class="hidden">
+  <div class="tabs">
+    <button class="on" data-tab="home">Wallet</button>
+    <button data-tab="cards">Mes cartes</button>
+    <button data-tab="merchant">Espace marchand</button>
+  </div>
+
+  <section id="tab-home">
+    <div class="grid">
+      <div class="balance"><small>Franc congolais</small><div class="amt" id="bal-CDF">—</div></div>
+      <div class="balance usd"><small>Dollar US</small><div class="amt" id="bal-USD">—</div></div>
+    </div>
+    <div class="actions">
+      <button class="ghost" data-open="topup"><i>＋</i>Recharger</button>
+      <button class="ghost" data-open="send"><i>↗</i>Envoyer</button>
+      <button class="ghost" data-open="withdraw"><i>↓</i>Retirer</button>
+      <button class="ghost" data-open="convert"><i>⇄</i>Convertir</button>
+    </div>
+    <div class="card hidden" id="kyc-box"></div>
+    <div class="card">
+      <h2>Historique</h2>
+      <ul class="list" id="history"><li class="muted">Aucune opération pour l'instant.</li></ul>
+    </div>
+    <p class="muted" id="limits"></p>
+  </section>
+
+  <section id="tab-cards" class="hidden">
+    <div class="card">
+      <h2>Cartes enregistrées</h2>
+      <ul class="list" id="cards"></ul>
+    </div>
+    <div class="card">
+      <h2>Ajouter une carte Visa / Mastercard</h2>
+      <p class="notice">En production, ces champs sont fournis par le processeur de cartes (champs hébergés PCI DSS) : le numéro ne passe jamais par les serveurs Pay243. Cartes de test : <code>4242 4242 4242 4242</code> (acceptée), <code>4000 0000 0000 0002</code> (refusée).</p>
+      <form id="f-card">
+        <label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number" required>
+        <div class="row">
+          <div><label>Mois</label><input name="exp_month" placeholder="12" required></div>
+          <div><label>Année</label><input name="exp_year" placeholder="2030" required></div>
+          <div><label>CVC</label><input name="cvc" placeholder="123" required></div>
+        </div>
+        <button class="full">Enregistrer la carte</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="tab-merchant" class="hidden">
+    <div id="m-none" class="card">
+      <h2>Accepter des paiements en ligne</h2>
+      <p class="muted">Créez votre compte marchand pour encaisser via wallet Pay243, M-Pesa, Airtel Money, Orange Money et cartes, depuis votre site, votre application ou un simple lien WhatsApp.</p>
+      <form id="f-merchant">
+        <label>Nom commercial</label><input name="name" placeholder="Ex : Boutique Kin Mode" required>
+        <label>URL de webhook (facultatif)</label><input name="webhook_url" placeholder="https://monsite.cd/webhooks/pay243">
+        <button class="full">Créer mon compte marchand</button>
+      </form>
+    </div>
+    <div id="m-yes" class="hidden">
+      <div class="grid" id="m-bal"></div>
+      <div class="card" style="margin-top:16px">
+        <h2>Créer un lien de paiement</h2>
+        <form id="f-link">
+          <div class="row">
+            <div><label>Montant</label><input name="amount" type="number" step="0.01" min="0.01" required></div>
+            <div><label>Devise</label><select name="currency"><option>USD</option><option>CDF</option></select></div>
+          </div>
+          <label>Description</label><input name="description" placeholder="Ex : Commande n°1024">
+          <button class="full">Générer le lien</button>
+        </form>
+        <div id="link-out" class="hidden" style="margin-top:12px">
+          <div class="secret mono" id="link-url"></div>
+          <div class="row" style="margin-top:8px"><button class="ghost" id="link-copy">Copier</button><a id="link-wa" target="_blank" rel="noopener"><button class="ghost" style="width:100%">Partager sur WhatsApp</button></a></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Intégration API</h2>
+        <div id="m-key-new" class="hidden"><p class="notice">Nouvelle clé secrète — copiez-la maintenant, elle ne sera plus affichée :</p><div class="secret mono" id="m-key"></div></div>
+        <label>Clés actives</label><ul class="list" id="m-keys"></ul>
+        <button class="ghost" id="m-newkey">Générer une nouvelle clé test</button>
+        <label>Webhook</label>
+        <form id="f-webhook" class="row"><input name="webhook_url" placeholder="https://monsite.cd/webhooks/pay243"><button style="flex:0 0 auto">Enregistrer</button></form>
+        <label>Secret de signature des webhooks</label><div class="secret mono" id="m-whsec"></div>
+        <p class="muted">Documentation : <a href="/docs">/docs</a> · SDK navigateur : <code>/sdk/pay243.js</code></p>
+      </div>
+      <div class="card"><h2>Derniers paiements reçus</h2><ul class="list" id="m-payments"></ul></div>
+    </div>
+  </section>
+</main>
+
+<div id="modal" class="modal-bg hidden"><div class="modal" id="modal-body"></div></div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+let TOKEN = null; let ME = null; let CARDS = [];
+try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+
+const fmt = (minor, cur) => cur === 'USD'
+  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+const toMinor = (v) => Math.round(parseFloat(String(v).replace(',', '.')) * 100);
+const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
+const detectOp = (phone) => {
+  const d = String(phone).replace(/\D/g, '').replace(/^243/, '').replace(/^0/, '').slice(0, 2);
+  if (['81','82','83'].includes(d)) return 'mpesa';
+  if (['97','98','99'].includes(d)) return 'airtel';
+  if (['80','84','85','89'].includes(d)) return 'orange';
+  return null;
+};
+const TYPE_LABEL = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
+const STATUS_LABEL = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', requires_payment: 'À payer', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré' };
+
+function toast(msg, err) {
+  document.querySelectorAll('.toast').forEach((x) => x.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+
+async function api(method, path, body, extraHeaders = {}) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}), ...extraHeaders }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401 && j.error?.code === 'unauthorized') logout();
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code, details: j.error?.details });
+  }
+  return j;
+}
+// Identifiant d'appareil persistant : évite de redemander un code SMS à chaque connexion depuis ce navigateur.
+const DEVICE_ID = (() => {
+  try { let d = localStorage.getItem('pay243_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('pay243_device', d); } return d; }
+  catch { return null; }
+})();
+const device = () => (DEVICE_ID ? { device_id: DEVICE_ID, device_label: navigator.userAgent.slice(0, 120) } : {});
+const formData = (f) => Object.fromEntries(new FormData(f));
+async function busy(btn, fn) { btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { btn.disabled = false; } }
+
+// ---------------- Auth ----------------
+// L'inscription se fait sur /signup (choix du type de compte, puis email).
+if (location.hash === '#register') location.replace('/signup');
+const sandboxHint = (d) => (d?.sandbox_code ? ` (sandbox : ${d.sandbox_code})` : '');
+$('#f-login').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const d = formData(e.target); if (!d.otp_code) delete d.otp_code;
+  try { const r = await api('POST', '/v1/auth/login', { ...d, ...device() }); setSession(r.token); }
+  catch (x) {
+    if (x.code !== 'otp_required') throw x;
+    $('#login-otp-label').textContent = x.details?.channel === 'sms' ? 'Code reçu par SMS (nouvel appareil)' : 'Code reçu par email (nouvel appareil)';
+    $('#login-otp').classList.remove('hidden'); $('#login-otp input').required = true; $('#login-otp input').focus();
+    toast(x.message + sandboxHint(x.details));
+  }
+}); };
+function setSession(t) {
+  TOKEN = t; try { sessionStorage.setItem('pay243_token', t); } catch {}
+  const next = new URLSearchParams(location.search).get('next');
+  if (next && /^\/settings(#[a-z]+)?$/.test(next)) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
+  boot();
+}
+function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'); } catch {} $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#who').textContent = ''; }
+
+// ---------------- Onglets ----------------
+$$('[data-tab]').forEach((b) => b.onclick = () => {
+  $$('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+  ['home', 'cards', 'merchant'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+  if (b.dataset.tab === 'merchant') loadMerchant();
+  if (b.dataset.tab === 'cards') loadCards();
+});
+
+// ---------------- Wallet ----------------
+async function boot() {
+  try {
+    const me = await api('GET', '/v1/me'); ME = me.user;
+    $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden');
+    const av = ME.avatar_url ? `<span class="av" style="background-image:url('${esc(ME.avatar_url)}')"></span>` : `<span class="av">${esc(ME.full_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase())}</span>`;
+    $('#who').innerHTML = `<a href="/settings" class="me" title="Paramètres du compte">${av}<span>${esc(ME.full_name)}</span></a> · <a href="/settings">Paramètres</a> · <button class="link" id="logout">Déconnexion</button>`;
+    $('#logout').onclick = logout;
+    const L = me.limits;
+    $('#limits').textContent = `Niveau KYC ${L.kyc_level} (${L.label}) — plafonds : ${L.perTxnUsd} $ par opération, ${L.dailyUsd} $ par jour, solde max ${L.maxBalanceUsd} $ (contre-valeur).`;
+    await Promise.all([loadWallets(), loadHistory(), loadCards(), loadKyc().catch(() => {})]);
+    let newKey = null;
+    try { newKey = sessionStorage.getItem('pay243_new_key'); sessionStorage.removeItem('pay243_new_key'); } catch {}
+    if (location.hash === '#merchant' || newKey) {
+      $('[data-tab="merchant"]').click();
+      if (newKey) { showKey(newKey); toast('Bienvenue ! Votre compte entreprise est prêt.'); }
+      history.replaceState(null, '', '/app');
+    } else if (location.hash === '#cards') {
+      $('[data-tab="cards"]').click(); history.replaceState(null, '', '/app');
+    } else if (location.hash === '#kyc') {
+      history.replaceState(null, '', '/app');
+      if (KYC?.can_submit) openKyc();
+    }
+  } catch { logout(); }
+}
+async function loadWallets() {
+  const w = await api('GET', '/v1/wallets');
+  w.data.forEach((x) => $('#bal-' + x.currency).textContent = fmt(x.balance, x.currency));
+  window.FX = w.fx;
+}
+async function loadHistory() {
+  const t = await api('GET', '/v1/transactions?limit=30');
+  $('#history').innerHTML = t.data.length ? t.data.map((x) => {
+    const sign = x.direction === 'credit' ? '+' : '−';
+    const label = (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '');
+    const extra = x.type === 'conversion' ? ` → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}` : '';
+    return `<li><div><div><b>${label}</b> <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span></div>
+      <div class="muted">${esc(x.description || '')}${x.counterparty ? ' — ' + esc(x.counterparty) : ''} · ${when(x.created_at)}${x.failure_reason ? '<br><span style="color:var(--err)">' + esc(x.failure_reason) + '</span>' : ''}</div></div>
+      <div class="${x.direction}">${sign}${fmt(x.amount, x.currency)}${extra}${x.fee ? `<div class="muted">frais ${fmt(x.fee, x.currency)}</div>` : ''}</div></li>`;
+  }).join('') : '<li class="muted">Aucune opération pour l\'instant.</li>';
+}
+const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: ME?.timezone }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------------- Vérification d'identité (KYC niveau 2) ----------------
+let KYC = null;
+async function loadKyc() {
+  KYC = await api('GET', '/v1/kyc');
+  const box = $('#kyc-box');
+  const last = KYC.last_submission;
+  if (KYC.kyc_level >= 2) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const n = KYC.next_level;
+  let html = `<h2>Vérification d'identité</h2>`;
+  if (last?.status === 'pending') {
+    html += `<p><span class="pill processing">En cours d'examen</span> Votre ${esc(last.document_label)} a été reçue le ${when(last.created_at)}. Vous serez prévenu dès qu'elle aura été vérifiée.</p>`;
+  } else {
+    if (last?.status === 'rejected') html += `<p class="notice"><b>Demande refusée :</b> ${esc(last.review_note || '')}<br>Vous pouvez envoyer une nouvelle demande.</p>`;
+    html += `<p class="muted">Vérifiez votre identité pour passer à <b>${n.perTxnUsd} $</b> par opération, <b>${n.dailyUsd} $</b> par jour et <b>${n.maxBalanceUsd} $</b> de solde max.</p>
+      <button class="full" id="kyc-start">Vérifier mon identité</button>`;
+  }
+  box.innerHTML = html;
+  const b = $('#kyc-start'); if (b) b.onclick = openKyc;
+}
+
+/** Redimensionne et ré-encode en JPEG dans le navigateur : moins de data mobile, métadonnées EXIF (GPS) supprimées. */
+async function compressImage(file, max = 1600, quality = 0.85) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+  if (!bmp) throw new Error(`Image illisible : ${file.name}. Utilisez une photo JPEG ou PNG.`);
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('Compression impossible'))), 'image/jpeg', quality));
+}
+async function uploadKycFile(kind, file) {
+  const blob = await compressImage(file);
+  const r = await fetch('/v1/kyc/files/' + kind, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Authorization: 'Bearer ' + TOKEN }, body: blob });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error?.message || 'Envoi impossible');
+  return j.id;
+}
+function openKyc() {
+  const types = KYC.document_types;
+  const fileInput = (kind, label, capture) => `<div id="kf-${kind}"><label>${label}</label><input type="file" name="${kind}" accept="image/*" capture="${capture}"></div>`;
+  openModal(`<h3>Vérifier mon identité</h3><p class="muted">Photos nettes, en pleine lumière, sans reflet. Vos documents sont chiffrés et ne sont vus que par l'équipe de conformité.</p>
+    <form><label>Pièce d'identité</label><select name="document_type" id="kt">${types.map((t) => `<option value="${t.id}">${esc(t.label)}</option>`).join('')}</select>
+    <label>Numéro de la pièce</label><input name="document_number" required autocomplete="off">
+    <label>Date de naissance</label><input name="date_of_birth" type="date" required>
+    ${fileInput('id_front', 'Photo du recto', 'environment')}${fileInput('id_back', 'Photo du verso', 'environment')}${fileInput('selfie', 'Selfie en tenant la pièce à côté du visage', 'user')}
+    <button class="full">Envoyer pour vérification</button></form>`, async (d, f) => {
+      const t = types.find((x) => x.id === d.document_type);
+      const kinds = ['id_front', ...(t.needs_back ? ['id_back'] : []), 'selfie'];
+      const files = {};
+      for (const k of kinds) {
+        const file = f.elements[k].files[0];
+        if (!file) throw new Error('Ajoutez toutes les photos demandées.');
+        toast('Envoi des photos… ' + (kinds.indexOf(k) + 1) + '/' + kinds.length);
+        files[k] = await uploadKycFile(k, file);
+      }
+      await api('POST', '/v1/kyc/submissions', { document_type: d.document_type, document_number: d.document_number, date_of_birth: d.date_of_birth, files });
+      closeModal(); toast('Demande envoyée. Vous serez prévenu après vérification.'); loadKyc();
+    });
+  const sync = () => $('#kf-id_back').classList.toggle('hidden', !types.find((x) => x.id === $('#kt').value).needs_back);
+  $('#kt').onchange = sync; sync();
+}
+
+function openModal(html, onSubmit) {
+  $('#modal-body').innerHTML = html + '<button class="link full" data-close>Annuler</button>';
+  $('#modal').classList.remove('hidden');
+  $('[data-close]').onclick = closeModal;
+  const f = $('#modal-body form');
+  if (f) f.onsubmit = (e) => { e.preventDefault(); busy(e.submitter, () => onSubmit(formData(f), f)); };
+}
+function closeModal() { $('#modal').classList.add('hidden'); }
+$('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
+
+const curSelect = `<label>Devise</label><select name="currency"><option value="USD">USD — Dollar</option><option value="CDF">CDF — Franc congolais</option></select>`;
+const amountInput = `<label>Montant</label><input name="amount" type="number" step="0.01" min="0.01" required>`;
+const pinInput = `<label>PIN de transaction</label><input name="pin" type="password" inputmode="numeric" required>`;
+const opPicker = (sel) => `<label>Opérateur</label><div class="op">${Object.entries(OPS).map(([k, v]) => `<label><input type="radio" name="operator" value="${k}" ${k === sel ? 'checked' : ''}><span><i class="dot ${k}"></i>${v}</span></label>`).join('')}</div>`;
+
+async function pollTxn(id) {
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const t = await api('GET', '/v1/transactions/' + id);
+    if (t.status !== 'pending') {
+      t.status === 'succeeded' ? toast(`${TYPE_LABEL[t.type]} confirmé(e) : ${fmt(t.amount, t.currency)}`) : toast(t.failure_reason || 'Opération échouée', true);
+      return Promise.all([loadWallets(), loadHistory()]);
+    }
+  }
+}
+
+const ACTIONS = {
+  topup() {
+    const def = detectOp(ME.phone);
+    openModal(`<h3>Recharger mon wallet</h3><p class="muted">Par Mobile Money ou par carte enregistrée.</p>
+      <form><label>Moyen</label><select name="method" id="tm"><option value="mobile_money">Mobile Money</option><option value="card" ${CARDS.length ? '' : 'disabled'}>Carte enregistrée${CARDS.length ? '' : ' (aucune)'}</option></select>
+      <div id="mm">${opPicker(def)}<label>Numéro Mobile Money</label><input name="phone" value="${ME.phone || ''}" placeholder="0812345678" inputmode="tel" id="tp"></div>
+      <div id="cc" class="hidden"><label>Carte</label><select name="card_id">${CARDS.map((c) => `<option value="${c.id}">${c.brand.toUpperCase()} •••• ${c.last4}</option>`).join('')}</select></div>
+      ${amountInput}${curSelect}<button class="full">Recharger</button></form>`, async (d) => {
+        const body = { method: d.method, amount: toMinor(d.amount), currency: d.currency };
+        if (d.method === 'mobile_money') Object.assign(body, { phone: d.phone, operator: d.operator }); else body.card_id = d.card_id;
+        const t = await api('POST', '/v1/topups', body, { 'Idempotency-Key': crypto.randomUUID() });
+        closeModal(); loadHistory();
+        if (t.status === 'pending') { toast(t.next_action?.message || 'Confirmez sur votre téléphone'); pollTxn(t.id); } else { toast('Recharge réussie'); loadWallets(); }
+      });
+    $('#tm').onchange = (e) => { $('#mm').classList.toggle('hidden', e.target.value !== 'mobile_money'); $('#cc').classList.toggle('hidden', e.target.value !== 'card'); };
+    $('#tp').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
+  },
+  send() {
+    openModal(`<h3>Envoyer de l'argent</h3><p class="muted">Vers un autre utilisateur Pay243, instantané et gratuit.</p>
+      <form><label>@identifiant, email ou numéro du destinataire</label><input name="to" placeholder="@grace.mbuyi, ami@exemple.com ou 0812345678" required autocomplete="off" autocapitalize="none">${amountInput}${curSelect}
+      <label>Motif (facultatif)</label><input name="note">${pinInput}<button class="full">Envoyer</button></form>`, async (d) => {
+        await api('POST', '/v1/transfers', { ...d, amount: toMinor(d.amount) }, { 'Idempotency-Key': crypto.randomUUID() });
+        closeModal(); toast('Transfert effectué'); loadWallets(); loadHistory();
+      });
+  },
+  withdraw() {
+    openModal(`<h3>Retirer vers Mobile Money</h3><p class="muted">Frais : 1 %. Vous pouvez aussi envoyer vers le numéro d'un proche.</p>
+      <form>${opPicker(detectOp(ME.phone))}<label>Numéro bénéficiaire</label><input name="phone" value="${ME.phone || ''}" placeholder="0812345678" inputmode="tel" required id="wp">
+      ${amountInput}${curSelect}${pinInput}<button class="full">Retirer</button></form>`, async (d) => {
+        const t = await api('POST', '/v1/withdrawals', { ...d, amount: toMinor(d.amount) }, { 'Idempotency-Key': crypto.randomUUID() });
+        closeModal(); toast('Retrait en cours de traitement…'); loadWallets(); loadHistory(); pollTxn(t.id);
+      });
+    $('#wp').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
+  },
+  convert() {
+    openModal(`<h3>Convertir CDF ⇄ USD</h3><p class="muted">Taux indicatif : 1 $ = ${FX.usd_to_cdf.toLocaleString('fr-FR')} FC (marge ${FX.spread_percent} %).</p>
+      <form><label>De</label><select name="from_currency"><option>USD</option><option>CDF</option></select>
+      <label>Vers</label><select name="to_currency"><option>CDF</option><option>USD</option></select>${amountInput}${pinInput}<button class="full">Convertir</button></form>`, async (d) => {
+        const t = await api('POST', '/v1/conversions', { ...d, amount: toMinor(d.amount) }, { 'Idempotency-Key': crypto.randomUUID() });
+        closeModal(); toast(`Vous avez reçu ${fmt(t.metadata.to_amount, t.metadata.to_currency)}`); loadWallets(); loadHistory();
+      });
+  },
+};
+$$('[data-open]').forEach((b) => b.onclick = () => ACTIONS[b.dataset.open]());
+
+// ---------------- Cartes ----------------
+async function loadCards() {
+  const c = await api('GET', '/v1/cards'); CARDS = c.data;
+  $('#cards').innerHTML = CARDS.length ? CARDS.map((x) => `<li><div><b>${x.brand.toUpperCase()}</b> •••• ${x.last4}<div class="muted">Expire ${String(x.exp_month).padStart(2, '0')}/${x.exp_year}</div></div><button class="link" data-del="${x.id}">Supprimer</button></li>`).join('') : '<li class="muted">Aucune carte enregistrée.</li>';
+  $$('[data-del]').forEach((b) => b.onclick = () => busy(b, async () => { await api('DELETE', '/v1/cards/' + b.dataset.del); loadCards(); }));
+}
+$('#f-card').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  // 1) tokenisation côté "processeur" (sandbox) — 2) enregistrement du jeton uniquement
+  const { token } = await api('POST', '/sandbox/cards/tokenize', formData(e.target));
+  await api('POST', '/v1/cards', { token });
+  e.target.reset(); toast('Carte enregistrée'); loadCards();
+}); };
+
+// ---------------- Marchand ----------------
+async function loadMerchant() {
+  let m;
+  try { m = await api('GET', '/v1/merchants/me'); } catch { $('#m-none').classList.remove('hidden'); $('#m-yes').classList.add('hidden'); return; }
+  $('#m-none').classList.add('hidden'); $('#m-yes').classList.remove('hidden');
+  $('#m-bal').innerHTML = m.balances.map((b) => `<div class="balance ${b.currency === 'USD' ? 'usd' : ''}"><small>${esc(m.name)} · ${b.currency}</small><div class="amt">${fmt(b.balance, b.currency)}</div></div>`).join('');
+  $('#m-keys').innerHTML = m.api_keys.map((k) => `<li><span class="mono">${k.preview}</span><span class="pill">${k.mode}</span></li>`).join('');
+  $('#m-whsec').textContent = m.webhook_secret;
+  $('#f-webhook').webhook_url.value = m.webhook_url || '';
+  const p = await api('GET', '/v1/merchants/me/payments');
+  $('#m-payments').innerHTML = p.data.length ? p.data.map((x) => `<li><div><b>${esc(x.description || x.id)}</b> <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span><div class="muted">${x.method ? (x.method === 'mobile_money' ? OPS[x.payer?.operator] : x.method === 'card' ? 'Carte' : 'Wallet Pay243') + ' · ' : ''}${when(x.created_at)}</div></div><div><b>${fmt(x.amount, x.currency)}</b>${x.net != null ? `<div class="muted">net ${fmt(x.net, x.currency)}</div>` : ''}</div></li>`).join('') : '<li class="muted">Aucun paiement.</li>';
+}
+$('#f-merchant').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const d = formData(e.target); if (!d.webhook_url) delete d.webhook_url;
+  const m = await api('POST', '/v1/merchants', d);
+  await loadMerchant(); showKey(m.secret_key);
+}); };
+function showKey(k) { $('#m-key').textContent = k; $('#m-key-new').classList.remove('hidden'); }
+$('#m-newkey').onclick = (e) => busy(e.target, async () => { const r = await api('POST', '/v1/merchants/me/keys', { mode: 'test' }); showKey(r.secret_key); loadMerchant(); });
+$('#f-webhook').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => { await api('PATCH', '/v1/merchants/me', { webhook_url: e.target.webhook_url.value || null }); toast('Webhook enregistré'); }); };
+$('#f-link').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const d = formData(e.target);
+  const p = await api('POST', '/v1/merchants/me/payment-links', { ...d, amount: toMinor(d.amount) });
+  $('#link-url').textContent = p.checkout_url; $('#link-out').classList.remove('hidden');
+  $('#link-wa').href = 'https://wa.me/?text=' + encodeURIComponent(`Bonjour, voici votre lien de paiement Pay243 (${fmt(p.amount, p.currency)}) : ${p.checkout_url}`);
+  loadMerchant();
+}); };
+$('#link-copy').onclick = () => { navigator.clipboard?.writeText($('#link-url').textContent); toast('Lien copié'); };
+
+if (TOKEN) boot();
+</script>
+</body>
+</html>

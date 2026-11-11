@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paiement sécurisé — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  .sum { text-align: center; padding: 8px 0 18px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .sum .amt { font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
+  .methods { display: grid; gap: 8px; }
+  .methods button { justify-content: flex-start; background: #fff; color: var(--ink); border: 1.5px solid var(--line); padding: 14px; }
+  .methods button.on { border-color: var(--blue); background: #eef5ff; }
+  .state { text-align: center; padding: 26px 8px; }
+  .state .big { font-size: 46px; }
+  .spinner { width: 42px; height: 42px; border: 4px solid #dbe6f5; border-top-color: var(--blue); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 14px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  .secure { text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<main class="center" style="margin-top:4vh">
+  <div style="display:flex;justify-content:center;margin-bottom:14px"><div class="brand"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></div></div>
+  <div class="card" id="box"><div class="state"><div class="spinner"></div>Chargement…</div></div>
+  <p class="muted secure">🔒 Paiement sécurisé · Wallet · M-Pesa · Airtel Money · Orange Money · Visa / Mastercard</p>
+</main>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const ID = location.pathname.split('/').pop();
+let TOKEN = null; try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+let P = null; let METHOD = 'mobile_money';
+const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
+const fmt = (m, c) => c === 'USD' ? (m / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $' : (m / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const detectOp = (phone) => { const d = String(phone).replace(/\D/g, '').replace(/^243/, '').replace(/^0/, '').slice(0, 2);
+  return ['81','82','83'].includes(d) ? 'mpesa' : ['97','98','99'].includes(d) ? 'airtel' : ['80','84','85','89'].includes(d) ? 'orange' : null; };
+
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code, details: j.error?.details });
+  return j;
+}
+const DEVICE_ID = (() => {
+  try { let d = localStorage.getItem('pay243_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('pay243_device', d); } return d; }
+  catch { return null; }
+})();
+const err = (m) => { const e = $('#err'); if (e) { e.textContent = m; e.classList.remove('hidden'); } };
+
+async function load() {
+  try { P = await api('GET', '/v1/checkout/' + ID); } catch (e) {
+    if (TOKEN) { TOKEN = null; return load(); }
+    $('#box').innerHTML = `<div class="state"><div class="big">⚠️</div><b>${esc(e.message)}</b></div>`; return;
+  }
+  render();
+}
+
+function header() {
+  return `<div class="sum"><div class="muted">Paiement à <b>${esc(P.merchant.name)}</b></div><div class="amt">${fmt(P.amount, P.currency)}</div>
+    ${P.description ? `<div class="muted">${esc(P.description)}</div>` : ''}${P.sandbox ? '<span class="pill">MODE TEST</span>' : ''}</div>`;
+}
+
+function render() {
+  if (P.status === 'succeeded' || P.status === 'refunded' || P.status === 'partially_refunded') return done();
+  if (P.status === 'processing') return waiting();
+  if (['canceled', 'expired'].includes(P.status)) {
+    $('#box').innerHTML = header() + `<div class="state"><div class="big">⏱️</div><b>${P.status === 'expired' ? 'Ce lien de paiement a expiré.' : 'Ce paiement a été annulé.'}</b></div>`; return;
+  }
+  $('#box').innerHTML = header() + `
+    <div class="methods">
+      <button data-m="mobile_money"><span class="dot mpesa"></span><span class="dot airtel"></span><span class="dot orange"></span>&nbsp;Mobile Money</button>
+      <button data-m="wallet">👛&nbsp; Wallet Pay243</button>
+      <button data-m="card">💳&nbsp; Carte bancaire</button>
+    </div>
+    <div id="pane" style="margin-top:14px"></div>
+    <p id="err" class="notice ${P.last_error ? '' : 'hidden'}" style="margin-top:12px;color:var(--err)">${esc(P.last_error || '')}</p>
+    ${P.cancel_url ? `<a href="${esc(P.cancel_url)}"><button class="link full">Annuler et retourner chez le marchand</button></a>` : ''}`;
+  document.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { METHOD = b.dataset.m; pane(); });
+  pane();
+}
+
+function pane() {
+  document.querySelectorAll('[data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === METHOD));
+  const el = $('#pane');
+  if (METHOD === 'mobile_money') {
+    el.innerHTML = `<form id="f"><label>Votre numéro Mobile Money</label><input name="phone" inputmode="tel" placeholder="0812345678" required id="ph">
+      <div class="op" style="margin-top:10px">${P.operators.map((o) => `<label><input type="radio" name="operator" value="${o.id}"><span><i class="dot ${o.id}"></i>${o.label.replace(' (Vodacom)', '')}</span></label>`).join('')}</div>
+      <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
+      ${P.sandbox ? '<p class="muted">Test : un numéro finissant par 0000 simule un refus.</p>' : ''}</form>`;
+    $('#ph').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
+    $('#f').onsubmit = submit((d) => ({ method: 'mobile_money', phone: d.phone, operator: d.operator }));
+  } else if (METHOD === 'wallet') {
+    if (!P.customer) {
+      el.innerHTML = `<form id="f"><p class="muted">Connectez-vous à votre wallet Pay243.</p><label>Email ou téléphone</label><input name="identifier" required autocomplete="username">
+        <label>Mot de passe</label><input name="password" type="password" required>
+        <div id="otpbox" class="hidden"><label>Code de vérification (nouvel appareil)</label><input name="otp_code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+        <button class="full">Se connecter</button>
+        <p class="muted">Pas de compte ? <a href="/signup" target="_blank">Créer un wallet</a></p></form>`;
+      $('#f').onsubmit = async (e) => { e.preventDefault(); e.submitter.disabled = true;
+        const d = Object.fromEntries(new FormData(e.target)); if (!d.otp_code) delete d.otp_code;
+        if (DEVICE_ID) d.device_id = DEVICE_ID;
+        try { const r = await api('POST', '/v1/auth/login', d); TOKEN = r.token; try { sessionStorage.setItem('pay243_token', TOKEN); } catch {} await load(); }
+        catch (x) {
+          if (x.code === 'otp_required') { $('#otpbox').classList.remove('hidden'); $('#otpbox input').required = true; $('#otpbox input').focus(); }
+          err(x.message + (x.details?.sandbox_code ? ` (sandbox : ${x.details.sandbox_code})` : '')); e.submitter.disabled = false;
+        } };
+    } else {
+      const enough = P.customer.balance >= P.amount;
+      el.innerHTML = `<form id="f"><p>Bonjour <b>${esc(P.customer.full_name)}</b>. Solde ${P.currency} : <b>${fmt(P.customer.balance, P.currency)}</b></p>
+        ${enough ? '' : '<p class="notice">Solde insuffisant. <a href="/app" target="_blank">Recharger mon wallet</a> puis réessayez.</p>'}
+        <label>PIN de transaction</label><input name="pin" type="password" inputmode="numeric" required>
+        <button class="full" ${enough ? '' : 'disabled'}>Payer ${fmt(P.amount, P.currency)}</button></form>`;
+      $('#f').onsubmit = submit((d) => ({ method: 'wallet', pin: d.pin }));
+    }
+  } else {
+    const saved = P.customer?.cards || [];
+    el.innerHTML = `<form id="f">
+      ${saved.length ? `<label>Carte enregistrée</label><select name="card_id"><option value="">— Nouvelle carte —</option>${saved.map((c) => `<option value="${c.id}">${c.brand.toUpperCase()} •••• ${c.last4}</option>`).join('')}</select>` : ''}
+      <div id="newcard"><label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number">
+      <div class="row"><div><label>MM</label><input name="exp_month"></div><div><label>AAAA</label><input name="exp_year"></div><div><label>CVC</label><input name="cvc"></div></div></div>
+      <div id="pinbox" class="hidden"><label>PIN Pay243</label><input name="pin" type="password" inputmode="numeric"></div>
+      <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
+      ${P.sandbox ? '<p class="muted">Test : 4242 4242 4242 4242 (acceptée), 4000 0000 0000 0002 (refusée).</p>' : ''}</form>`;
+    const sel = $('select[name=card_id]');
+    if (sel) sel.onchange = () => { $('#newcard').classList.toggle('hidden', !!sel.value); $('#pinbox').classList.toggle('hidden', !sel.value); };
+    $('#f').onsubmit = submit(async (d) => {
+      if (d.card_id) return { method: 'card', card_id: d.card_id, pin: d.pin };
+      // En production : tokenisation par le SDK du processeur de cartes (le PAN ne touche jamais Pay243).
+      const { token } = await api('POST', '/sandbox/cards/tokenize', { number: d.number, exp_month: d.exp_month, exp_year: d.exp_year, cvc: d.cvc });
+      return { method: 'card', token };
+    });
+  }
+}
+
+function submit(build) {
+  return async (e) => {
+    e.preventDefault(); const btn = e.submitter; btn.disabled = true;
+    try { const body = await build(Object.fromEntries(new FormData(e.target))); P = { ...P, ...(await api('POST', `/v1/checkout/${ID}/pay`, body)) }; render(); }
+    catch (x) { err(x.message); btn.disabled = false; }
+  };
+}
+
+function waiting() {
+  $('#box').innerHTML = header() + `<div class="state"><div class="spinner"></div><b>Confirmez le paiement sur votre téléphone</b>
+    <p class="muted">Une demande ${P.operators.length ? 'Mobile Money' : ''} a été envoyée. Saisissez votre PIN opérateur pour valider.</p></div>`;
+  setTimeout(async () => { try { P = await api('GET', '/v1/checkout/' + ID); } catch {} render(); }, 2500);
+}
+
+function done() {
+  const url = P.return_url ? `${P.return_url}${P.return_url.includes('?') ? '&' : '?'}payment_id=${encodeURIComponent(P.id)}` : null;
+  $('#box').innerHTML = header() + `<div class="state"><div class="big">✅</div><b>Paiement réussi</b><p class="muted">Merci ! ${esc(P.merchant.name)} a reçu votre paiement.</p>
+    ${url ? `<a href="${esc(url)}"><button class="full">Retour chez le marchand</button></a>` : ''}</div>`;
+  if (url) setTimeout(() => { location.href = url; }, 4000);
+}
+
+load();
+</script>
+</body>
+</html>

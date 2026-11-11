@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Créer un compte — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Ouvrez gratuitement votre compte Pay243, particulier ou entreprise, avec votre adresse email.">
+<meta name="theme-color" content="#0a2a66">
+<link rel="stylesheet" href="/assets/landing.css">
+<style>
+  .nav .nav-cta { display: flex !important; }
+  .nav .nav-cta .btn-light { display: inline-flex !important; }
+  .signup-bg { background: var(--soft); padding: 72px 0 96px; min-height: calc(100vh - 72px); }
+  .signup-head { text-align: center; margin-bottom: 36px; }
+  .signup-head .kicker { font-weight: 700; font-size: 16px; margin: 0 0 14px; }
+  .signup-head h1 { font: 800 clamp(34px, 4.4vw, 54px)/1.04 var(--display); letter-spacing: -.04em; margin: 0 auto; max-width: 22ch; text-wrap: balance; }
+  .panel { background: #fff; border-radius: 22px; box-shadow: 0 1px 2px rgba(11, 20, 36, .04), 0 20px 60px rgba(11, 20, 36, .06); max-width: 860px; margin: 0 auto; padding: 36px; }
+  .panel.narrow { max-width: 520px; }
+  .steps { display: flex; justify-content: center; gap: 8px; margin: 0 0 28px; list-style: none; padding: 0; }
+  .steps li { width: 34px; height: 5px; border-radius: 99px; background: var(--line); }
+  .steps li.on { background: var(--ink); }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .choice { position: relative; display: block; border: 2px solid var(--line); border-radius: 18px; padding: 28px 26px; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; }
+  .choice:hover { border-color: #c9d3e3; }
+  .choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .choice:has(input:checked) { border-color: var(--ink); background: #fafbfd; box-shadow: 0 10px 30px rgba(11, 20, 36, .07); }
+  .choice:has(input:focus-visible) { outline: 3px solid rgba(0, 87, 217, .35); outline-offset: 3px; }
+  .choice .top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .radio { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #b8c1d1; flex: none; display: grid; place-items: center; transition: border-color .15s; }
+  .choice:has(input:checked) .radio { border-color: var(--blue); }
+  .choice:has(input:checked) .radio::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
+  .choice h2 { font: 800 28px/1.1 var(--display); letter-spacing: -.03em; margin: 0; }
+  .choice .ico { margin-left: auto; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: #e9f0ff; color: var(--blue); }
+  .choice.biz .ico { background: #fff6cc; color: #8a6d00; }
+  .choice p { color: var(--ink-2); margin: 0 0 14px; }
+  .choice ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .choice li { display: flex; gap: 10px; font-size: 15px; color: var(--ink-2); }
+  .choice li::before { content: ""; flex: none; width: 20px; height: 20px; border-radius: 50%; margin-top: 1px; background: #e9f0ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230057d9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 12px no-repeat; }
+  .actions { display: flex; justify-content: center; margin-top: 30px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--ink-2); }
+  .field label small { font-weight: 500; color: var(--muted); }
+  .field input { width: 100%; font: 16px var(--text); padding: 15px 16px; border-radius: 12px; border: 1.5px solid #d6dce6; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+  .field input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 87, 217, .12); }
+  .field .hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pw { position: relative; }
+  .pw button { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--blue); font: 600 14px var(--text); cursor: pointer; padding: 8px; }
+  .meter { height: 5px; border-radius: 99px; background: var(--line); margin-top: 8px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .2s, background .2s; }
+  .code-input { letter-spacing: 12px; text-align: center; font: 800 28px var(--display) !important; padding: 14px !important; }
+  .panel h2.step-title { font: 800 30px/1.1 var(--display); letter-spacing: -.03em; margin: 0 0 8px; }
+  .panel .step-sub { color: var(--ink-2); margin: 0 0 24px; }
+  .who { display: inline-flex; align-items: center; gap: 8px; background: var(--soft); border-radius: 999px; padding: 6px 6px 6px 14px; font-weight: 600; font-size: 14px; margin-bottom: 22px; }
+  .who button { border: 0; background: #fff; border-radius: 999px; padding: 6px 12px; font: 600 13px var(--text); cursor: pointer; color: var(--blue); }
+  .full { width: 100%; }
+  .err { display: none; background: #fdecee; color: #a3121f; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
+  .err.on { display: block; }
+  .note { background: #fff6cc; color: #5c4a00; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--ink-2); margin: 6px 0 18px; }
+  .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue); }
+  .resend { background: none; border: 0; color: var(--blue); font: 600 14px var(--text); cursor: pointer; padding: 0; }
+  .resend:disabled { color: var(--muted); cursor: default; }
+  .alt { text-align: center; margin-top: 20px; font-size: 15px; color: var(--muted); }
+  .alt a { color: var(--blue); font-weight: 600; text-decoration: none; }
+  .divider { height: 1px; background: var(--line); margin: 8px 0 22px; }
+  [data-step] { display: none; }
+  [data-step].on { display: block; animation: fade .35s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .site-footer { background: #000; color: #fff; padding: 64px 0 48px; }
+  .site-footer .logo { color: #fff; font-size: 26px; }
+  .site-footer .logo b { color: #7fb0ff; }
+  .site-footer nav { display: flex; flex-wrap: wrap; gap: 10px 26px; margin: 28px 0 20px; padding-bottom: 20px; border-bottom: 1px solid #2a2a2a; }
+  .site-footer nav a { color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; }
+  .site-footer nav a:hover { text-decoration: underline; }
+  .site-footer p { color: #b9b9b9; font-size: 13px; line-height: 1.6; margin: 0; max-width: 90ch; }
+
+  @media (max-width: 760px) {
+    .signup-bg { padding: 40px 0 64px; }
+    .panel { padding: 24px 18px; border-radius: 18px; }
+    .choices, .row2 { grid-template-columns: 1fr; }
+    .choice { padding: 22px 20px; }
+    .actions .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <nav aria-label="Navigation principale">
+      <ul class="menu">
+        <li><a href="/#particuliers">Particuliers</a></li>
+        <li><a href="/#entreprises">Entreprises</a></li>
+        <li><a href="/docs">Développeurs</a></li>
+      </ul>
+    </nav>
+    <div class="nav-cta">
+      <a class="link-help" href="/#aide">Aide</a>
+      <a class="btn btn-light" href="/app">Se connecter</a>
+    </div>
+  </div>
+</header>
+
+<main class="signup-bg">
+  <div class="wrap">
+    <div class="signup-head">
+      <p class="kicker">Ouvrir un compte Pay243</p>
+      <h1 id="headline">Payez, envoyez et encaissez en toute confiance.</h1>
+    </div>
+
+    <!-- Étape 1 : type de compte -->
+    <section class="panel on" data-step="1" aria-labelledby="headline">
+      <ol class="steps" aria-label="Étape 1 sur 3"><li class="on"></li><li></li><li></li></ol>
+      <form id="f-type">
+        <div class="choices" role="radiogroup" aria-label="Type de compte">
+          <label class="choice">
+            <input type="radio" name="account_type" value="personal" checked>
+            <div class="top"><span class="radio"></span><h2>Particulier</h2>
+              <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span></div>
+            <p>Envoyez, payez et gérez votre argent depuis une seule app sécurisée.</p>
+            <ul>
+              <li>Rechargez avec M-Pesa, Airtel Money, Orange Money ou votre carte</li>
+              <li>Envoyez gratuitement à vos proches, en CDF ou en dollars</li>
+              <li>Payez en ligne sans communiquer vos coordonnées</li>
+            </ul>
+          </label>
+          <label class="choice biz">
+            <input type="radio" name="account_type" value="business">
+            <div class="top"><span class="radio"></span><h2>Entreprise</h2>
+              <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M10 20v-6h4v6"/></svg></span></div>
+            <p>Vendez en ligne, en boutique ou sur WhatsApp, et développez votre activité.</p>
+            <ul>
+              <li>Acceptez le wallet Pay243, le Mobile Money des trois opérateurs et les cartes</li>
+              <li>Liens de paiement, page de paiement hébergée et API pour développeurs</li>
+              <li>Commission de 2,5 % par paiement, sans abonnement</li>
+            </ul>
+          </label>
+        </div>
+        <div class="actions"><button class="btn btn-dark btn-lg" style="min-width:220px">Commencer</button></div>
+      </form>
+    </section>
+
+    <!-- Étape 2 : adresse email -->
+    <section class="panel narrow" data-step="2">
+      <ol class="steps" aria-label="Étape 2 sur 3"><li class="on"></li><li class="on"></li><li></li></ol>
+      <h2 class="step-title">Quelle est votre adresse email ?</h2>
+      <p class="step-sub">Elle vous servira à vous connecter. Nous vous envoyons un code pour la vérifier.</p>
+      <div class="err" id="err2" role="alert"></div>
+      <form id="f-email" novalidate>
+        <div class="field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="vous@exemple.com"></div>
+        <button class="btn btn-dark btn-lg full">Continuer</button>
+      </form>
+      <p class="alt"><button type="button" class="resend" data-back="1">← Changer de type de compte</button></p>
+      <p class="alt">Vous avez déjà un compte ? <a href="/app">Se connecter</a></p>
+    </section>
+
+    <!-- Étape 3 : vérification + informations -->
+    <section class="panel narrow" data-step="3">
+      <ol class="steps" aria-label="Étape 3 sur 3"><li class="on"></li><li class="on"></li><li class="on"></li></ol>
+      <h2 class="step-title">Vérifiez votre email</h2>
+      <p class="step-sub">Saisissez le code à 6 chiffres envoyé à :</p>
+      <div class="who"><span id="who-email"></span><button type="button" data-back="2">Modifier</button></div>
+      <div class="note" id="sandbox-note" hidden></div>
+      <div class="err" id="err3" role="alert"></div>
+      <form id="f-account" novalidate>
+        <div class="field">
+          <label for="otp">Code de vérification</label>
+          <input id="otp" name="otp_code" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" required>
+          <div class="hint"><button type="button" class="resend" id="resend" disabled>Renvoyer le code</button> <span id="resend-timer"></span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field" data-biz hidden><label for="business_name">Nom de l'entreprise</label><input id="business_name" name="business_name" autocomplete="organization" placeholder="Ex : Boutique Kin Mode"></div>
+        <div class="field"><label for="full_name" id="name-label">Nom complet</label><input id="full_name" name="full_name" autocomplete="name" required placeholder="Ex : Grace Mbuyi"></div>
+        <div class="field"><label for="phone">Numéro Mobile Money <small>(facultatif)</small></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678">
+          <div class="hint">M-Pesa, Airtel Money ou Orange Money : utile pour recharger et retirer. Vous pourrez l'ajouter plus tard.</div></div>
+        <div class="field"><label for="password">Mot de passe</label>
+          <div class="pw"><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-toggle="password">Afficher</button></div>
+          <div class="meter"><i id="meter"></i></div><div class="hint" id="pw-hint">8 caractères minimum. Mélangez lettres, chiffres et symboles.</div></div>
+        <div class="row2">
+          <div class="field"><label for="pin">PIN de transaction</label><input id="pin" name="pin" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required placeholder="4 à 6 chiffres"></div>
+          <div class="field"><label for="pin2">Confirmer le PIN</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
+        </div>
+        <label class="consent"><input type="checkbox" id="consent" required>
+          <span>J'accepte les conditions d'utilisation et la politique de confidentialité de Pay243, et je confirme avoir au moins 18 ans.</span></label>
+        <button class="btn btn-dark btn-lg full" id="create">Créer mon compte</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <a class="logo on-dark" href="/"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <nav aria-label="Liens utiles">
+      <a href="/#aide">Aide</a><a href="/#particuliers">Particuliers</a><a href="/#entreprises">Entreprises</a><a href="/#securite">Sécurité</a><a href="/docs">Développeurs</a><a href="/app">Se connecter</a>
+    </nav>
+    <p>© <span id="year"></span> Pay243 — Kinshasa, République démocratique du Congo. Version de démonstration : aucune transaction réelle n'est effectuée. Les services de monnaie électronique seront proposés dans le cadre réglementaire de la Banque Centrale du Congo.</p>
+  </div>
+</footer>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const state = { type: new URLSearchParams(location.search).get('type') === 'business' ? 'business' : 'personal', email: '' };
+const DEVICE_ID = (() => {
+  try { let d = localStorage.getItem('pay243_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('pay243_device', d); } return d; }
+  catch { return null; }
+})();
+
+async function api(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error?.message || 'Erreur réseau. Réessayez.'), { code: j.error?.code, details: j.error?.details });
+  return j;
+}
+const showErr = (id, msg) => { const e = $(id); e.textContent = msg || ''; e.classList.toggle('on', !!msg); };
+async function busy(btn, label, fn) {
+  const old = btn.textContent; btn.disabled = true; btn.textContent = label;
+  try { await fn(); } finally { btn.disabled = false; btn.textContent = old; }
+}
+
+const HEADLINES = {
+  1: 'Payez, envoyez et encaissez en toute confiance.',
+  personal: 'Créez votre compte personnel.',
+  business: 'Créez votre compte entreprise.',
+};
+function go(step) {
+  $$('[data-step]').forEach((s) => s.classList.toggle('on', s.dataset.step === String(step)));
+  $('#headline').textContent = step === 1 ? HEADLINES[1] : HEADLINES[state.type];
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const focus = { 2: '#email', 3: '#otp' }[step];
+  if (focus) setTimeout(() => $(focus).focus(), 50);
+}
+$$('[data-back]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.back))));
+
+// Étape 1
+$(`input[name=account_type][value=${state.type}]`).checked = true;
+$('#f-type').addEventListener('submit', (e) => {
+  e.preventDefault();
+  state.type = new FormData(e.target).get('account_type');
+  const biz = state.type === 'business';
+  $$('[data-biz]').forEach((el) => { el.hidden = !biz; el.querySelector('input').required = biz; });
+  $('#name-label').textContent = biz ? 'Votre nom complet (responsable du compte)' : 'Nom complet';
+  go(2);
+});
+
+// Étape 2
+let timer;
+function startResendTimer() {
+  let left = 60; $('#resend').disabled = true; clearInterval(timer);
+  const tick = () => { $('#resend-timer').textContent = left > 0 ? `(dans ${left} s)` : ''; if (left-- <= 0) { clearInterval(timer); $('#resend').disabled = false; } };
+  tick(); timer = setInterval(tick, 1000);
+}
+async function sendCode() {
+  const r = await api('/v1/auth/otp', { email: state.email, purpose: 'register' });
+  $('#who-email').textContent = r.email;
+  const note = $('#sandbox-note');
+  note.hidden = !r.sandbox_code;
+  if (r.sandbox_code) note.textContent = `Mode démonstration : aucun email n'est envoyé. Votre code est ${r.sandbox_code}.`;
+  startResendTimer();
+}
+$('#f-email').addEventListener('submit', (e) => {
+  e.preventDefault(); showErr('#err2');
+  const email = $('#email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return showErr('#err2', 'Saisissez une adresse email valide, par exemple vous@exemple.com.');
+  busy(e.submitter, 'Envoi du code…', async () => {
+    try { state.email = email; await sendCode(); go(3); }
+    catch (x) {
+      if (x.code === 'otp_too_soon' && $('#who-email').textContent === email.toLowerCase()) return go(3);
+      showErr('#err2', x.code === 'email_taken' ? `${x.message}` : x.message);
+    }
+  });
+});
+$('#resend').addEventListener('click', async () => {
+  showErr('#err3');
+  try { await sendCode(); } catch (x) { showErr('#err3', x.message); }
+});
+
+// Étape 3
+$$('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
+  const i = document.getElementById(b.dataset.toggle);
+  i.type = i.type === 'password' ? 'text' : 'password';
+  b.textContent = i.type === 'password' ? 'Afficher' : 'Masquer';
+}));
+$('#password').addEventListener('input', (e) => {
+  const v = e.target.value;
+  const score = [v.length >= 8, v.length >= 12, /[a-z]/.test(v) && /[A-Z]/.test(v), /\d/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+  const m = $('#meter');
+  m.style.width = `${(score / 5) * 100}%`;
+  m.style.background = score <= 2 ? '#ce1021' : score === 3 ? '#e0a100' : '#12a150';
+  $('#pw-hint').textContent = !v ? '8 caractères minimum. Mélangez lettres, chiffres et symboles.' : score <= 2 ? 'Mot de passe faible.' : score === 3 ? 'Mot de passe correct.' : 'Mot de passe solide.';
+});
+$('#otp').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
+
+$('#f-account').addEventListener('submit', (e) => {
+  e.preventDefault(); showErr('#err3');
+  const d = Object.fromEntries(new FormData(e.target));
+  if (!/^\d{6}$/.test(d.otp_code)) return showErr('#err3', 'Saisissez le code à 6 chiffres reçu par email.');
+  if (state.type === 'business' && (d.business_name || '').trim().length < 2) return showErr('#err3', "Indiquez le nom de votre entreprise.");
+  if ((d.full_name || '').trim().length < 3) return showErr('#err3', 'Indiquez votre nom complet.');
+  if ((d.password || '').length < 8) return showErr('#err3', 'Le mot de passe doit contenir au moins 8 caractères.');
+  if (!/^\d{4,6}$/.test(d.pin)) return showErr('#err3', 'Le PIN doit comporter 4 à 6 chiffres.');
+  if (d.pin !== $('#pin2').value) return showErr('#err3', 'Les deux PIN ne correspondent pas.');
+  if (!$('#consent').checked) return showErr('#err3', "Acceptez les conditions d'utilisation pour continuer.");
+  const body = { account_type: state.type, email: state.email, otp_code: d.otp_code, full_name: d.full_name, password: d.password, pin: d.pin };
+  if (d.phone) body.phone = d.phone;
+  if (state.type === 'business') body.business_name = d.business_name;
+  if (DEVICE_ID) Object.assign(body, { device_id: DEVICE_ID, device_label: navigator.userAgent.slice(0, 120) });
+  busy(e.submitter, 'Création du compte…', async () => {
+    try {
+      const r = await api('/v1/auth/register', body);
+      try {
+        sessionStorage.setItem('pay243_token', r.token);
+        if (r.merchant?.secret_key) sessionStorage.setItem('pay243_new_key', r.merchant.secret_key);
+      } catch {}
+      location.href = r.merchant ? '/app#merchant' : '/app';
+    } catch (x) {
+      showErr('#err3', x.message);
+      if (['email_taken'].includes(x.code)) go(2);
+    }
+  });
+});
+
+document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

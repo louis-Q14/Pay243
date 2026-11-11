@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paramètres — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a66">
+<link rel="stylesheet" href="/assets/landing.css">
+<style>
+  body { background: #eef2f8; }
+  .page { background: #eef2f8; box-shadow: none; min-height: 100vh; }
+  .topline { height: 4px; background: var(--navy); }
+  .bar { background: #fff; box-shadow: 0 1px 0 var(--line), 0 6px 18px rgba(11, 20, 36, .04); position: sticky; top: 0; z-index: 30; }
+  .bar .wrap { display: flex; align-items: center; gap: 18px; height: 64px; }
+  .bar .logo-img { height: 30px; }
+  .me-chip { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .me-chip a.btn { padding: 10px 18px; font-size: 14px; }
+  .mini-av { width: 36px; height: 36px; border-radius: 50%; background: var(--navy) center / cover; color: #fff; display: grid; place-items: center; font: 700 14px var(--display); flex: none; }
+  .tabs-bar { background: #fff; border-top: 1px solid var(--line); }
+  .tabs-bar .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-top: 10px; padding-bottom: 10px; }
+  .tabs-bar .wrap::-webkit-scrollbar { display: none; }
+  .tab { flex: none; border: 0; background: none; font: 500 16px var(--text); color: var(--ink-2); padding: 10px 18px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .tab:hover { background: var(--soft); }
+  .tab.on { color: var(--blue); font-weight: 700; background: #fff; box-shadow: 0 1px 2px rgba(11, 20, 36, .08), 0 6px 18px rgba(11, 20, 36, .08); }
+
+  main.settings { padding: 40px 0 80px; }
+  main.settings section { padding: 0; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+  .cols > * { min-width: 0; }
+  .panel { background: #fff; border-radius: 22px; padding: 16px; box-shadow: 0 1px 2px rgba(11, 20, 36, .03); }
+  .sec-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 16px; }
+  .sec-title h2 { font: 800 26px/1.1 var(--display); letter-spacing: -.03em; margin: 0; }
+  .sec-title.space { margin-top: 36px; }
+  .add { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c9d1de; background: #fff; border-radius: 999px; padding: 7px 16px; font: 700 14px var(--text); color: var(--ink); cursor: pointer; text-decoration: none; }
+  .add:hover { background: var(--soft); }
+  .add svg { width: 15px; height: 15px; }
+
+  /* ---------- Carte de profil ---------- */
+  .profile { padding: 0; overflow: hidden; }
+  .profile .cover { background: radial-gradient(120% 140% at 100% 0, #1d4fb8 0, var(--navy) 55%); color: #fff; height: 168px; padding: 22px 24px; display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; position: relative; overflow: hidden; }
+  .profile .cover::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 200px; height: 200px; border-radius: 50%; background: rgba(247, 214, 24, .12); }
+  .avatar-wrap { position: relative; width: 104px; height: 104px; margin: -56px 0 0 24px; }
+  .avatar { width: 104px; height: 104px; border-radius: 50%; border: 4px solid #fff; background: #dfe7f5 center / cover; display: grid; place-items: center; font: 800 36px var(--display); color: var(--navy); box-shadow: 0 6px 20px rgba(11, 20, 36, .15); }
+  .avatar-edit { position: absolute; right: -2px; bottom: 4px; width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 1px solid var(--line); display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(11, 20, 36, .12); }
+  .avatar-edit svg { width: 16px; height: 16px; }
+  .profile .body { padding: 18px 16px 16px; }
+  .line { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 0; }
+  .line .name { font: 800 26px/1.15 var(--display); letter-spacing: -.03em; margin: 0; overflow-wrap: anywhere; }
+  .lk { border: 0; background: none; color: var(--blue); font: 700 15px var(--text); cursor: pointer; padding: 4px 0; white-space: nowrap; text-decoration: none; }
+  .lk:hover { text-decoration: underline; }
+  .lk.danger { color: #b3121f; }
+  .handle { font-size: 16px; color: var(--ink); overflow-wrap: anywhere; }
+  .handle.none { color: var(--muted); }
+  .opt { display: flex; gap: 14px; align-items: flex-start; border: 1px solid #d5dbe5; border-radius: 14px; padding: 16px; margin-top: 12px; color: var(--ink); text-decoration: none; background: #fff; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+  .opt:hover { border-color: #b8c2d3; background: #fbfcfe; }
+  .opt svg { width: 22px; height: 22px; flex: none; margin-top: 2px; }
+  .opt b { display: block; font-weight: 500; font-size: 15px; }
+  .opt small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .opt .u { color: var(--blue); text-decoration: underline; font-size: 13px; font-weight: 600; }
+  .tag { display: inline-block; font: 700 11px var(--text); padding: 2px 7px; border-radius: 5px; background: #e5e8ee; color: var(--ink-2); margin-bottom: 3px; }
+  .tag.new { background: #e9e6ff; color: #3b2bb5; }
+  .tag.ok { background: #e3f5ea; color: #0e7a3c; }
+  .tag.wait { background: #fff1cc; color: #7a5800; }
+  .tag.no { background: #fde7e9; color: #a3121f; }
+
+  /* ---------- Options du compte ---------- */
+  .field-box { border: 1px solid #c9d1de; border-radius: 12px; padding: 8px 12px 6px; position: relative; }
+  .field-box label { display: block; font-size: 13px; color: var(--muted); }
+  .field-box select { width: 100%; border: 0; background: transparent; font: 16px var(--text); color: var(--ink); padding: 2px 24px 6px 0; appearance: none; cursor: pointer; }
+  .field-box select:focus { outline: none; }
+  .field-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 87, 217, .12); }
+  .field-box::after { content: ""; position: absolute; right: 16px; top: 50%; width: 9px; height: 9px; border-right: 1.6px solid var(--ink-2); border-bottom: 1.6px solid var(--ink-2); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+  .kv { padding: 14px 4px 0; }
+  .kv dt { font-size: 13px; color: var(--muted); }
+  .kv dd { margin: 2px 0 12px; font-size: 16px; overflow-wrap: anywhere; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+  .copy { border: 0; background: var(--soft); border-radius: 8px; padding: 3px 9px; font: 600 12px var(--text); cursor: pointer; color: var(--ink-2); }
+
+  /* ---------- Coordonnées ---------- */
+  .item { display: flex; align-items: center; gap: 16px; padding: 14px 12px; border-radius: 14px; }
+  .item + .item { border-top: 1px solid var(--line); border-radius: 0; }
+  .item svg.ic { width: 24px; height: 24px; flex: none; align-self: flex-start; margin-top: 18px; }
+  .item .txt { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.35; }
+  .item .txt small { display: block; color: var(--muted); font-size: 13px; }
+  .item .acts { display: flex; gap: 14px; align-items: center; }
+  .empty { color: var(--muted); padding: 14px 12px; font-size: 15px; }
+  .more { margin-top: 16px; display: inline-block; }
+
+  /* ---------- Autres onglets ---------- */
+  .stack { display: grid; gap: 18px; max-width: 820px; }
+  .row-set { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 12px; }
+  .row-set + .row-set { border-top: 1px solid var(--line); }
+  .row-set h3 { margin: 0; font-size: 17px; }
+  .row-set p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .switch { position: relative; width: 50px; height: 30px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch span { position: absolute; inset: 0; border-radius: 99px; background: #c9d1de; transition: background .2s; cursor: pointer; }
+  .switch span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); transition: transform .2s; }
+  .switch input:checked + span { background: var(--blue); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:disabled + span { opacity: .55; cursor: not-allowed; }
+  .switch input:focus-visible + span { outline: 3px solid rgba(0, 87, 217, .35); outline-offset: 2px; }
+  .intro { color: var(--ink-2); margin: -6px 0 18px; max-width: 70ch; }
+  .limits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 6px 12px 12px; }
+  .limits div { background: var(--soft); border-radius: 14px; padding: 14px; }
+  .limits small { color: var(--muted); font-size: 13px; display: block; }
+  .limits b { font: 800 22px var(--display); }
+  .btn-sm { padding: 9px 16px; font-size: 14px; }
+  .btn-danger { background: #b3121f; color: #fff; }
+  .btn-danger:hover { background: #95101a; }
+
+  /* ---------- Fenêtres ---------- */
+  .modal-bg { position: fixed; inset: 0; background: rgba(11, 20, 36, .5); display: grid; place-items: center; padding: 16px; z-index: 60; animation: fade .2s; }
+  .modal { background: #fff; border-radius: 22px; width: 100%; max-width: 460px; max-height: 92vh; overflow: auto; padding: 28px; box-shadow: 0 30px 80px rgba(11, 20, 36, .3); }
+  .modal h3 { font: 800 24px/1.15 var(--display); letter-spacing: -.02em; margin: 0 0 6px; }
+  .modal .sub { color: var(--ink-2); margin: 0 0 18px; font-size: 15px; }
+  .f { margin-bottom: 14px; }
+  .f label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--ink-2); }
+  .f input, .f select { width: 100%; font: 16px var(--text); padding: 13px 14px; border-radius: 12px; border: 1.5px solid #d6dce6; background: #fff; color: var(--ink); }
+  .f input:focus, .f select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 87, 217, .12); }
+  .f .hint { font-size: 13px; color: var(--muted); margin-top: 5px; }
+  .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+  .chk { display: flex; gap: 10px; align-items: center; font-size: 15px; margin: 4px 0 8px; }
+  .chk input { width: 18px; height: 18px; accent-color: var(--blue); }
+  .err { background: #fdecee; color: #a3121f; border-radius: 12px; padding: 11px 14px; font-size: 14px; margin-bottom: 14px; }
+  .note { background: #fff6cc; color: #5c4a00; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 14px; }
+  .secret { background: var(--ink); color: var(--yellow); border-radius: 12px; padding: 12px; word-break: break-all; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 13px 20px; border-radius: 14px; z-index: 80; max-width: 92vw; box-shadow: 0 12px 30px rgba(0, 0, 0, .25); font-size: 15px; }
+  .toast.bad { background: #b3121f; }
+  .skeleton { color: var(--muted); padding: 40px 0; text-align: center; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  @media (max-width: 900px) {
+    .cols { grid-template-columns: 1fr; gap: 36px; }
+    main.settings { padding: 24px 0 64px; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px; }
+    .me-chip .btn { display: none; }
+    .profile .cover { height: 130px; }
+    .line .name { font-size: 22px; }
+    .limits { grid-template-columns: 1fr; }
+    .f2 { grid-template-columns: 1fr; }
+    .row-set { flex-wrap: wrap; }
+    .modal { padding: 22px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="topline"></div>
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="/app" aria-label="Pay243, mon wallet"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <div class="me-chip">
+      <a class="btn btn-light" href="/app">Mon wallet</a>
+      <div class="mini-av" id="mini-av" aria-hidden="true"></div>
+      <button class="lk" id="logout" style="color:var(--ink-2)">Déconnexion</button>
+    </div>
+  </div>
+  <nav class="tabs-bar" aria-label="Sections des paramètres">
+    <div class="wrap" role="tablist">
+      <button class="tab on" data-tab="compte" role="tab">Compte</button>
+      <button class="tab" data-tab="securite" role="tab">Sécurité</button>
+      <button class="tab" data-tab="confidentialite" role="tab">Données et confidentialité</button>
+      <button class="tab" data-tab="paiements" role="tab">Paiements</button>
+      <button class="tab" data-tab="notifications" role="tab">Notifications</button>
+      <button class="tab" data-tab="vendeur" role="tab">Outils vendeur</button>
+      <button class="tab" data-tab="releves" role="tab">Relevés</button>
+    </div>
+  </nav>
+</header>
+
+<main class="settings">
+  <div class="wrap">
+    <div id="loading" class="skeleton">Chargement de vos paramètres…</div>
+
+    <!-- =========================== COMPTE =========================== -->
+    <section data-pane="compte" hidden>
+      <div class="cols">
+        <div>
+          <div class="panel profile">
+            <div class="cover"><span>Profil</span><span id="since"></span></div>
+            <div class="avatar-wrap">
+              <div class="avatar" id="avatar"></div>
+              <button class="avatar-edit" id="avatar-edit" aria-label="Changer la photo de profil">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5l4 4L8 20H4v-4z"/><path d="M14 6l4 4"/></svg>
+              </button>
+              <input type="file" id="avatar-file" accept="image/*" hidden>
+            </div>
+            <div class="body">
+              <div class="line"><h1 class="name" id="p-name"></h1><button class="lk" id="edit-name">Modifier le nom</button></div>
+              <div class="line"><span class="handle" id="p-handle"></span><button class="lk" id="edit-handle">Gérer</button></div>
+              <a class="opt" href="/#aide">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1v.5"/><path d="M12 17h.01"/></svg>
+                <span><span class="tag new">Nouveau</span><b>Centre d'aide Pay243</b><small>Réponses rapides, ou parlez à un conseiller sur WhatsApp.</small></span>
+              </a>
+              <button class="opt" id="tile-kyc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.5 1.8-2.3 3.2-2.3s2.6.8 3.2 2.3M14.5 10h4M14.5 13.5h3"/></svg>
+                <span id="tile-kyc-txt"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sec-title space"><h2>Options du compte</h2></div>
+          <div class="panel">
+            <div class="field-box">
+              <label for="tz">Fuseau horaire</label>
+              <select id="tz"></select>
+            </div>
+            <dl class="kv">
+              <dt>Nationalité</dt><dd><span id="p-nat"></span><button class="lk" id="edit-nat">Modifier</button></dd>
+              <dt>Type de compte</dt><dd id="p-type"></dd>
+              <dt>Identifiant client</dt><dd><span class="mono" id="p-id"></span><button class="copy" data-copy="#p-id">Copier</button></dd>
+              <div id="merchant-id-row" hidden><dt>Identifiant marchand</dt><dd><span class="mono" id="p-mid"></span><button class="copy" data-copy="#p-mid">Copier</button></dd></div>
+            </dl>
+            <button class="lk" id="add-id-doc" style="padding:0 4px 8px">Ajouter une pièce d'identité</button>
+            <button class="opt" id="tile-business">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></svg>
+              <span><b>Encaissez en ligne, par lien ou par API</b><span class="u">Passer à un compte entreprise</span></span>
+            </button>
+            <button class="opt" id="tile-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/></svg>
+              <span><b style="margin-top:2px">Fermer votre compte</b></span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="sec-title"><h2>Adresse email</h2><button class="add" id="add-email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Changer</span></button></div>
+          <div class="panel" id="emails"></div>
+
+          <div class="sec-title space"><h2>Numéro de téléphone</h2><button class="add" id="add-phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter</span></button></div>
+          <div class="panel" id="phones"></div>
+
+          <div class="sec-title space"><h2>Adresses</h2><button class="add" id="add-address"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter</span></button></div>
+          <div class="panel" id="addresses"></div>
+          <button class="lk more" id="all-addresses" hidden>Voir toutes vos adresses</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================== SÉCURITÉ =========================== -->
+    <section data-pane="securite" hidden>
+      <div class="stack">
+        <div class="sec-title"><h2>Sécurité</h2></div>
+        <div class="panel">
+          <div class="row-set"><div><h3>Mot de passe</h3><p>Changer de mot de passe déconnecte toutes vos autres sessions.</p></div><button class="lk" id="edit-password">Modifier</button></div>
+          <div class="row-set"><div><h3>PIN de transaction</h3><p>Demandé pour chaque envoi, retrait, conversion ou paiement.</p></div><button class="lk" id="edit-pin">Modifier</button></div>
+          <div class="row-set"><div><h3>Vérification des nouveaux appareils</h3><p>Un code vous est envoyé <span id="otp-channel">par email</span> à chaque connexion depuis un appareil inconnu.</p></div><span class="tag ok">Activée</span></div>
+        </div>
+        <div class="sec-title space"><h2>Appareils de confiance</h2><button class="add" id="revoke-all"><span>Déconnecter les autres</span></button></div>
+        <p class="intro">Ces appareils se connectent sans code de vérification. Retirez ceux que vous ne reconnaissez pas.</p>
+        <div class="panel" id="devices"></div>
+      </div>
+    </section>
+
+    <!-- =========================== CONFIDENTIALITÉ =========================== -->
+    <section data-pane="confidentialite" hidden>
+      <div class="stack">
+        <div class="sec-title"><h2>Données et confidentialité</h2></div>
+        <div class="panel">
+          <div class="row-set"><div><h3>Télécharger mes données</h3><p>Profil, adresses, appareils, cartes (4 derniers chiffres), demandes de vérification et historique complet, au format JSON.</p></div><button class="btn btn-light btn-sm" id="export">Télécharger</button></div>
+          <div class="row-set"><div><h3>Documents d'identité</h3><p>Chiffrés (AES-256) dès leur réception, consultables uniquement par l'équipe de conformité, et chaque consultation est journalisée.</p></div></div>
+          <div class="row-set"><div><h3>Numéros de carte</h3><p>Jamais stockés par Pay243 : seul un jeton du processeur de cartes est conservé.</p></div></div>
+          <div class="row-set"><div><h3>Conservation</h3><p>Après fermeture du compte, l'historique des opérations est conservé le temps exigé par la réglementation anti-blanchiment, puis supprimé.</p></div></div>
+        </div>
+        <div class="panel"><div class="row-set"><div><h3>Fermer votre compte</h3><p>Votre solde doit être à zéro et aucune opération ne doit être en cours.</p></div><button class="lk danger" data-action="close">Fermer le compte</button></div></div>
+      </div>
+    </section>
+
+    <!-- =========================== PAIEMENTS =========================== -->
+    <section data-pane="paiements" hidden>
+      <div class="stack">
+        <div class="sec-title"><h2>Cartes enregistrées</h2><a class="add" href="/app#cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter</span></a></div>
+        <div class="panel" id="cards"></div>
+        <div class="sec-title space"><h2>Mobile Money</h2></div>
+        <div class="panel" id="mm"></div>
+        <div class="sec-title space"><h2>Vos plafonds</h2></div>
+        <div class="panel"><div class="limits" id="limits"></div><div class="row-set" id="limits-cta"></div></div>
+      </div>
+    </section>
+
+    <!-- =========================== NOTIFICATIONS =========================== -->
+    <section data-pane="notifications" hidden>
+      <div class="stack">
+        <div class="sec-title"><h2>Notifications</h2></div>
+        <p class="intro">Choisissez comment Pay243 vous prévient. Les alertes de sécurité restent toujours actives : elles vous permettent de repérer un accès frauduleux.</p>
+        <div class="panel" id="notifs"></div>
+      </div>
+    </section>
+
+    <!-- =========================== OUTILS VENDEUR =========================== -->
+    <section data-pane="vendeur" hidden>
+      <div class="stack">
+        <div class="sec-title"><h2>Outils vendeur</h2></div>
+        <div class="panel" id="seller"></div>
+      </div>
+    </section>
+
+    <!-- =========================== RELEVÉS =========================== -->
+    <section data-pane="releves" hidden>
+      <div class="stack">
+        <div class="sec-title"><h2>Relevés de compte</h2></div>
+        <p class="intro">Un relevé par mois au format CSV (ouvrable dans Excel ou Google Sheets), daté dans votre fuseau horaire. Utile pour votre comptabilité ou une déclaration.</p>
+        <div class="panel" id="statements"></div>
+      </div>
+    </section>
+  </div>
+</main>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let TOKEN = null;
+try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+if (!TOKEN) location.replace('/app?next=' + encodeURIComponent('/settings' + location.hash));
+const DEVICE_ID = (() => { try { return localStorage.getItem('pay243_device'); } catch { return null; } })();
+let S = null; // réponse de /v1/me/settings
+let LIMITS = null;
+
+function setToken(t) { TOKEN = t; try { sessionStorage.setItem('pay243_token', t); } catch {} }
+function logout() { try { sessionStorage.removeItem('pay243_token'); } catch {} location.href = '/app'; }
+$('#logout').onclick = logout;
+
+function toast(msg, bad) {
+  $$('.toast').forEach((t) => t.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+
+async function api(method, path, body, headers = {}) {
+  const r = await fetch(path, {
+    method,
+    headers: { ...(body instanceof Blob ? {} : { 'Content-Type': 'application/json' }), Authorization: 'Bearer ' + TOKEN, ...(DEVICE_ID ? { 'X-Device-Id': DEVICE_ID } : {}), ...headers },
+    body: body instanceof Blob ? body : body ? JSON.stringify(body) : undefined,
+  });
+  const j = r.headers.get('content-type')?.includes('json') ? await r.json().catch(() => ({})) : r;
+  if (!r.ok) {
+    if (r.status === 401 && j.error?.code === 'unauthorized') logout();
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code, details: j.error?.details });
+  }
+  return j;
+}
+
+// ---------- Icônes ----------
+const IC = {
+  mail: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3.5 6l8.5 7 8.5-7M3.5 18.5l6.5-6M20.5 18.5l-6.5-6"/></svg>',
+  phone: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  home: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>',
+  device: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  card: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/></svg>',
+  doc: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
+};
+
+// ---------- Utilitaires d'affichage ----------
+const TIMEZONES = [
+  ['Africa/Kinshasa', 'Kinshasa — ouest de la RDC (UTC+1)'], ['Africa/Lubumbashi', 'Lubumbashi — est de la RDC (UTC+2)'],
+  ['Africa/Brazzaville', 'Brazzaville'], ['Africa/Luanda', 'Luanda'], ['Africa/Kigali', 'Kigali'], ['Africa/Bujumbura', 'Bujumbura'],
+  ['Africa/Kampala', 'Kampala'], ['Africa/Nairobi', 'Nairobi'], ['Africa/Lusaka', 'Lusaka'], ['Africa/Johannesburg', 'Johannesburg'],
+  ['Africa/Lagos', 'Lagos'], ['Africa/Douala', 'Douala'], ['Africa/Abidjan', 'Abidjan'], ['Africa/Casablanca', 'Casablanca'],
+  ['Europe/Brussels', 'Bruxelles'], ['Europe/Paris', 'Paris'], ['Europe/London', 'Londres'], ['America/New_York', 'New York'],
+  ['America/Toronto', 'Toronto'], ['Asia/Dubai', 'Dubaï'], ['Asia/Shanghai', 'Shanghai'], ['UTC', 'Temps universel (UTC)'],
+];
+const COUNTRIES = ['CD', 'CG', 'AO', 'ZM', 'RW', 'BI', 'UG', 'TZ', 'CF', 'SS', 'CM', 'GA', 'KE', 'ZA', 'NG', 'CI', 'SN', 'MA', 'BE', 'FR', 'CH', 'GB', 'DE', 'US', 'CA', 'CN', 'IN', 'LB', 'AE'];
+const regionName = (() => { try { const d = new Intl.DisplayNames(['fr'], { type: 'region' }); return (c) => (c === 'CD' ? 'RD Congo' : c === 'CG' ? 'Congo-Brazzaville' : d.of(c) || c); } catch { return (c) => c; } })();
+const countryOptions = (sel) => [...new Set([sel, ...COUNTRIES])].filter(Boolean).map((c) => `<option value="${c}" ${c === sel ? 'selected' : ''}>${esc(regionName(c))}</option>`).join('');
+const OPS = { mpesa: 'M-Pesa (Vodacom)', airtel: 'Airtel Money', orange: 'Orange Money', africell: 'Africell' };
+const initials = (n) => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+const fmtDate = (iso, opts = { dateStyle: 'medium', timeStyle: 'short' }) => { try { return new Date(iso).toLocaleString('fr-FR', { ...opts, timeZone: S?.user.timezone }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
+const maskPhone = (p) => p ? p.replace(/^(\+243)(\d)(\d{3})(\d{3})(\d{2})$/, '$1 $2•• ••• •$5') : '';
+function deviceName(label) {
+  const l = String(label || '');
+  const os = /Windows/.test(l) ? 'Windows' : /Android/.test(l) ? 'Android' : /iPhone|iPad/.test(l) ? 'iPhone / iPad' : /Mac OS/.test(l) ? 'Mac' : /Linux/.test(l) ? 'Linux' : null;
+  const br = /Edg\//.test(l) ? 'Edge' : /OPR\//.test(l) ? 'Opera' : /Chrome\//.test(l) ? 'Chrome' : /Firefox\//.test(l) ? 'Firefox' : /Safari\//.test(l) ? 'Safari' : null;
+  return os || br ? [br, os].filter(Boolean).join(' sur ') : (l ? l.slice(0, 40) : 'Appareil inconnu');
+}
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+
+// ---------- Fenêtre modale générique ----------
+function modal(html, onSubmit, { submitLabel = 'Enregistrer', danger = false, noSubmit = false } = {}) {
+  closeModal();
+  const bg = document.createElement('div'); bg.className = 'modal-bg'; bg.id = 'modal';
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><form novalidate>${html}<div class="err" hidden></div>
+    <div class="actions"><button type="button" class="btn btn-light" data-close>${noSubmit ? 'Fermer' : 'Annuler'}</button>${noSubmit ? '' : `<button class="btn ${danger ? 'btn-danger' : 'btn-dark'}">${submitLabel}</button>`}</div></form></div>`;
+  document.body.appendChild(bg);
+  const form = $('form', bg); const err = $('.err', bg);
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('[data-close]')) closeModal(); });
+  form.onsubmit = async (e) => {
+    e.preventDefault(); err.hidden = true;
+    const btn = e.submitter || $('button:not([data-close])', form); if (btn) btn.disabled = true;
+    try { await onSubmit(Object.fromEntries(new FormData(form)), form); }
+    catch (x) { err.textContent = x.message; err.hidden = false; }
+    finally { if (btn) btn.disabled = false; }
+  };
+  setTimeout(() => $('input:not([type=hidden]), select', form)?.focus(), 30);
+  return form;
+}
+function closeModal() { $('#modal')?.remove(); }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+// ---------- Onglets (avec ancre d'URL : /settings#securite) ----------
+const TABS = $$('.tab').map((t) => t.dataset.tab);
+function showTab(name) {
+  if (!TABS.includes(name)) name = 'compte';
+  $$('.tab').forEach((t) => { t.classList.toggle('on', t.dataset.tab === name); t.setAttribute('aria-selected', t.dataset.tab === name); });
+  $$('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+  history.replaceState(null, '', name === 'compte' ? '/settings' : '/settings#' + name);
+  ({ paiements: loadPayments, vendeur: loadSeller, releves: loadStatements })[name]?.().catch((e) => toast(e.message, true));
+}
+$$('.tab').forEach((t) => t.onclick = () => showTab(t.dataset.tab));
+window.addEventListener('hashchange', () => { if (S) showTab(location.hash.slice(1)); });
+
+// =====================================================================
+//  Chargement et rendu
+// =====================================================================
+async function load() {
+  S = await api('GET', '/v1/me/settings');
+  render();
+}
+function syncUser(user) { S.user = user; render(); }
+
+function render() {
+  const u = S.user;
+  $('#loading').hidden = true;
+  // En-tête et carte de profil
+  const av = (el) => { el.style.backgroundImage = u.avatar_url ? `url("${u.avatar_url}")` : ''; el.textContent = u.avatar_url ? '' : initials(u.full_name); };
+  av($('#avatar')); av($('#mini-av'));
+  $('#since').textContent = 'Membre depuis ' + new Date(u.created_at).getFullYear();
+  $('#p-name').textContent = u.full_name;
+  const locked = S.locked_fields.includes('full_name');
+  $('#edit-name').textContent = locked ? 'Nom vérifié' : 'Modifier le nom';
+  $('#p-handle').textContent = u.handle ? '@' + u.handle : 'Aucun identifiant de paiement';
+  $('#p-handle').classList.toggle('none', !u.handle);
+  $('#edit-handle').textContent = u.handle ? 'Gérer' : 'Créer';
+
+  const k = S.kyc;
+  $('#tile-kyc-txt').innerHTML = k.level >= 2
+    ? '<span class="tag ok">Vérifiée</span><b>Identité vérifiée</b><small>Plafonds relevés : vous pouvez envoyer et recevoir davantage.</small>'
+    : k.last_status === 'pending'
+      ? '<span class="tag wait">En cours</span><b>Vérification d\'identité en cours d\'examen</b><small>Vous serez prévenu dès qu\'elle sera traitée.</small>'
+      : `<span class="tag ${k.last_status === 'rejected' ? 'no' : ''}">${k.last_status === 'rejected' ? 'Refusée' : 'Niveau 1'}</span><b>Vérifiez votre identité pour relever vos plafonds</b><span class="u">Commencer la vérification</span>`;
+
+  // Options du compte
+  const tz = TIMEZONES.some(([id]) => id === u.timezone) ? TIMEZONES : [[u.timezone, u.timezone], ...TIMEZONES];
+  $('#tz').innerHTML = tz.map(([id, label]) => `<option value="${esc(id)}" ${id === u.timezone ? 'selected' : ''}>${esc(label)}</option>`).join('');
+  $('#p-nat').textContent = regionName(u.nationality);
+  $('#edit-nat').hidden = S.locked_fields.includes('nationality');
+  $('#p-type').textContent = u.account_type === 'business' ? 'Entreprise' : 'Particulier';
+  $('#p-id').textContent = u.id;
+  $('#merchant-id-row').hidden = !S.merchant;
+  if (S.merchant) $('#p-mid').textContent = S.merchant.id;
+  $('#add-id-doc').textContent = k.level >= 2 ? 'Pièce d\'identité vérifiée' : k.last_status === 'pending' ? 'Pièce d\'identité en cours d\'examen' : 'Ajouter une pièce d\'identité';
+  $('#add-id-doc').disabled = k.level >= 2 || k.last_status === 'pending';
+  $('#tile-business').hidden = u.account_type === 'business';
+
+  // Email
+  $('#emails').innerHTML = u.email
+    ? `<div class="item">${IC.mail}<div class="txt"><span class="tag">Principale</span><br>${esc(u.email)}<small>${u.email_verified ? 'Vérifiée · identifiant de connexion' : 'Non vérifiée'}</small></div><div class="acts"><button class="lk" data-act="email">Modifier</button></div></div>`
+    : `<div class="empty">Aucune adresse email. Ajoutez-en une pour vous connecter et recevoir vos alertes.</div>`;
+  $('#add-email span').textContent = u.email ? 'Changer' : 'Ajouter';
+
+  // Téléphone
+  $('#phones').innerHTML = u.phone
+    ? `<div class="item">${IC.phone}<div class="txt"><span class="tag">Principal</span><br>${esc(maskPhone(u.phone))}<small>Mobile · ${esc(OPS[u.operator] || 'Opérateur inconnu')}${u.phone_verified ? ' · vérifié' : ' · non vérifié'}</small></div>
+       <div class="acts">${u.phone_verified ? '' : '<button class="lk" data-act="verify-phone">Vérifier</button>'}<button class="lk" data-act="phone">Modifier</button>${u.email ? '<button class="lk danger" data-act="del-phone">Retirer</button>' : ''}</div></div>`
+    : `<div class="empty">Aucun numéro. Ajoutez votre numéro Mobile Money pour recharger et retirer plus vite.</div>`;
+  $('#add-phone span').textContent = u.phone ? 'Changer' : 'Ajouter';
+
+  // Adresses
+  const list = S.addresses;
+  const shown = list.slice(0, 1);
+  const addrHtml = (a) => `<div class="item">${IC.home}<div class="txt">${a.is_primary ? '<span class="tag">Principale</span><br>' : ''}${esc(a.line1)}${a.line2 ? '<br>' + esc(a.line2) : ''}<br>${esc([a.postal_code, a.city].filter(Boolean).join(' '))}${a.province && a.province !== a.city ? ', ' + esc(a.province) : ''}<br>${esc(regionName(a.country).toUpperCase())}</div>
+    <div class="acts"><button class="lk" data-addr="${esc(a.id)}">Modifier</button></div></div>`;
+  $('#addresses').innerHTML = list.length ? shown.map(addrHtml).join('') : '<div class="empty">Aucune adresse enregistrée.</div>';
+  $('#all-addresses').hidden = list.length < 2;
+  $('#all-addresses').textContent = `Voir toutes vos adresses (${list.length})`;
+  $('#add-address').hidden = list.length >= 5;
+  $$('[data-addr]').forEach((b) => b.onclick = () => editAddress(list.find((a) => a.id === b.dataset.addr)));
+
+  // Sécurité
+  $('#otp-channel').textContent = u.email ? 'par email' : 'par SMS';
+  $('#devices').innerHTML = S.devices.length ? S.devices.map((d) => `<div class="item">${IC.device}<div class="txt">${d.current ? '<span class="tag ok">Cet appareil</span><br>' : ''}<b>${esc(deviceName(d.label))}</b><small>Ajouté le ${esc(fmtDate(d.created_at, { dateStyle: 'medium' }))} · dernière activité ${esc(fmtDate(d.last_seen_at))}</small></div>
+    <div class="acts">${d.current ? '' : `<button class="lk danger" data-dev="${esc(d.id)}">Retirer</button>`}</div></div>`).join('') : '<div class="empty">Aucun appareil de confiance : un code sera demandé à chaque connexion.</div>';
+  $$('[data-dev]').forEach((b) => b.onclick = () => confirmBox('Retirer cet appareil ?', 'La prochaine connexion depuis cet appareil demandera un code de vérification.', 'Retirer', async () => {
+    await api('DELETE', '/v1/me/devices/' + encodeURIComponent(b.dataset.dev));
+    S.devices = S.devices.filter((d) => d.id !== b.dataset.dev); render(); toast('Appareil retiré');
+  }));
+
+  // Notifications
+  const n = u.notifications;
+  const sw = (key, title, desc, { disabled = false } = {}) => `<div class="row-set"><div><h3>${title}</h3><p>${desc}</p></div><label class="switch"><input type="checkbox" data-pref="${key}" ${n[key] ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(title)}"><span></span></label></div>`;
+  $('#notifs').innerHTML = sw('payments_email', 'Argent reçu — par email', u.email ? `Un email à ${esc(u.email)} à chaque transfert reçu.` : 'Ajoutez une adresse email pour activer cette option.', { disabled: !u.email })
+    + sw('payments_sms', 'Argent reçu — par SMS', u.phone ? `Un SMS au ${esc(maskPhone(u.phone))}.` : 'Ajoutez un numéro de téléphone pour activer cette option.', { disabled: !u.phone })
+    + sw('security_email', 'Alertes de sécurité', 'Changement de mot de passe, de PIN, d\'email ou de numéro, déconnexions. Toujours actives.', { disabled: true })
+    + sw('product_email', 'Nouveautés et offres', 'Nouvelles fonctionnalités et offres partenaires, au plus une fois par mois.');
+  $$('[data-pref]').forEach((c) => c.onchange = async () => {
+    try { const r = await api('PUT', '/v1/me/notifications', { [c.dataset.pref]: c.checked }); syncUser(r.user); toast('Préférences enregistrées'); }
+    catch (e) { c.checked = !c.checked; toast(e.message, true); }
+  });
+}
+
+// =====================================================================
+//  Actions — Compte
+// =====================================================================
+function confirmBox(title, text, label, fn, danger = true) {
+  modal(`<h3>${esc(title)}</h3><p class="sub">${esc(text)}</p>`, async () => { await fn(); closeModal(); }, { submitLabel: label, danger });
+}
+
+$('#edit-name').onclick = () => {
+  if (S.locked_fields.includes('full_name')) {
+    return modal('<h3>Votre nom est vérifié</h3><p class="sub">Il correspond à votre pièce d\'identité. Pour le modifier (mariage, erreur d\'orthographe…), contactez le support avec un justificatif.</p>', null, { noSubmit: true });
+  }
+  modal(`<h3>Modifier le nom</h3><p class="sub">Utilisez le nom figurant sur votre pièce d'identité : il sera vérifié si vous relevez vos plafonds.</p>
+    <div class="f"><label>Nom complet</label><input name="full_name" value="${esc(S.user.full_name)}" required minlength="3" maxlength="80" autocomplete="name"></div>`, async (d) => {
+    const r = await api('PATCH', '/v1/me', { full_name: d.full_name }); syncUser(r.user); closeModal(); toast('Nom mis à jour');
+  });
+};
+
+$('#edit-handle').onclick = () => {
+  const f = modal(`<h3>Votre identifiant de paiement</h3><p class="sub">Vos proches peuvent vous envoyer de l'argent avec cet identifiant, sans connaître votre numéro ni votre email.</p>
+    <div class="f"><label>Identifiant</label><input name="handle" value="${esc(S.user.handle || '')}" placeholder="ex : grace.mbuyi" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="31">
+    <div class="hint">3 à 30 caractères : lettres minuscules, chiffres, « . » ou « _ ». Apparaît comme <b id="hprev">@${esc(S.user.handle || '…')}</b>.</div></div>
+    ${S.user.handle ? '<button type="button" class="lk danger" id="h-del">Supprimer mon identifiant</button>' : ''}`, async (d) => {
+    const r = await api('PATCH', '/v1/me', { handle: d.handle.trim() || null }); syncUser(r.user); closeModal(); toast(r.user.handle ? `Identifiant @${r.user.handle} enregistré` : 'Identifiant supprimé');
+  });
+  f.handle.oninput = () => { f.handle.value = f.handle.value.toLowerCase().replace(/^@/, '').replace(/[^a-z0-9._]/g, ''); $('#hprev').textContent = '@' + (f.handle.value || '…'); };
+  const del = $('#h-del'); if (del) del.onclick = async () => { const r = await api('PATCH', '/v1/me', { handle: null }); syncUser(r.user); closeModal(); toast('Identifiant supprimé'); };
+};
+
+// Photo de profil : recadrée au carré et compressée dans le navigateur (256 px, JPEG, métadonnées supprimées).
+$('#avatar-edit').onclick = () => {
+  if (!S.user.avatar_url) return $('#avatar-file').click();
+  modal('<h3>Photo de profil</h3><p class="sub">Une photo aide vos contacts à vérifier qu\'ils envoient de l\'argent à la bonne personne.</p>', async () => { $('#avatar-file').click(); closeModal(); }, { submitLabel: 'Changer la photo' });
+  const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn btn-light'; rm.textContent = 'Supprimer'; rm.style.marginRight = 'auto';
+  rm.onclick = async () => { const r = await api('DELETE', '/v1/me/avatar'); syncUser(r.user); closeModal(); toast('Photo supprimée'); };
+  $('#modal .actions').prepend(rm);
+};
+$('#avatar-file').onchange = async (e) => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) throw new Error('Image illisible. Choisissez une photo JPEG ou PNG.');
+    const side = Math.min(bmp.width, bmp.height); const size = 256;
+    const c = document.createElement('canvas'); c.width = size; c.height = size;
+    c.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, size, size);
+    const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.86));
+    const r = await api('PUT', '/v1/me/avatar', blob, { 'Content-Type': 'image/jpeg' });
+    syncUser(r.user); toast('Photo de profil mise à jour');
+  } catch (x) { toast(x.message, true); }
+};
+
+$('#tz').onchange = async (e) => {
+  try { const r = await api('PATCH', '/v1/me', { timezone: e.target.value }); syncUser(r.user); toast('Fuseau horaire enregistré'); }
+  catch (x) { toast(x.message, true); render(); }
+};
+$('#edit-nat').onclick = () => modal(`<h3>Nationalité</h3><p class="sub">Elle sera contrôlée lors de la vérification de votre identité.</p>
+  <div class="f"><label>Nationalité</label><select name="nationality">${countryOptions(S.user.nationality)}</select></div>`, async (d) => {
+  const r = await api('PATCH', '/v1/me', { nationality: d.nationality }); syncUser(r.user); closeModal(); toast('Nationalité mise à jour');
+});
+$$('[data-copy]').forEach((b) => b.onclick = () => { navigator.clipboard?.writeText($(b.dataset.copy).textContent); toast('Copié'); });
+
+const goKyc = () => { if (S.kyc.level < 2 && S.kyc.last_status !== 'pending') location.href = '/app#kyc'; };
+$('#tile-kyc').onclick = goKyc;
+$('#add-id-doc').onclick = goKyc;
+
+// ---------- Email (code envoyé à la nouvelle adresse) ----------
+const sandboxNote = (r) => (r.sandbox_code ? `<div class="note">Mode démo : aucun message réel n'est envoyé. Votre code est <b>${esc(r.sandbox_code)}</b>.</div>` : '');
+function changeEmail() {
+  modal(`<h3>${S.user.email ? 'Changer d\'adresse email' : 'Ajouter une adresse email'}</h3><p class="sub">Nous enverrons un code de confirmation à la nouvelle adresse. Elle deviendra votre identifiant de connexion.</p>
+    <div class="f"><label>Nouvelle adresse email</label><input name="email" type="email" required autocomplete="email" inputmode="email"></div>`, async (d) => {
+    const r = await api('POST', '/v1/me/email/otp', { email: d.email });
+    modal(`<h3>Saisissez le code</h3><p class="sub">Envoyé à <b>${esc(r.email)}</b>. Il expire dans 5 minutes.</p>${sandboxNote(r)}
+      <div class="f"><label>Code à 6 chiffres</label><input name="otp_code" inputmode="numeric" maxlength="6" pattern="\\d{6}" autocomplete="one-time-code" required></div>
+      <div class="f"><label>Mot de passe actuel</label><input name="password" type="password" required autocomplete="current-password"><div class="hint">Par sécurité, confirmez que c'est bien vous.</div></div>`, async (d2) => {
+      const u = await api('POST', '/v1/me/email', { email: r.email, otp_code: d2.otp_code, password: d2.password });
+      syncUser(u.user); closeModal(); toast('Adresse email mise à jour');
+    }, { submitLabel: 'Confirmer' });
+  }, { submitLabel: 'Envoyer le code' });
+}
+$('#add-email').onclick = changeEmail;
+document.addEventListener('click', (e) => {
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'email') changeEmail();
+  if (act === 'phone') changePhone();
+  if (act === 'verify-phone') changePhone(S.user.phone);
+  if (act === 'del-phone') removePhone();
+  if (e.target.closest('[data-action="close"]')) closeAccount();
+});
+
+// ---------- Téléphone (code SMS) ----------
+function changePhone(prefill = '') {
+  modal(`<h3>${prefill ? 'Vérifier votre numéro' : S.user.phone ? 'Changer de numéro' : 'Ajouter un numéro'}</h3><p class="sub">Votre numéro M-Pesa, Airtel Money ou Orange Money. Nous vous enverrons un code par SMS.</p>
+    <div class="f"><label>Numéro de téléphone</label><input name="phone" value="${esc(prefill)}" inputmode="tel" placeholder="0812345678" autocomplete="tel" required></div>`, async (d) => {
+    const r = await api('POST', '/v1/me/phone/otp', { phone: d.phone });
+    modal(`<h3>Saisissez le code reçu par SMS</h3><p class="sub">Envoyé au <b>${esc(r.phone)}</b>.</p>${sandboxNote(r)}
+      <div class="f"><label>Code à 6 chiffres</label><input name="otp_code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></div>`, async (d2) => {
+      const u = await api('POST', '/v1/me/phone', { phone: r.phone, otp_code: d2.otp_code });
+      syncUser(u.user); closeModal(); toast('Numéro vérifié et enregistré');
+    }, { submitLabel: 'Confirmer' });
+  }, { submitLabel: 'Envoyer le code' });
+}
+$('#add-phone').onclick = () => changePhone();
+function removePhone() {
+  modal(`<h3>Retirer ce numéro ?</h3><p class="sub">Vous devrez saisir un numéro à chaque recharge ou retrait Mobile Money.</p>
+    <div class="f"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>`, async (d) => {
+    const r = await api('DELETE', '/v1/me/phone', { password: d.password }); syncUser(r.user); closeModal(); toast('Numéro retiré');
+  }, { submitLabel: 'Retirer', danger: true });
+}
+
+// ---------- Adresses ----------
+function addressForm(a = {}) {
+  return `<div class="f"><label>Adresse</label><input name="line1" value="${esc(a.line1 || '')}" placeholder="N°, avenue, quartier" required autocomplete="address-line1"></div>
+    <div class="f"><label>Complément <small>(facultatif)</small></label><input name="line2" value="${esc(a.line2 || '')}" placeholder="Appartement, référence…" autocomplete="address-line2"></div>
+    <div class="f2"><div class="f"><label>Ville / commune</label><input name="city" value="${esc(a.city || '')}" required autocomplete="address-level2"></div>
+    <div class="f"><label>Province <small>(facultatif)</small></label><input name="province" value="${esc(a.province || '')}" autocomplete="address-level1"></div></div>
+    <div class="f2"><div class="f"><label>Code postal <small>(facultatif)</small></label><input name="postal_code" value="${esc(a.postal_code || '')}" autocomplete="postal-code"></div>
+    <div class="f"><label>Pays</label><select name="country">${countryOptions(a.country || 'CD')}</select></div></div>
+    ${a.is_primary ? '' : `<label class="chk"><input type="checkbox" name="is_primary" ${S.addresses.length ? '' : 'checked disabled'}> Adresse principale</label>`}`;
+}
+const addressBody = (d) => ({ line1: d.line1, line2: d.line2 || null, city: d.city, province: d.province || null, postal_code: d.postal_code || null, country: d.country, ...(d.is_primary ? { is_primary: true } : {}) });
+$('#add-address').onclick = () => modal(`<h3>Ajouter une adresse</h3>${addressForm()}`, async (d) => {
+  await api('POST', '/v1/me/addresses', addressBody(d));
+  S.addresses = (await api('GET', '/v1/me/addresses')).data; render(); closeModal(); toast('Adresse ajoutée');
+});
+function editAddress(a) {
+  modal(`<h3>Modifier l'adresse</h3>${addressForm(a)}<button type="button" class="lk danger" id="addr-del">Supprimer cette adresse</button>`, async (d) => {
+    await api('PATCH', '/v1/me/addresses/' + a.id, addressBody(d));
+    S.addresses = (await api('GET', '/v1/me/addresses')).data; render(); closeModal(); toast('Adresse mise à jour');
+  });
+  $('#addr-del').onclick = async () => {
+    await api('DELETE', '/v1/me/addresses/' + a.id);
+    S.addresses = (await api('GET', '/v1/me/addresses')).data; render(); closeModal(); toast('Adresse supprimée');
+  };
+}
+$('#all-addresses').onclick = () => {
+  modal(`<h3>Vos adresses</h3><div>${S.addresses.map((a) => `<div class="item" style="padding:12px 0">${IC.home}<div class="txt">${a.is_primary ? '<span class="tag">Principale</span><br>' : ''}${esc(a.line1)}, ${esc(a.city)}<small>${esc(regionName(a.country))}</small></div><div class="acts">${a.is_primary ? '' : `<button type="button" class="lk" data-primary="${esc(a.id)}">Principale</button>`}<button type="button" class="lk" data-edit="${esc(a.id)}">Modifier</button></div></div>`).join('')}</div>`, null, { noSubmit: true });
+  $$('[data-edit]').forEach((b) => b.onclick = () => editAddress(S.addresses.find((a) => a.id === b.dataset.edit)));
+  $$('[data-primary]').forEach((b) => b.onclick = async () => {
+    await api('PATCH', '/v1/me/addresses/' + b.dataset.primary, { is_primary: true });
+    S.addresses = (await api('GET', '/v1/me/addresses')).data; render(); $('#all-addresses').click(); toast('Adresse principale modifiée');
+  });
+};
+
+// ---------- Compte entreprise ----------
+function becomeBusiness() {
+  modal(`<h3>Passer à un compte entreprise</h3><p class="sub">Gardez votre wallet et votre historique, et ajoutez un espace marchand : liens de paiement, API, webhooks, versements Mobile Money.</p>
+    <div class="f"><label>Nom de l'entreprise</label><input name="business_name" required maxlength="80" placeholder="Ex : Boutique Kin Mode" autocomplete="organization"></div>`, async (d) => {
+    const r = await api('POST', '/v1/me/business', { business_name: d.business_name });
+    S.merchant = { id: r.merchant.id, name: r.merchant.name }; syncUser(r.user);
+    if (r.merchant.secret_key) {
+      modal(`<h3>Votre compte entreprise est prêt</h3><p class="sub">Voici votre clé API de test. Copiez-la maintenant : elle ne sera plus affichée.</p><div class="secret" id="newkey">${esc(r.merchant.secret_key)}</div>`, async () => { location.href = '/app#merchant'; }, { submitLabel: 'Ouvrir l\'espace marchand' });
+      const cp = document.createElement('button'); cp.type = 'button'; cp.className = 'btn btn-light'; cp.textContent = 'Copier la clé';
+      cp.onclick = () => { navigator.clipboard?.writeText(r.merchant.secret_key); toast('Clé copiée'); };
+      $('#modal .actions').prepend(cp);
+    } else { closeModal(); toast('Compte entreprise activé'); }
+  }, { submitLabel: 'Activer' });
+}
+$('#tile-business').onclick = becomeBusiness;
+
+// ---------- Fermeture ----------
+function closeAccount() {
+  modal(`<h3>Fermer votre compte</h3><p class="sub">C'est définitif : vous ne pourrez plus vous connecter, vos cartes et vos clés API seront supprimées. Votre solde doit être à zéro.</p>
+    <div class="f"><label>Pourquoi partez-vous ? <small>(facultatif)</small></label><select name="reason"><option value="">—</option><option>Je n'utilise plus le service</option><option>J'ai un autre compte</option><option>Frais ou plafonds</option><option>Problème de sécurité</option><option>Autre</option></select></div>
+    <div class="f"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>
+    <div class="f"><label>Tapez <b>FERMER</b> pour confirmer</label><input name="confirm" autocomplete="off" required></div>`, async (d) => {
+    await api('POST', '/v1/me/close', { password: d.password, confirm: d.confirm.trim().toUpperCase(), reason: d.reason || undefined });
+    try { sessionStorage.removeItem('pay243_token'); } catch {}
+    document.body.innerHTML = '<div style="max-width:520px;margin:18vh auto;padding:24px;text-align:center;font:16px/1.6 var(--text)"><h1 style="font:800 34px var(--display)">Votre compte est fermé</h1><p>Merci d\'avoir utilisé Pay243. Un email de confirmation vous a été envoyé.</p><a class="btn btn-dark" href="/">Retour à l\'accueil</a></div>';
+  }, { submitLabel: 'Fermer définitivement', danger: true });
+}
+$('#tile-close').onclick = closeAccount;
+
+// =====================================================================
+//  Actions — Sécurité
+// =====================================================================
+$('#edit-password').onclick = () => modal(`<h3>Changer de mot de passe</h3><p class="sub">Vos autres sessions seront déconnectées. Cet appareil reste connecté.</p>
+  <div class="f"><label>Mot de passe actuel</label><input name="current_password" type="password" required autocomplete="current-password"></div>
+  <div class="f"><label>Nouveau mot de passe</label><input name="new_password" type="password" required minlength="8" autocomplete="new-password"><div class="hint">8 caractères minimum. Évitez un mot de passe utilisé ailleurs.</div></div>
+  <div class="f"><label>Confirmez le nouveau mot de passe</label><input name="confirm" type="password" required autocomplete="new-password"></div>`, async (d) => {
+  if (d.new_password !== d.confirm) throw new Error('Les deux mots de passe ne correspondent pas.');
+  const r = await api('POST', '/v1/me/password', { current_password: d.current_password, new_password: d.new_password });
+  setToken(r.token); closeModal(); toast('Mot de passe modifié. Vos autres sessions sont déconnectées.');
+});
+$('#edit-pin').onclick = () => modal(`<h3>Changer de PIN de transaction</h3><p class="sub">Après 5 erreurs, le PIN est bloqué par sécurité.</p>
+  <div class="f"><label>PIN actuel</label><input name="current_pin" type="password" inputmode="numeric" maxlength="6" required autocomplete="off"></div>
+  <div class="f2"><div class="f"><label>Nouveau PIN</label><input name="new_pin" type="password" inputmode="numeric" maxlength="6" required autocomplete="off"></div>
+  <div class="f"><label>Confirmation</label><input name="confirm" type="password" inputmode="numeric" maxlength="6" required autocomplete="off"></div></div>
+  <div class="hint" style="margin-top:-6px">4 à 6 chiffres, ni 1234, ni 0000.</div>`, async (d) => {
+  if (d.new_pin !== d.confirm) throw new Error('Les deux PIN ne correspondent pas.');
+  await api('POST', '/v1/me/pin', { current_pin: d.current_pin, new_pin: d.new_pin }); closeModal(); toast('PIN modifié');
+});
+$('#revoke-all').onclick = () => confirmBox('Déconnecter tous les autres appareils ?', 'Toutes les sessions ouvertes ailleurs seront fermées et ces appareils devront de nouveau saisir un code. Cet appareil reste connecté.', 'Déconnecter', async () => {
+  const r = await api('POST', '/v1/me/sessions/revoke'); setToken(r.token);
+  S.devices = (await api('GET', '/v1/me/devices')).data; render(); toast('Les autres appareils sont déconnectés');
+});
+
+// =====================================================================
+//  Données, paiements, vendeur, relevés
+// =====================================================================
+$('#export').onclick = async (e) => {
+  e.target.disabled = true;
+  try { const j = await api('GET', '/v1/me/export'); download(new Blob([JSON.stringify(j, null, 2)], { type: 'application/json' }), `pay243-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`); toast('Export téléchargé'); }
+  catch (x) { toast(x.message, true); } finally { e.target.disabled = false; }
+};
+
+const money = (minor, cur) => cur === 'USD' ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' $' : (minor / 100).toLocaleString('fr-FR') + ' FC';
+async function loadPayments() {
+  const [cards, me] = await Promise.all([api('GET', '/v1/cards'), api('GET', '/v1/me')]);
+  LIMITS = me.limits;
+  $('#cards').innerHTML = cards.data.length ? cards.data.map((c) => `<div class="item">${IC.card}<div class="txt"><b>${esc(c.brand.toUpperCase())} •••• ${esc(c.last4)}</b><small>Expire ${String(c.exp_month).padStart(2, '0')}/${c.exp_year}</small></div><div class="acts"><button class="lk danger" data-card="${esc(c.id)}">Supprimer</button></div></div>`).join('')
+    : '<div class="empty">Aucune carte. Ajoutez une carte Visa ou Mastercard pour recharger votre wallet.</div>';
+  $$('[data-card]').forEach((b) => b.onclick = () => confirmBox('Supprimer cette carte ?', 'Vous pourrez la rajouter à tout moment.', 'Supprimer', async () => { await api('DELETE', '/v1/cards/' + b.dataset.card); loadPayments(); toast('Carte supprimée'); }));
+  const u = S.user;
+  $('#mm').innerHTML = u.phone
+    ? `<div class="item">${IC.phone}<div class="txt"><b>${esc(OPS[u.operator] || 'Mobile Money')}</b><small>${esc(maskPhone(u.phone))} · proposé par défaut pour les recharges et retraits</small></div><div class="acts"><button class="lk" data-act="phone">Modifier</button></div></div>`
+    : '<div class="empty">Aucun numéro Mobile Money. <button class="lk" data-act="phone">Ajouter un numéro</button></div>';
+  const L = LIMITS;
+  $('#limits').innerHTML = `<div><small>Par opération</small><b>${L.perTxnUsd} $</b></div><div><small>Par jour</small><b>${L.dailyUsd} $</b></div><div><small>Solde maximum</small><b>${L.maxBalanceUsd} $</b></div>`;
+  $('#limits-cta').innerHTML = `<div><h3>Niveau ${L.kyc_level} · ${esc(L.label)}</h3><p>Montants en contre-valeur dollar, tous wallets confondus.</p></div>${L.kyc_level < 2 && S.kyc.last_status !== 'pending' ? '<a class="btn btn-dark btn-sm" href="/app#kyc">Relever mes plafonds</a>' : ''}`;
+}
+
+async function loadSeller() {
+  const box = $('#seller');
+  if (!S.merchant) {
+    box.innerHTML = `<div class="row-set"><div><h3>Vendez avec Pay243</h3><p>Encaissez par wallet, M-Pesa, Airtel Money, Orange Money et carte, via un lien WhatsApp ou votre site. Frais uniquement sur les ventes.</p></div><button class="btn btn-dark btn-sm" id="seller-go">Passer à un compte entreprise</button></div>`;
+    $('#seller-go').onclick = becomeBusiness; return;
+  }
+  const m = await api('GET', '/v1/merchants/me');
+  box.innerHTML = `<div class="row-set"><div><h3>${esc(m.name)}</h3><p>Identifiant marchand <span class="mono">${esc(m.id)}</span></p></div><a class="btn btn-dark btn-sm" href="/app#merchant">Ouvrir l'espace marchand</a></div>
+    <div class="limits">${m.balances.map((b) => `<div><small>Solde ${esc(b.currency)}</small><b>${money(b.balance, b.currency)}</b></div>`).join('')}<div><small>Clés API actives</small><b>${m.api_keys.length}</b></div></div>
+    <div class="row-set"><div><h3>Webhook</h3><p>${m.webhook_url ? esc(m.webhook_url) : 'Aucune URL configurée : vous ne recevez pas de notification serveur.'}</p></div><a class="lk" href="/app#merchant">Configurer</a></div>
+    <div class="row-set"><div><h3>Documentation de l'API</h3><p>Paiements, remboursements, webhooks signés, SDK navigateur.</p></div><a class="lk" href="/docs">Lire la doc</a></div>`;
+}
+
+async function loadStatements() {
+  const r = await api('GET', '/v1/me/statements');
+  const label = (m) => { const [y, mo] = m.split('-'); return new Date(Date.UTC(+y, +mo - 1, 15)).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); };
+  $('#statements').innerHTML = r.data.length ? r.data.map((s) => `<div class="item">${IC.doc}<div class="txt"><b style="text-transform:capitalize">${esc(label(s.month))}</b><small>${s.count} opération${s.count > 1 ? 's' : ''}</small></div><div class="acts"><button class="lk" data-month="${esc(s.month)}">Télécharger (CSV)</button></div></div>`).join('')
+    : '<div class="empty">Aucune opération pour l\'instant : vos relevés apparaîtront ici.</div>';
+  $$('[data-month]').forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    try { const res = await api('GET', '/v1/me/statements/' + b.dataset.month); download(await res.blob(), `releve-pay243-${b.dataset.month}.csv`); }
+    catch (x) { toast(x.message, true); } finally { b.disabled = false; }
+  });
+}
+
+if (TOKEN) load().then(() => showTab(location.hash.slice(1))).catch((e) => { $('#loading').textContent = e.message; });
+</script>
+</body>
+</html>

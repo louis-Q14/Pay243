@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pay243 — Back-office</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  main { max-width: 1180px; }
+  .split { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+  .list li.sel { background: #eef5ff; margin: 0 -20px; padding: 12px 20px; }
+  .list li { cursor: pointer; }
+  .docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .docs figure { margin: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0f1b2d; }
+  .docs img { width: 100%; height: 240px; object-fit: contain; display: block; cursor: zoom-in; }
+  .docs figcaption { background: #fff; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  dl { display: grid; grid-template-columns: 170px 1fr; gap: 6px 12px; margin: 0; }
+  dt { color: var(--muted); font-size: 13px; } dd { margin: 0; font-weight: 600; }
+  .flag { background: #fde8e9; border: 1px solid #f3b7ba; color: var(--err); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+  .btn-ok { background: var(--ok); } .btn-ko { background: var(--err); }
+  textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; min-height: 70px; }
+  #zoom img { max-width: 96vw; max-height: 92vh; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } dl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="/assets/logo.png" alt="Pay243" class="logo-img"><span>Back-office</span></div>
+  <div id="who" class="muted"></div>
+</header>
+
+<main id="login" class="center">
+  <div class="card">
+    <h2>Accès conformité</h2>
+    <p class="muted">Saisissez votre clé personnelle d'agent. Toutes vos actions sont journalisées.</p>
+    <form id="f-login"><label>Clé back-office</label><input name="key" type="password" autocomplete="off" required><button class="full">Se connecter</button></form>
+  </div>
+</main>
+
+<main id="app" class="hidden">
+  <div class="tabs">
+    <button class="on" data-st="pending">À examiner</button>
+    <button data-st="approved">Validées</button>
+    <button data-st="rejected">Refusées</button>
+    <button data-st="recon">Rapprochement</button>
+    <button data-st="audit">Journal d'audit</button>
+  </div>
+  <div class="split" id="kyc-view">
+    <div class="card"><h2 id="list-title">Demandes</h2><ul class="list" id="list"></ul></div>
+    <div id="detail"><div class="card muted">Sélectionnez une demande.</div></div>
+  </div>
+  <div class="hidden" id="recon-view">
+    <div class="card">
+      <h2>Cantonnement — monnaie électronique en circulation</h2>
+      <form id="f-trust" class="row" style="align-items:end">
+        <div><label>Solde du compte de cantonnement CDF</label><input name="trust_CDF" type="number" step="0.01" placeholder="ex. 25000000"></div>
+        <div><label>Solde du compte de cantonnement USD</label><input name="trust_USD" type="number" step="0.01" placeholder="ex. 120000"></div>
+        <button style="flex:0 0 auto">Calculer la couverture</button>
+      </form>
+      <div id="safeguard" style="margin-top:12px"></div>
+    </div>
+    <div class="split">
+      <div class="card">
+        <h2>Importer un relevé opérateur</h2>
+        <form id="f-stmt">
+          <label>Opérateur</label><select name="operator" id="stmt-op"></select>
+          <label>Journée comptable (heure de Kinshasa)</label><input name="date" type="date" id="stmt-date" required>
+          <label>Relevé CSV</label><input name="file" type="file" accept=".csv,text/csv" required>
+          <label><input type="checkbox" name="replace" style="width:auto"> Remplacer un import existant</label>
+          <button class="full">Rapprocher</button>
+        </form>
+        <p class="muted">Colonnes : <code>provider_ref, reference, type (collect|disburse), amount, currency, status, timestamp</code>.</p>
+        <button class="ghost full" id="sweep">Vérifier maintenant les transactions en attente</button>
+        <h2 style="margin-top:18px">Derniers rapprochements</h2><ul class="list" id="runs"></ul>
+      </div>
+      <div class="card"><h2 id="exc-title">Écarts à traiter</h2><div id="exceptions"></div></div>
+    </div>
+  </div>
+  <div class="card hidden" id="audit-view"><h2>Journal d'audit</h2><ul class="list" id="audit"></ul></div>
+</main>
+
+<div id="zoom" class="modal-bg hidden"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dt = (s) => (s ? new Date(s).toLocaleString('fr-FR') : '—');
+const KIND = { id_front: 'Recto', id_back: 'Verso', selfie: 'Selfie' };
+const ST = { pending: ['processing', 'À examiner'], approved: ['succeeded', 'Validée'], rejected: ['failed', 'Refusée'] };
+let KEY = null; let STATUS = 'pending'; let CURRENT = null; const blobs = [];
+
+function toast(msg, err) {
+  $$('.toast').forEach((x) => x.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+async function api(method, path, body) {
+  const r = await fetch('/v1' + path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + KEY }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401) logout();
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code, details: j.error?.details });
+  }
+  return j;
+}
+async function image(path) {
+  const r = await fetch('/v1' + path, { headers: { Authorization: 'Bearer ' + KEY } });
+  if (!r.ok) throw new Error('Image indisponible');
+  const u = URL.createObjectURL(await r.blob()); blobs.push(u); return u;
+}
+function freeBlobs() { while (blobs.length) URL.revokeObjectURL(blobs.pop()); }
+
+$('#f-login').onsubmit = async (e) => {
+  e.preventDefault(); KEY = new FormData(e.target).get('key');
+  try { await start(); } catch (x) { toast(x.message, true); }
+};
+async function start() {
+  const me = await api('GET', '/admin/me');
+  try { sessionStorage.setItem('pay243_admin', KEY); } catch {}
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#who').innerHTML = `Agent <b>${esc(me.name)}</b> · ${esc(me.mode)} · <button class="link" id="logout">Déconnexion</button>`;
+  $('#logout').onclick = logout;
+  await loadList();
+}
+function logout() { KEY = null; freeBlobs(); try { sessionStorage.removeItem('pay243_admin'); } catch {} $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#who').textContent = ''; }
+
+$$('[data-st]').forEach((b) => b.onclick = () => {
+  $$('[data-st]').forEach((x) => x.classList.toggle('on', x === b));
+  STATUS = b.dataset.st;
+  $('#kyc-view').classList.toggle('hidden', ['audit', 'recon'].includes(STATUS));
+  $('#audit-view').classList.toggle('hidden', STATUS !== 'audit');
+  $('#recon-view').classList.toggle('hidden', STATUS !== 'recon');
+  (STATUS === 'audit' ? loadAudit() : STATUS === 'recon' ? loadRecon() : loadList()).catch((x) => toast(x.message, true));
+});
+
+async function loadList() {
+  const r = await api('GET', '/admin/kyc/submissions?status=' + STATUS);
+  $('#list-title').textContent = `${ST[STATUS][1]} (${r.data.length})`;
+  $('#list').innerHTML = r.data.length ? r.data.map((s) => `<li data-id="${s.id}" class="${CURRENT === s.id ? 'sel' : ''}"><div>
+      <div><b>${esc(s.user.full_name)}</b> ${s.flagged ? '<span class="pill failed">Doublon</span>' : ''}</div>
+      <div class="muted">${esc(s.user.email || s.user.phone || '')} · ${esc(s.document_label)}<br>${dt(s.created_at)}</div></div></li>`).join('')
+    : '<li class="muted">Aucune demande.</li>';
+  $$('#list li[data-id]').forEach((li) => li.onclick = () => openDetail(li.dataset.id).catch((x) => toast(x.message, true)));
+  if (!r.data.some((s) => s.id === CURRENT)) { CURRENT = null; $('#detail').innerHTML = '<div class="card muted">Sélectionnez une demande.</div>'; }
+}
+
+async function openDetail(id) {
+  CURRENT = id; freeBlobs();
+  $$('#list li').forEach((li) => li.classList.toggle('sel', li.dataset.id === id));
+  const s = await api('GET', '/admin/kyc/submissions/' + id);
+  const d = s.duplicates;
+  const dups = [
+    ...d.same_document_number.map((x) => `Même n° de pièce : <b>${esc(x.full_name)}</b> (${esc(x.phone)}) — demande ${esc(ST[x.status]?.[1] || x.status)}`),
+    ...d.same_image.map((x) => `Image identique déjà envoyée par <b>${esc(x.full_name)}</b> (${esc(x.phone)})`),
+  ];
+  const [cls, label] = ST[s.status];
+  $('#detail').innerHTML = `<div class="card">
+      <h2>${esc(s.user.full_name)} <span class="pill ${cls}">${label}</span></h2>
+      ${dups.length ? `<div class="flag"><b>Alerte fraude</b><br>${dups.join('<br>')}</div>` : ''}
+      <dl style="margin-top:12px">
+        <dt>Email</dt><dd>${esc(s.user.email || '—')}</dd>
+        <dt>Téléphone</dt><dd>${esc(s.user.phone || '—')}</dd>
+        <dt>Type de compte</dt><dd>${s.user.account_type === 'business' ? 'Entreprise' : 'Particulier'}</dd>
+        <dt>Nom du compte</dt><dd>${esc(s.user.full_name)}</dd>
+        <dt>Pièce</dt><dd>${esc(s.document_label)}</dd>
+        <dt>Numéro</dt><dd class="mono">${esc(s.document_number)}</dd>
+        <dt>Date de naissance</dt><dd>${esc(s.date_of_birth)}</dd>
+        <dt>Niveau KYC actuel</dt><dd>${s.user.kyc_level}</dd>
+        <dt>Compte créé le</dt><dd>${dt(s.user.created_at)}</dd>
+        <dt>Demande reçue le</dt><dd>${dt(s.created_at)}</dd>
+        ${s.reviewer ? `<dt>Traitée par</dt><dd>${esc(s.reviewer)} le ${dt(s.reviewed_at)}</dd>` : ''}
+        ${s.review_note ? `<dt>Note</dt><dd>${esc(s.review_note)}</dd>` : ''}
+        ${s.previous_submissions.length ? `<dt>Demandes précédentes</dt><dd>${s.previous_submissions.map((p) => `${esc(ST[p.status]?.[1] || p.status)} le ${dt(p.created_at)}${p.review_note ? ' — ' + esc(p.review_note) : ''}`).join('<br>')}</dd>` : ''}
+      </dl>
+    </div>
+    <div class="card"><h2>Documents</h2><div class="docs" id="docs">${s.files.map((f) => `<figure><img data-kind="${f.kind}" alt="${KIND[f.kind]}"><figcaption>${KIND[f.kind]} · ${Math.round(f.size / 1024)} Ko</figcaption></figure>`).join('')}</div>
+      <p class="muted">Contrôles : la photo du visage correspond au selfie, le nom correspond au compte, la pièce n'est ni expirée ni retouchée, l'âge est cohérent.</p></div>
+    ${s.status === 'pending' ? `<div class="card"><h2>Décision</h2>
+      <label>Note interne / motif du refus (le motif est envoyé à l'utilisateur)</label><textarea id="note" maxlength="300"></textarea>
+      ${d.same_document_number.some((x) => x.status === 'approved') ? '<label><input type="checkbox" id="override" style="width:auto"> Passer outre le doublon (note justificative obligatoire)</label>' : ''}
+      <div class="row" style="margin-top:12px"><button class="btn-ok" id="approve">Valider → niveau 2</button><button class="btn-ko" id="reject">Refuser</button></div>
+      <div class="row" style="margin-top:8px">${['Photo floue ou illisible', 'Pièce expirée', 'Le selfie ne correspond pas à la pièce', 'Le nom ne correspond pas au compte'].map((r) => `<button class="ghost" data-reason="${esc(r)}" style="font-size:12px">${esc(r)}</button>`).join('')}</div>
+    </div>` : ''}`;
+
+  for (const img of $$('#docs img')) {
+    image(`/admin/kyc/submissions/${id}/files/${img.dataset.kind}`).then((u) => { img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
+    img.onclick = () => { $('#zoom').innerHTML = `<img src="${img.src}" alt="">`; $('#zoom').classList.remove('hidden'); };
+  }
+  $$('[data-reason]').forEach((b) => b.onclick = () => { $('#note').value = b.dataset.reason; });
+  const act = async (btn, fn) => { btn.disabled = true; try { await fn(); await loadList(); await openDetail(id); } catch (x) { toast(x.message, true); } finally { btn.disabled = false; } };
+  if ($('#approve')) $('#approve').onclick = (e) => act(e.currentTarget, async () => {
+    await api('POST', `/admin/kyc/submissions/${id}/approve`, { note: $('#note').value || undefined, override_duplicates: !!$('#override')?.checked });
+    toast('Identité validée. L\'utilisateur est prévenu par SMS.');
+  });
+  if ($('#reject')) $('#reject').onclick = (e) => act(e.currentTarget, async () => {
+    await api('POST', `/admin/kyc/submissions/${id}/reject`, { reason: $('#note').value });
+    toast('Demande refusée. L\'utilisateur est prévenu par SMS.');
+  });
+}
+$('#zoom').onclick = () => $('#zoom').classList.add('hidden');
+
+// ---------------- Rapprochement ----------------
+const fmt = (minor, cur) => (minor == null ? '—' : (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 }) + (cur === 'USD' ? ' $' : ' FC'));
+const TYPE = { topup: 'Recharge', payment: 'Paiement', withdrawal: 'Retrait', payout: 'Versement', refund: 'Remboursement' };
+let TRUST = '';
+
+async function loadRecon() {
+  const o = await api('GET', '/admin/reconciliation/overview');
+  if (!$('#stmt-op').options.length) $('#stmt-op').innerHTML = o.operators.map((x) => `<option value="${x.id}">${esc(x.label)}</option>`).join('');
+  if (!$('#stmt-date').value) $('#stmt-date').value = o.business_date;
+  $('#runs').innerHTML = o.runs.length ? o.runs.map((r) => {
+    const d = r.summary.totals || {};
+    const diffs = Object.entries(d).map(([c, v]) => `${c} : écart ${fmt(v.difference, c)}`).join(' · ');
+    return `<li style="cursor:default"><div><b>${esc(r.operator)} · ${esc(r.business_date)}</b> ${r.status === 'superseded' ? '<span class="pill">remplacé</span>' : ''}
+      <div class="muted">${r.rows} lignes · ${r.matched} concordantes · <b>${r.exceptions}</b> écart(s)<br>${esc(diffs)}<br>par ${esc(r.imported_by)} le ${dt(r.created_at)}</div></div></li>`;
+  }).join('') : '<li class="muted">Aucun relevé importé.</li>';
+  await Promise.all([loadSafeguarding(), loadExceptions()]);
+}
+
+async function loadSafeguarding() {
+  const r = await api('GET', '/admin/reconciliation/safeguarding' + TRUST);
+  $('#safeguard').innerHTML = `<div class="grid">${r.data.map((c) => `<div class="card" style="margin:0">
+      <h2>${c.currency}</h2>
+      <dl><dt>En circulation</dt><dd>${fmt(c.e_money_outstanding, c.currency)}</dd>
+        <dt>dont clients</dt><dd>${fmt(c.breakdown.users, c.currency)}</dd>
+        <dt>dont marchands</dt><dd>${fmt(c.breakdown.merchants, c.currency)}</dd>
+        <dt>dont retraits en cours</dt><dd>${fmt(c.breakdown.payouts_in_flight, c.currency)}</dd>
+        <dt>Commissions</dt><dd>${fmt(c.platform.fees, c.currency)}</dd>
+        ${Object.entries(c.held_at_partners).map(([k, v]) => `<dt>Position ${esc(k)}</dt><dd>${fmt(v, c.currency)}</dd>`).join('')}
+        <dt>Compte de cantonnement</dt><dd>${fmt(c.trust_account, c.currency)}</dd>
+        <dt>Couverture</dt><dd>${c.covered == null ? '<span class="muted">saisir le solde bancaire</span>' : `<span class="pill ${c.covered ? 'succeeded' : 'failed'}">${c.covered ? 'Couvert' : 'INSUFFISANT'}</span> ${fmt(c.coverage, c.currency)}`}</dd></dl>
+    </div>`).join('')}</div>`;
+}
+
+async function loadExceptions() {
+  const r = await api('GET', '/admin/reconciliation/exceptions?status=open');
+  $('#exc-title').textContent = `Écarts à traiter (${r.data.length})`;
+  $('#exceptions').innerHTML = r.data.length ? r.data.map((e) => {
+    const t = e.transaction;
+    const st = e.details?.statement;
+    const canApply = t && ['pending', 'failed'].includes(t.status) && e.kind !== 'amount_mismatch';
+    return `<div class="card" style="margin-bottom:10px" data-exc="${e.id}">
+      <div><span class="pill failed">${esc(e.label)}</span> <span class="muted">${esc(e.operator || '')} · ${dt(e.created_at)}</span></div>
+      <dl style="margin-top:8px">
+        ${t ? `<dt>Transaction</dt><dd>${esc(TYPE[t.type] || t.type)} ${fmt(t.amount, t.currency)} · ${esc(t.status)}<br><span class="muted mono">${esc(t.id)} · ${esc(t.phone || '')}</span></dd>` : ''}
+        ${st ? `<dt>Relevé opérateur</dt><dd>${st.type === 'collect' ? 'Encaissement' : 'Décaissement'} ${fmt(st.amount, st.currency)} · ${esc(st.status)}<br><span class="muted mono">${esc(st.provider_ref)} (ligne ${st.line})</span></dd>` : ''}
+        ${e.details?.age_minutes != null ? `<dt>En attente depuis</dt><dd>${e.details.age_minutes} min</dd>` : ''}
+        ${e.details?.reason ? `<dt>Détail</dt><dd>${esc(e.details.reason)}</dd>` : ''}
+      </dl>
+      <label>Note (obligatoire, journalisée)</label><input data-note placeholder="Ex. : confirmé sur le portail opérateur, réf. …">
+      <div class="row" style="margin-top:8px">
+        ${canApply ? '<button class="btn-ok" data-act="apply_success">Valider l\'opération</button>' : ''}
+        ${t?.status === 'pending' ? '<button class="btn-ko" data-act="apply_failure">Déclarer échouée</button>' : ''}
+        <button class="ghost" data-act="acknowledge">Traité hors système</button>
+      </div></div>`;
+  }).join('') : '<p class="muted">Aucun écart ouvert.</p>';
+  $$('[data-exc]').forEach((box) => box.querySelectorAll('[data-act]').forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      await api('POST', `/admin/reconciliation/exceptions/${box.dataset.exc}/resolve`, { action: b.dataset.act, note: box.querySelector('[data-note]').value });
+      toast('Écart traité.'); await loadRecon();
+    } catch (x) { toast(x.message, true); b.disabled = false; }
+  }));
+}
+
+$('#f-trust').onsubmit = (e) => {
+  e.preventDefault();
+  const d = new FormData(e.target); const qs = new URLSearchParams();
+  for (const c of ['CDF', 'USD']) { const v = d.get('trust_' + c); if (v) qs.set('trust_' + c, Math.round(parseFloat(v) * 100)); }
+  TRUST = qs.toString() ? '?' + qs : '';
+  loadSafeguarding().catch((x) => toast(x.message, true));
+};
+$('#f-stmt').onsubmit = async (e) => {
+  e.preventDefault(); const btn = e.submitter; btn.disabled = true;
+  try {
+    const d = new FormData(e.target);
+    const qs = new URLSearchParams({ operator: d.get('operator'), date: d.get('date'), ...(d.get('replace') ? { replace: '1' } : {}) });
+    const r = await fetch('/v1/admin/reconciliation/statements?' + qs, { method: 'POST', headers: { 'Content-Type': 'text/csv', Authorization: 'Bearer ' + KEY }, body: await d.get('file').text() });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error?.message || 'Import impossible');
+    toast(`${j.rows} lignes · ${j.matched} concordantes · ${j.exceptions} écart(s)`);
+    e.target.reset(); $('#stmt-date').value = j.business_date; await loadRecon();
+  } catch (x) { toast(x.message, true); } finally { btn.disabled = false; }
+};
+$('#sweep').onclick = async (e) => {
+  e.currentTarget.disabled = true;
+  try { const r = await api('POST', '/admin/reconciliation/sweep'); toast(`${r.checked ?? 0} vérifiée(s) · ${r.resolved ?? 0} dénouée(s) · ${r.expired ?? 0} expirée(s) · ${r.flagged ?? 0} signalée(s)`); await loadRecon(); }
+  catch (x) { toast(x.message, true); } finally { e.currentTarget.disabled = false; }
+};
+
+async function loadAudit() {
+  const r = await api('GET', '/admin/audit?limit=200');
+  $('#audit').innerHTML = r.data.length ? r.data.map((a) => `<li style="cursor:default"><div><b>${esc(a.action)}</b> · ${esc(a.actor)} <span class="muted">${esc(a.target || '')}</span>
+      <div class="muted">${dt(a.created_at)} · IP ${esc(a.ip || '—')}${a.details ? ' · ' + esc(JSON.stringify(a.details)) : ''}</div></div></li>`).join('')
+    : '<li class="muted">Journal vide.</li>';
+}
+
+try { KEY = sessionStorage.getItem('pay243_admin'); } catch {}
+if (KEY) start().catch(() => logout());
+</script>
+</body>
+</html>

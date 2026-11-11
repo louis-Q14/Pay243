@@ -1,0 +1,13 @@
+node_modules/
+# Base PGlite locale et pièces d'identité chiffrées (données personnelles) : jamais dans git
+data/
+*.db*
+# Secrets
+.env
+.env.*
+!.env.example
+# Divers
+*.log
+.DS_Store
+Thumbs.db
+coverage/

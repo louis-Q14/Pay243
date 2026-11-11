@@ -1,0 +1,24 @@
+{
+  "name": "pay243",
+  "version": "0.1.0",
+  "description": "Pay243 — wallet et passerelle de paiement en ligne pour la RDC (M-Pesa, Airtel Money, Orange Money, cartes)",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js",
+    "test:pg": "node -e \"if(!process.env.TEST_DATABASE_URL){console.error('Définissez TEST_DATABASE_URL=postgres://user:mdp@hote:5432/pay243_test');process.exit(1)}\" && node --test test/*.test.js",
+    "test:load": "node test/load/two-instances.mjs",
+    "demo:boutique": "node examples/boutique-demo/server.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "express": "^5.1.0",
+    "pg": "^8.23.1"
+  }
+}

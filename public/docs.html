@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pay243 — Documentation API marchands</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  main { max-width: 860px; } h1 { letter-spacing: -.02em; } h2 { margin-top: 34px; border-top: 1px solid var(--line); padding-top: 22px; }
+  pre { background: #0f1b2d; color: #e6edf7; padding: 14px 16px; border-radius: 12px; overflow: auto; font-size: 13px; line-height: 1.55; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; } td, th { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .m { font-weight: 800; font-family: ui-monospace, monospace; font-size: 12px; padding: 2px 6px; border-radius: 6px; background: #e6f0ff; color: var(--blue-d); }
+  .m.post { background: #e6f6ee; color: var(--ok); }
+</style>
+</head>
+<body>
+<header class="top"><div class="brand"><img src="/assets/logo.png" alt="Pay243" class="logo-img"><span>Docs</span></div><a href="/app">Wallet</a></header>
+<main>
+<h1>Accepter des paiements avec Pay243</h1>
+<p>Une seule intégration pour encaisser vos clients en RDC par <b>wallet Pay243</b>, <b>M-Pesa</b>, <b>Airtel Money</b>, <b>Orange Money</b> et <b>cartes Visa/Mastercard</b>, en <b>CDF</b> ou en <b>USD</b>.</p>
+
+<h2>1. Principe</h2>
+<ol>
+  <li>Votre <b>serveur</b> crée un paiement avec votre clé secrète <code>sk_test_…</code> / <code>sk_live_…</code>.</li>
+  <li>Vous redirigez le client vers <code>checkout_url</code> (page de paiement hébergée par Pay243).</li>
+  <li>Le client paie avec le moyen de son choix ; il est renvoyé vers votre <code>return_url?payment_id=…</code>.</li>
+  <li>Pay243 vous notifie par <b>webhook signé</b> <code>payment.succeeded</code> : c'est le signal pour livrer.</li>
+</ol>
+<p class="notice">Les montants sont des <b>entiers en unités mineures</b> : <code>2500</code> en USD = 25,00 $ ; <code>2500000</code> en CDF = 25 000 FC.</p>
+
+<h2>2. Authentification</h2>
+<pre>Authorization: Bearer sk_test_VOTRE_CLE_SECRETE
+Idempotency-Key: 6f1c…   (recommandé sur tous les POST)</pre>
+<p>La clé secrète ne doit jamais apparaître dans une application mobile ou du JavaScript navigateur.</p>
+
+<h2>3. Créer un paiement</h2>
+<p><span class="m post">POST</span> <code>/v1/payments</code></p>
+<pre>curl -X POST $BASE/v1/payments \
+  -H "Authorization: Bearer $SK" -H "Content-Type: application/json" \
+  -H "Idempotency-Key: CMD-1024" \
+  -d '{
+    "amount": 4500,
+    "currency": "USD",
+    "description": "Commande #1024",
+    "reference": "CMD-1024",
+    "return_url": "https://maboutique.cd/merci",
+    "cancel_url": "https://maboutique.cd/panier",
+    "metadata": { "client_id": "778" }
+  }'</pre>
+<pre>{
+  "id": "pay_9xG…", "object": "payment", "status": "requires_payment",
+  "amount": 4500, "currency": "USD", "fee": 0, "net": null,
+  "checkout_url": "https://pay243.cd/checkout/pay_9xG…",
+  "expires_at": "2026-11-10T16:00:00.000Z", …
+}</pre>
+<table>
+  <tr><th>Paramètre</th><th>Description</th></tr>
+  <tr><td><code>amount</code>*</td><td>Entier &gt; 0, unités mineures</td></tr>
+  <tr><td><code>currency</code>*</td><td><code>CDF</code> ou <code>USD</code></td></tr>
+  <tr><td><code>description</code></td><td>Affiché au client (200 car.)</td></tr>
+  <tr><td><code>reference</code></td><td>Votre identifiant de commande (filtrable)</td></tr>
+  <tr><td><code>return_url</code> / <code>cancel_url</code></td><td>URLs de retour</td></tr>
+  <tr><td><code>expires_in_minutes</code></td><td>Défaut 60, min 5, max 10080</td></tr>
+  <tr><td><code>metadata</code></td><td>Objet libre (20 clés max.), renvoyé dans les webhooks</td></tr>
+</table>
+
+<h2>4. Autres endpoints</h2>
+<table>
+  <tr><td><span class="m">GET</span></td><td><code>/v1/payments/:id</code></td><td>Statut d'un paiement</td></tr>
+  <tr><td><span class="m">GET</span></td><td><code>/v1/payments?status=succeeded&amp;reference=CMD-1024&amp;limit=20</code></td><td>Liste</td></tr>
+  <tr><td><span class="m post">POST</span></td><td><code>/v1/payments/:id/cancel</code></td><td>Annule un paiement non payé</td></tr>
+  <tr><td><span class="m post">POST</span></td><td><code>/v1/payments/:id/refunds</code> <code>{ amount?, reason? }</code></td><td>Remboursement total ou partiel (vers le wallet, la carte ou le numéro Mobile Money d'origine)</td></tr>
+  <tr><td><span class="m">GET</span></td><td><code>/v1/balance</code></td><td>Solde disponible CDF / USD</td></tr>
+  <tr><td><span class="m post">POST</span></td><td><code>/v1/payouts</code> <code>{ amount, currency, phone, operator? }</code></td><td>Versement de votre solde vers Mobile Money</td></tr>
+  <tr><td><span class="m">GET</span></td><td><code>/v1/events</code></td><td>Journal des webhooks et de leurs livraisons</td></tr>
+</table>
+
+<h2>5. Statuts d'un paiement</h2>
+<table>
+  <tr><td><code>requires_payment</code></td><td>En attente du client (ou dernier essai échoué : voir <code>last_error</code>)</td></tr>
+  <tr><td><code>processing</code></td><td>Demande Mobile Money envoyée, le client doit valider avec son PIN opérateur</td></tr>
+  <tr><td><code>succeeded</code></td><td>Payé — <code>net = amount − fee</code> crédité sur votre solde</td></tr>
+  <tr><td><code>partially_refunded</code> / <code>refunded</code></td><td>Remboursé en partie / en totalité</td></tr>
+  <tr><td><code>canceled</code> / <code>expired</code></td><td>Annulé par vous / lien expiré</td></tr>
+</table>
+
+<h2>6. Webhooks</h2>
+<p>Événements : <code>payment.succeeded</code>, <code>payment.failed</code>, <code>payment.refunded</code>, <code>payment.canceled</code>, <code>refund.failed</code>, <code>payout.succeeded</code>, <code>payout.failed</code>. Réessais automatiques avec délai exponentiel (8 tentatives) tant que vous ne répondez pas 2xx.</p>
+<pre>Pay243-Signature: t=1762790400,v1=5f2c…   // HMAC-SHA256(webhook_secret, t + "." + corps_brut)</pre>
+<pre>// Node.js (SDK fourni : sdk/node/pay243.js)
+app.post('/webhooks/pay243', express.raw({ type: 'application/json' }), (req, res) =&gt; {
+  const event = Pay243.webhooks.constructEvent(req.body, req.get('Pay243-Signature'), process.env.WHSEC);
+  if (event.type === 'payment.succeeded') livrerCommande(event.data.reference);
+  res.sendStatus(200);
+});</pre>
+<pre>&lt;?php // PHP
+$payload = file_get_contents('php://input');
+parse_str(str_replace(',', '&amp;', $_SERVER['HTTP_PAY243_SIGNATURE']), $sig);
+$expected = hash_hmac('sha256', $sig['t'] . '.' . $payload, getenv('WHSEC'));
+if (!hash_equals($expected, $sig['v1']) || abs(time() - (int)$sig['t']) &gt; 300) { http_response_code(400); exit; }
+$event = json_decode($payload, true);</pre>
+
+<h2>7. Bouton de paiement (navigateur)</h2>
+<pre>&lt;script src="https://pay243.cd/sdk/pay243.js"&gt;&lt;/script&gt;
+&lt;div id="payer"&gt;&lt;/div&gt;
+&lt;script&gt;
+  Pay243.button('#payer', {
+    createPayment: () =&gt; fetch('/api/commande', { method: 'POST' }).then(r =&gt; r.json()) // votre serveur
+  });
+&lt;/script&gt;</pre>
+<p>Sans développement : créez un <b>lien de paiement</b> depuis l'espace marchand et partagez-le par WhatsApp ou SMS.</p>
+
+<h2>8. Erreurs</h2>
+<pre>{ "error": { "code": "insufficient_funds", "message": "Solde insuffisant." } }</pre>
+<p>Codes HTTP : 400 requête invalide · 401 clé/session invalide · 402 fonds insuffisants ou carte refusée · 403 plafond KYC · 404 introuvable · 409 état incompatible · 410 expiré · 429 trop de requêtes · 502 opérateur indisponible.</p>
+
+<h2>9. Mode test</h2>
+<table>
+  <tr><td>Mobile Money</td><td>Tout numéro valide réussit ; un numéro finissant par <code>0000</code> échoue.</td></tr>
+  <tr><td>Cartes</td><td><code>4242 4242 4242 4242</code> acceptée · <code>5555 5555 5555 4444</code> acceptée · <code>4000 0000 0000 0002</code> refusée</td></tr>
+  <tr><td>Préfixes</td><td>081/082/083 → M-Pesa · 097/098/099 → Airtel · 080/084/085/089 → Orange</td></tr>
+</table>
+</main>
+</body>
+</html>

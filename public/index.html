@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pay243 — Payer, envoyer et encaisser partout en RDC</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Pay243 réunit M-Pesa, Airtel Money, Orange Money et les cartes bancaires dans un seul wallet en francs congolais et en dollars. Paiements en ligne pour les marchands.">
+<meta name="theme-color" content="#0a2a66">
+<link rel="stylesheet" href="/assets/landing.css">
+</head>
+<body>
+<div class="page">
+
+<!-- Bandeau -->
+<div class="ribbon" id="ribbon">
+  <div class="wrap">
+    <span>M-Pesa, Airtel Money et Orange Money réunis dans un seul wallet. <a href="/signup">Ouvrir mon compte gratuit ›</a></span>
+    <button type="button" aria-label="Fermer le bandeau" onclick="document.getElementById('ribbon').remove()">×</button>
+  </div>
+</div>
+
+<!-- Navigation -->
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <nav aria-label="Navigation principale">
+      <ul class="menu">
+        <li><a href="#particuliers">Particuliers</a></li>
+        <li><a href="#entreprises">Entreprises</a></li>
+        <li><a href="/docs">Développeurs</a></li>
+      </ul>
+    </nav>
+    <div class="nav-cta">
+      <a class="link-help" href="#aide">Aide</a>
+      <a class="btn btn-light" href="/app" data-guest>Se connecter</a>
+      <a class="btn btn-dark" href="/signup" data-guest>Créer un compte</a>
+      <a class="btn btn-dark" href="/app" data-member hidden>Mon wallet</a>
+    </div>
+    <button class="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu"><span></span></button>
+  </div>
+</header>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#particuliers">Particuliers</a>
+  <a href="#entreprises">Entreprises</a>
+  <a href="/docs">Développeurs</a>
+  <a href="#aide">Aide</a>
+  <div class="btns">
+    <a class="btn btn-light" href="/app" data-guest>Se connecter</a>
+    <a class="btn btn-dark" href="/signup" data-guest>Créer un compte</a>
+    <a class="btn btn-dark" href="/app" data-member hidden>Mon wallet</a>
+  </div>
+</div>
+
+<main>
+<!-- Hero -->
+<div class="hero" data-view="personal" id="hero">
+  <div class="wrap">
+    <div class="seg" role="group" aria-label="Choisir votre profil">
+      <button type="button" aria-pressed="true" data-switch="personal">Particuliers</button>
+      <button type="button" aria-pressed="false" data-switch="business">Entreprises</button>
+    </div>
+
+    <h1 data-mode="personal">Votre argent, partout au <em>Congo</em></h1>
+    <h1 data-mode="business">Encaissez partout, <em>en un lien</em></h1>
+
+    <p class="lead" data-mode="personal">Rechargez depuis M-Pesa, Airtel Money, Orange Money ou votre carte. Envoyez gratuitement, payez en ligne et retirez en quelques secondes, en francs congolais ou en dollars.</p>
+    <p class="lead" data-mode="business">Acceptez le wallet Pay243, le Mobile Money des trois opérateurs et les cartes Visa et Mastercard, sur votre site, dans votre application ou par un simple lien WhatsApp.</p>
+
+    <div class="ctas" data-mode="personal">
+      <a class="btn btn-dark btn-lg" href="/signup">Créer mon wallet gratuit</a>
+      <a class="btn btn-light btn-lg" href="#particuliers">Découvrir</a>
+    </div>
+    <div class="ctas" data-mode="business">
+      <a class="btn btn-dark btn-lg" href="/signup?type=business">Ouvrir un compte marchand</a>
+      <a class="btn btn-light btn-lg" href="/docs">Voir l'API</a>
+    </div>
+    <p class="fine">Ouverture en 2 minutes avec votre adresse email. Aucun frais d'ouverture.</p>
+  </div>
+
+</div>
+
+<!-- Opérateurs -->
+<div class="partners">
+  <div class="wrap">
+    <p>Rechargez et retirez avec</p>
+    <span class="chip"><i style="background:#e60000"></i>M-Pesa</span>
+    <span class="chip"><i style="background:#ed1c24"></i>Airtel Money</span>
+    <span class="chip"><i style="background:#ff7900"></i>Orange Money</span>
+    <span class="chip"><i style="background:#1a1f71"></i>Visa</span>
+    <span class="chip"><i style="background:linear-gradient(90deg,#eb001b 50%,#f79e1b 50%)"></i>Mastercard</span>
+  </div>
+</div>
+
+<!-- Particuliers -->
+<section id="particuliers">
+  <div class="wrap center-text reveal">
+    <span class="eyebrow">Pour les particuliers</span>
+    <h2 class="big">La nouvelle app pour votre argent de tous les jours</h2>
+    <p class="sub">Un seul wallet pour vos francs congolais et vos dollars, quel que soit votre opérateur.</p>
+  </div>
+  <div class="wrap features">
+    <article class="feature blue reveal">
+      <h3>Rechargez en un geste</h3>
+      <p>Depuis M-Pesa, Airtel Money, Orange Money ou une carte enregistrée. Vous validez sur votre téléphone, l'argent arrive dans votre wallet.</p>
+      <div class="art"><div class="mini">
+        <div class="field"><span>Opérateur</span><b>Airtel Money</b></div>
+        <div class="field"><span>Montant</span><b>100 000 FC</b></div>
+        <div class="go">Recharger</div>
+      </div></div>
+    </article>
+    <article class="feature yellow reveal">
+      <h3>Envoyez gratuitement</h3>
+      <p>Les transferts entre wallets Pay243 sont instantanés et sans frais, protégés par votre PIN. Pour un proche sans compte, envoyez sur son numéro Mobile Money.</p>
+      <div class="art"><div class="mini">
+        <div class="line"><span>À Patrick Ilunga</span><b>25 000 FC</b></div>
+        <div class="line"><span>Frais</span><b>0 FC</b></div>
+        <div class="line"><span>Statut</span><span class="pill">Reçu</span></div>
+      </div></div>
+    </article>
+    <article class="feature mint reveal">
+      <h3>CDF ou dollars, à vous de choisir</h3>
+      <p>Gardez vos deux soldes côte à côte et convertissez au taux affiché, en toute transparence, avant de valider.</p>
+      <div class="art"><div class="mini">
+        <div class="fx">100,00 $ → 282 150 FC<small>Taux et marge affichés avant confirmation</small></div>
+      </div></div>
+    </article>
+  </div>
+</section>
+
+<!-- Lien de paiement -->
+<section style="padding-top:0">
+  <div class="wrap split">
+    <div class="reveal">
+      <span class="eyebrow">Sans site web</span>
+      <h2 class="big">Vendez sur WhatsApp, encaissez en un lien</h2>
+      <p class="sub">Créez un lien de paiement en quelques secondes et partagez-le avec votre client. Il paie avec son wallet, son Mobile Money ou sa carte : vous êtes payé, sans terminal ni site.</p>
+      <ul class="checks">
+        <li>Le lien est valable 7 jours et ne peut être payé qu'une fois</li>
+        <li>Votre client choisit son moyen de paiement</li>
+        <li>Votre solde est disponible immédiatement, puis vous le retirez quand vous voulez</li>
+      </ul>
+      <a class="btn btn-dark btn-lg" href="/signup">Créer mon premier lien</a>
+    </div>
+    <div class="visual reveal" aria-hidden="true">
+      <div class="stack">
+        <div class="bubble" style="animation-delay:-2s">
+          <div class="who">Pâtisserie Mama Ngalula</div>
+          Votre gâteau d'anniversaire est prêt 🎂 Réglez ici :
+          <span class="lnk">Payer 35 000 FC</span>
+          <div class="time">14:02 ✓✓</div>
+        </div>
+        <div class="float delay">
+          <div class="row"><div class="badge ok"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+            <div><b>Payé par Orange Money</b><small>il y a quelques secondes</small></div></div>
+          <div class="amt">35 000 FC</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Entreprises -->
+<section class="dark" id="entreprises">
+  <div class="wrap split">
+    <div class="reveal">
+      <span class="eyebrow">Pour les entreprises et les développeurs</span>
+      <h2 class="big">Le paiement en ligne, enfin simple en RDC</h2>
+      <p class="sub">Une seule intégration pour accepter le wallet Pay243, les trois opérateurs Mobile Money et les cartes. Page de paiement hébergée, remboursements, versements et webhooks signés.</p>
+      <ul class="checks">
+        <li>Bouton « Payer avec Pay243 » en quelques lignes</li>
+        <li>Mode test complet avec des opérateurs simulés</li>
+        <li>Rapprochement quotidien et notifications fiables, même si le réseau coupe</li>
+      </ul>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a class="btn btn-white btn-lg" href="/signup?type=business">Ouvrir un compte marchand</a>
+        <a class="btn btn-lg" style="background:rgba(255,255,255,.1);color:#fff" href="/docs">Lire la documentation</a>
+      </div>
+    </div>
+    <div class="code reveal" aria-label="Exemple d'appel à l'API">
+      <div class="bar"><i></i><i></i><i></i><span>creer-paiement.js</span></div>
+<pre><span class="c">// Créer un paiement et rediriger le client</span>
+<span class="k">const</span> res = <span class="k">await</span> <span class="p">fetch</span>(<span class="s">'https://api.pay243.cd/v1/payments'</span>, {
+  method: <span class="s">'POST'</span>,
+  headers: {
+    Authorization: <span class="s">`Bearer ${SECRET_KEY}`</span>,
+    <span class="s">'Idempotency-Key'</span>: commande.id,
+  },
+  body: <span class="p">JSON.stringify</span>({
+    amount: <span class="n">4500000</span>, <span class="c">// 45 000 FC</span>
+    currency: <span class="s">'CDF'</span>,
+    reference: <span class="s">'CMD-1024'</span>,
+  }),
+});
+<span class="k">const</span> { checkout_url } = <span class="k">await</span> res.<span class="p">json</span>();</pre>
+    </div>
+  </div>
+  <div class="wrap stats">
+    <div class="stat"><b>0 FC</b><span>pour envoyer entre wallets Pay243</span></div>
+    <div class="stat"><b>1 %</b><span>de frais pour retirer vers le Mobile Money</span></div>
+    <div class="stat"><b>2,5 %</b><span>de commission par paiement marchand, sans abonnement</span></div>
+    <div class="stat"><b>2 devises</b><span>CDF et USD, dans le même compte</span></div>
+  </div>
+</section>
+
+<!-- Sécurité -->
+<section id="securite">
+  <div class="wrap center-text reveal">
+    <span class="eyebrow">Sécurité</span>
+    <h2 class="big">Votre argent est protégé à chaque étape</h2>
+    <p class="sub">Les protections d'une plateforme de paiement sérieuse, pensées pour les réseaux mobiles congolais.</p>
+  </div>
+  <div class="wrap secure">
+    <div class="reveal"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <h3>PIN de transaction</h3><p>Chaque envoi, retrait ou paiement est confirmé par votre PIN, bloqué après 5 erreurs.</p></div>
+    <div class="reveal"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+      <h3>Code de vérification</h3><p>Votre email est vérifié à l'inscription, et un code est demandé sur tout nouvel appareil.</p></div>
+    <div class="reveal"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <h3>Pièces chiffrées</h3><p>Vos documents d'identité sont chiffrés et vérifiés uniquement par l'équipe de conformité.</p></div>
+    <div class="reveal"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+      <h3>Contrôle permanent</h3><p>Chaque opération est rapprochée avec les opérateurs, et aucune n'est jamais débitée deux fois.</p></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="aide" style="padding-top:0">
+  <div class="wrap center-text reveal">
+    <h2 class="big">Questions fréquentes</h2>
+  </div>
+  <div class="wrap faq">
+    <details><summary>Faut-il un compte bancaire pour utiliser Pay243 ?</summary>
+      <p>Non. Une adresse email suffit pour ouvrir un compte, et vous le rechargez avec votre Mobile Money habituel. Une carte bancaire est possible mais pas obligatoire.</p></details>
+    <details><summary>Combien coûte Pay243 ?</summary>
+      <p>L'ouverture et les transferts entre wallets Pay243 sont gratuits. Un retrait vers le Mobile Money coûte 1 %. Les marchands paient 2,5 % par paiement reçu, sans abonnement.</p></details>
+    <details><summary>Que se passe-t-il si le réseau coupe pendant une opération ?</summary>
+      <p>Rien n'est perdu. L'opération reste « en attente » le temps que nous obtenions la confirmation de l'opérateur, et un retrait non abouti vous est intégralement restitué, frais compris.</p></details>
+    <details><summary>Quels sont les plafonds ?</summary>
+      <p>Les plafonds dépendent de votre niveau de vérification. Vous pouvez les augmenter à tout moment depuis l'app, en envoyant votre pièce d'identité (carte d'électeur, passeport…) et un selfie.</p></details>
+    <details><summary>Je suis développeur : comment tester l'intégration ?</summary>
+      <p>Créez un compte marchand pour obtenir une clé de test <code>sk_test_…</code>, puis suivez la <a href="/docs">documentation de l'API</a>. Le mode test simule les opérateurs : aucun argent réel ne circule.</p></details>
+  </div>
+</section>
+
+<!-- Appel final -->
+<section class="final">
+  <div class="wrap reveal">
+    <h2 class="big">Prêt à simplifier vos paiements ?</h2>
+    <p class="sub">Rejoignez Pay243 en 2 minutes, avec votre adresse email.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-white btn-lg" href="/signup">Créer mon compte gratuit</a>
+      <a class="btn btn-lg" style="background:rgba(255,255,255,.14);color:#fff" href="/app">Se connecter</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- Pied de page -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="logo on-dark" href="/"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+        <p class="about">Le wallet et la passerelle de paiement pensés pour la République démocratique du Congo.</p>
+      </div>
+      <div><h4>Particuliers</h4><ul><li><a href="/signup">Ouvrir un compte</a></li><li><a href="#particuliers">Recharger et envoyer</a></li><li><a href="#securite">Sécurité</a></li></ul></div>
+      <div><h4>Entreprises</h4><ul><li><a href="#entreprises">Accepter les paiements</a></li><li><a href="/app">Espace marchand</a></li><li><a href="#entreprises">Tarifs</a></li></ul></div>
+      <div><h4>Développeurs</h4><ul><li><a href="/docs">Documentation API</a></li><li><a href="/docs">Webhooks</a></li><li><a href="/sdk/pay243.js">SDK navigateur</a></li></ul></div>
+      <div><h4>Aide</h4><ul><li><a href="#aide">Questions fréquentes</a></li><li><a href="/health">État du service</a></li></ul></div>
+    </div>
+    <div class="legal">
+      <span>© <span id="year"></span> Pay243. Kinshasa, République démocratique du Congo.</span>
+      <span class="sandbox">Version de démonstration : aucune transaction réelle</span>
+    </div>
+  </div>
+</footer>
+</div>
+
+<script>
+// Profil Particuliers / Entreprises
+const hero = document.getElementById('hero');
+document.querySelectorAll('[data-switch]').forEach((b) => b.addEventListener('click', () => {
+  hero.dataset.view = b.dataset.switch;
+  document.querySelectorAll('[data-switch]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+}));
+
+// Menu mobile
+const burger = document.querySelector('.burger');
+const mobile = document.getElementById('mobile-menu');
+burger.addEventListener('click', () => {
+  const open = mobile.classList.toggle('open');
+  burger.setAttribute('aria-expanded', String(open));
+});
+mobile.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { mobile.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); }));
+
+// Utilisateur déjà connecté : « Mon wallet » à la place de l'inscription
+let member = false;
+try { member = !!sessionStorage.getItem('pay243_token'); } catch {}
+if (member) {
+  document.querySelectorAll('[data-guest]').forEach((e) => { e.hidden = true; e.style.display = 'none'; });
+  document.querySelectorAll('[data-member]').forEach((e) => { e.hidden = false; });
+}
+
+// Apparition au défilement
+const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => entries.forEach((e) => {
+  if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+}), { threshold: 0.12 }) : null;
+document.querySelectorAll('.reveal').forEach((el) => (io ? io.observe(el) : el.classList.add('in')));
+
+document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
