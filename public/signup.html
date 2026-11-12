@@ -20,11 +20,11 @@
     background: radial-gradient(120% 80% at 50% 0%, #3a3a3d 0%, #1c1c1e 50%, #111 100%) fixed; }
   a { color: inherit; }
 
-  .shell { width: min(1280px, calc(100% - 40px)); margin: 24px auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; align-items: stretch;
+  .shell { width: min(1120px, calc(100% - 40px)); margin: 24px auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; align-items: stretch;
     background: var(--panel); border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); }
 
   /* ================= Panneau visuel ================= */
-  .art { position: relative; min-height: min(820px, calc(100vh - 68px)); border-radius: 30px; overflow: hidden; isolation: isolate;
+  .art { position: relative; min-height: min(680px, calc(100vh - 68px)); border-radius: 30px; overflow: hidden; isolation: isolate;
     display: flex; flex-direction: column; justify-content: space-between; padding: 36px 40px 40px; background: #0b0716; perspective: 1200px; }
   .art::before { content: ""; position: absolute; inset: -30%; z-index: -2;
     background:
@@ -99,12 +99,12 @@
   .caption { margin: 14px 0 0; color: var(--txt-2); font-size: 15px; max-width: 46ch; min-height: 3.1em; transition: opacity .3s; }
 
   /* ================= Panneau formulaire ================= */
-  .form-side { padding: 30px 46px 34px; display: flex; flex-direction: column; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 34px; font-size: 14px; color: var(--txt-2); }
+  .form-side { padding: 28px 40px 28px; display: flex; flex-direction: column; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 26px; font-size: 14px; color: var(--txt-2); }
   .topbar a { color: var(--y); font-weight: 800; text-decoration: none; }
   .topbar a:hover { text-decoration: underline; }
   .back-home { color: var(--txt-2) !important; font-weight: 600 !important; }
-  .progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 30px; padding: 0; list-style: none; }
+  .progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
   .progress li { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .progress li::before { content: ""; display: block; height: 4px; border-radius: 99px; margin-bottom: 9px;
     background: linear-gradient(90deg, var(--y) var(--p, 0%), var(--line) var(--p, 0%)); transition: --p .5s; }
@@ -112,14 +112,14 @@
   .progress li.now { color: #fff; } .progress li.now::before { --p: 100%; background: linear-gradient(90deg, var(--y), #ffd666); box-shadow: 0 0 14px rgba(253,184,19,.5); }
 
   .kicker { color: var(--y); font-weight: 800; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 10px; }
-  h1#headline { font: 700 clamp(30px, 3vw, 42px)/1.08 var(--display); letter-spacing: -.025em; margin: 0 0 10px; color: #fff; text-wrap: balance; }
-  .lead { color: var(--txt-2); margin: 0 0 28px; }
+  h1#headline { font: 700 clamp(26px, 2.6vw, 36px)/1.1 var(--display); letter-spacing: -.025em; margin: 0 0 20px; color: #fff; text-wrap: balance; }
+  .lead { color: var(--txt-2); margin: -10px 0 20px; }
   [data-step] { display: none; }
   [data-step].on { display: block; animation: rise .45s cubic-bezier(.2,.8,.2,1); }
   @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-  .choices { display: grid; gap: 14px; }
-  .choice { position: relative; display: block; background: var(--tile); border: 1.5px solid var(--line); border-radius: 18px; padding: 20px 22px; cursor: pointer;
+  .choices { display: grid; gap: 12px; }
+  .choice { position: relative; display: block; background: var(--tile); border: 1.5px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer;
     transition: border-color .2s, background .2s, transform .2s, box-shadow .2s; }
   .choice:hover { border-color: #3d3d42; transform: translateY(-2px); }
   .choice input { position: absolute; opacity: 0; pointer-events: none; }
@@ -130,19 +130,19 @@
   .choice:has(input:checked) .radio { border-color: var(--y); }
   .choice:has(input:checked) .radio::after { content: ""; width: 11px; height: 11px; border-radius: 50%; background: var(--y); animation: pop .25s ease; }
   @keyframes pop { from { transform: scale(0); } }
-  .choice h2 { font: 700 22px/1.1 var(--display); letter-spacing: -.02em; margin: 0; color: #fff; }
-  .choice .ico { margin-left: auto; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--tile-2); color: var(--txt-2); transition: background .2s, color .2s; }
+  .choice h2 { font: 700 20px/1.1 var(--display); letter-spacing: -.02em; margin: 0; color: #fff; }
+  .choice .ico { margin-left: auto; width: 36px; height: 36px; border-radius: 13px; display: grid; place-items: center; background: var(--tile-2); color: var(--txt-2); transition: background .2s, color .2s; }
   .choice:has(input:checked) .ico { background: var(--y); color: #000; }
-  .choice p { color: var(--txt-2); margin: 0 0 0 38px; font-size: 15px; }
+  .choice p { color: var(--txt-2); margin: 0 0 0 38px; font-size: 14.5px; }
   .choice ul { list-style: none; padding: 0; margin: 0 0 0 38px; display: grid; gap: 8px; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .4s ease, opacity .3s, margin .3s; }
-  .choice:has(input:checked) ul { max-height: 220px; opacity: 1; margin-top: 14px; }
+  .choice:has(input:checked) ul { max-height: 120px; opacity: 1; margin-top: 10px; }
   .choice li { display: flex; gap: 10px; font-size: 14.5px; color: var(--txt-2); }
   .choice li::before { content: "✓"; flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 900; color: #000; background: var(--y); margin-top: 1px; }
 
-  .field { margin-bottom: 18px; }
+  .field { margin-bottom: 14px; }
   .field label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #fff; }
   .field label small { font-weight: 500; color: var(--muted); }
-  .field input { width: 100%; font: 16px var(--text); padding: 15px 17px; border-radius: 11px; border: 1.5px solid var(--tile-2); background: var(--tile-2); color: #fff; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .field input { width: 100%; font: 16px var(--text); padding: 13px 16px; border-radius: 11px; border: 1.5px solid var(--tile-2); background: var(--tile-2); color: #fff; transition: border-color .15s, box-shadow .15s, background .15s; }
   .field input::placeholder { color: #707077; }
   .field input:focus { outline: none; border-color: var(--y); box-shadow: 0 0 0 4px var(--y-soft); background: #232326; }
   .field .hint { font-size: 13px; color: var(--muted); margin-top: 7px; }
@@ -155,13 +155,13 @@
   .who { display: inline-flex; align-items: center; gap: 8px; background: var(--tile-2); border-radius: 999px; padding: 6px 6px 6px 16px; font-weight: 600; font-size: 14px; margin-bottom: 22px; max-width: 100%; }
   .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who button { border: 0; background: #000; border-radius: 999px; padding: 6px 12px; font: 700 13px var(--text); cursor: pointer; color: var(--y); flex: none; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 11px; padding: 17px 26px; font: 800 17px/1 var(--text);
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 11px; padding: 15px 24px; font: 800 16px/1 var(--text);
     cursor: pointer; background: var(--y); color: #000; transition: transform .15s, box-shadow .2s, filter .15s; }
   .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(253,184,19,.28); }
   .btn:disabled { opacity: .6; cursor: wait; transform: none; box-shadow: none; }
   .btn .arr { transition: transform .2s; } .btn:hover .arr { transform: translateX(4px); }
   .full { width: 100%; }
-  .actions { margin-top: 24px; }
+  .actions { margin-top: 20px; }
   .err { display: none; background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.35); color: #ffb3b3; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
   .err.on { display: block; animation: shake .35s; }
   @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
@@ -177,7 +177,7 @@
   .perks { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 0; padding: 0; list-style: none; }
   .perks li { font-size: 13px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; }
   .perks li b { color: #fff; }
-  .legal { margin-top: auto; padding-top: 26px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .legal { margin-top: auto; padding-top: 20px; text-align: center; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
 
   @media (prefers-reduced-motion: reduce) {
     .art::before, .art::after, .orbit, .orbit span b, .pill i { animation: none !important; }
@@ -185,27 +185,40 @@
     *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
   }
   @media (max-width: 960px) {
-    .shell { grid-template-columns: 1fr; width: min(640px, calc(100% - 24px)); margin: 12px auto; border-radius: 28px; }
-    .art { position: relative; top: 0; height: auto; min-height: 0; max-height: none; padding: 22px; border-radius: 20px; }
-    .stage { min-height: 330px; margin: 4px 0 10px; }
-    .orbit { width: 270px; }
-    .orbit span { transform: rotate(var(--a)) translateY(-135px) rotate(calc(var(--a) * -1)); }
+    body { align-content: start; background-attachment: scroll; }
+    .shell { grid-template-columns: 1fr; width: min(600px, calc(100% - 24px)); margin: 12px auto; border-radius: 28px; }
+    .art { position: relative; top: 0; height: auto; min-height: 0; max-height: none; padding: 18px 20px 20px; border-radius: 20px; }
+    .stage { min-height: 260px; margin: 0 0 6px; }
+    .orbit { width: 240px; }
+    .orbit span { transform: rotate(var(--a)) translateY(-120px) rotate(calc(var(--a) * -1)); }
     .orbit span b { height: 26px; padding: 0 9px; font-size: 10.5px; }
-    .pcard { width: min(250px, 74%); padding: 14px 16px; border-radius: 16px; transform: translateY(-14px); }
-    .pcard .amt { font-size: 22px; }
+    .pcard { width: min(230px, 70%); padding: 12px 14px; border-radius: 14px; transform: translateY(-8px); }
+    .pcard .amt { font-size: 20px; } .pcard .brand { font-size: 15px; } .pcard .chipm { width: 30px; height: 22px; }
     .note.n0, .note.n2 { display: none; }
     .note { max-width: 250px; padding: 9px 12px 9px 9px; } .note .ic { width: 30px; height: 30px; }
-    .note.n1 { bottom: 14px; right: 0; }
-    .tagline { font-size: 26px; }
+    .note.n1 { bottom: 0; right: 0; }
+    .tagline { font-size: 24px; }
+    .tagline br { display: none; }
     .caption { display: none; }
     .progress li { font-size: 10.5px; letter-spacing: .04em; }
-    .form-side { padding: 26px 16px 30px; min-height: 0; }
-    .topbar { margin-bottom: 24px; }
+    .form-side { padding: 20px 14px 18px; }
+    .topbar { margin-bottom: 18px; }
   }
   @media (max-width: 520px) {
-    .row2 { grid-template-columns: 1fr; }
-    .art-top .pill { display: none; }
+    .shell { width: calc(100% - 16px); margin: 8px auto; padding: 6px; border-radius: 24px; gap: 6px; }
+    .art { padding: 14px 16px 16px; border-radius: 18px; }
+    .mark { width: 42px; height: 42px; } .mark img { width: 20px; height: 20px; }
+    .stage { min-height: 200px; }
+    .orbit { width: 190px; }
+    .orbit span { transform: rotate(var(--a)) translateY(-95px) rotate(calc(var(--a) * -1)); }
+    .orbit span b { height: 22px; padding: 0 7px; font-size: 9.5px; }
+    .pcard { width: 190px; padding: 10px 12px; }
+    .pcard .amt { font-size: 17px; } .pcard .kind { font-size: 9px; } .pcard .name { font-size: 11px; }
+    .note.n1 { display: none; }
+    .tagline { font-size: 21px; }
+    .row2 { gap: 10px; }
     .choice p, .choice ul { margin-left: 0; }
+    .progress { margin-bottom: 18px; }
   }
 </style>
 </head>
@@ -216,7 +229,7 @@
   <aside class="art" id="art" aria-hidden="true">
     <div class="art-top">
       <a class="mark" href="/" tabindex="-1"><img src="/favicon.png" alt=""></a>
-      <span class="pill"><i></i> Ouverture gratuite · environ 3 minutes</span>
+      <span class="pill"><i></i> Gratuit · 3 min</span>
     </div>
 
     <div class="stage" id="stage">
@@ -241,8 +254,7 @@
     </div>
 
     <div>
-      <h2 class="tagline">Un seul compte pour<br><span class="rot" id="rot"></span></h2>
-      <p class="caption" id="caption"></p>
+      <h2 class="tagline">Un compte pour <br><span class="rot" id="rot"></span></h2>
     </div>
   </aside>
 
@@ -254,90 +266,82 @@
     </div>
 
     <ol class="progress" id="progress" aria-label="Progression">
-      <li class="now">Type de compte</li><li>Email</li><li>Sécurité</li>
+      <li class="now">Compte</li><li>Email</li><li>Sécurité</li>
     </ol>
 
-    <p class="kicker">Ouvrir un compte Pay243</p>
-    <h1 id="headline">Payez, envoyez et encaissez en toute confiance.</h1>
+    <h1 id="headline">Ouvrez votre compte</h1>
 
     <!-- Étape 1 : type de compte -->
     <section class="on" data-step="1" aria-labelledby="headline">
-      <p class="lead">Choisissez le compte qui vous ressemble. Vous pourrez passer en compte entreprise plus tard.</p>
       <form id="f-type">
         <div class="choices" role="radiogroup" aria-label="Type de compte">
           <label class="choice">
             <input type="radio" name="account_type" value="personal" checked>
             <div class="top"><span class="radio"></span><h2>Particulier</h2>
               <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span></div>
-            <p>Envoyez, payez et gérez votre argent depuis une seule app sécurisée.</p>
+            <p>Payer, envoyer, recharger.</p>
             <ul>
-              <li>Rechargez avec M-Pesa, Airtel Money, Orange Money ou votre carte</li>
-              <li>Envoyez gratuitement à vos proches, en CDF ou en dollars</li>
-              <li>Payez en ligne sans communiquer vos coordonnées</li>
+              <li>Mobile Money et cartes</li>
+              <li>Envois gratuits, CDF et USD</li>
             </ul>
           </label>
           <label class="choice">
             <input type="radio" name="account_type" value="business">
             <div class="top"><span class="radio"></span><h2>Entreprise</h2>
               <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M10 20v-6h4v6"/></svg></span></div>
-            <p>Vendez en ligne, en boutique ou sur WhatsApp, et développez votre activité.</p>
+            <p>Encaisser en ligne et sur WhatsApp.</p>
             <ul>
-              <li>Acceptez le wallet Pay243, le Mobile Money des trois opérateurs et les cartes</li>
-              <li>Liens de paiement, page de paiement hébergée et API pour développeurs</li>
-              <li>Commission de 2,5 % par paiement, sans abonnement</li>
+              <li>Wallet, Mobile Money et cartes</li>
+              <li>2,5 % par vente, sans abonnement</li>
             </ul>
           </label>
         </div>
         <div class="actions"><button class="btn full">Commencer <span class="arr">→</span></button></div>
       </form>
-      <ul class="perks">
-        <li><b>0 FC</b> pour ouvrir</li><li><b>CDF</b> et <b>USD</b></li><li>3 opérateurs Mobile Money</li><li>Visa · Mastercard</li>
-      </ul>
     </section>
 
     <!-- Étape 2 : adresse email -->
     <section data-step="2">
-      <p class="lead">Elle vous servira à vous connecter. Nous vous envoyons un code pour la vérifier.</p>
+      <p class="lead">Nous y envoyons un code de vérification.</p>
       <div class="err" id="err2" role="alert"></div>
       <form id="f-email" novalidate>
         <div class="field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="vous@exemple.com"></div>
         <button class="btn full">Continuer <span class="arr">→</span></button>
       </form>
-      <p class="alt"><button type="button" class="resend" data-back="1">← Changer de type de compte</button></p>
+      <p class="alt"><button type="button" class="resend" data-back="1">← Retour</button></p>
     </section>
 
     <!-- Étape 3 : vérification + informations -->
     <section data-step="3">
-      <p class="lead" style="margin-bottom:12px">Saisissez le code à 6 chiffres envoyé à :</p>
+      <p class="lead" style="margin-bottom:10px">Code envoyé à :</p>
       <div class="who"><span id="who-email"></span><button type="button" data-back="2">Modifier</button></div>
       <div class="sandbox" id="sandbox-note" hidden></div>
-      <p class="hint-mail" id="mail-hint" hidden>Rien reçu après une minute ? Regardez dans vos <b>courriers indésirables</b> ou <b>Promotions</b>, et vérifiez l'adresse ci-dessus. L'expéditeur est <b>no-reply@pay243.com</b>.</p>
+      <p class="hint-mail" id="mail-hint" hidden>Rien reçu ? Vérifiez vos <b>courriers indésirables</b> (expéditeur : no-reply@pay243.com).</p>
       <div class="err" id="err3" role="alert"></div>
       <form id="f-account" novalidate>
         <div class="field">
-          <label for="otp">Code de vérification</label>
+          <label for="otp">Code à 6 chiffres</label>
           <input id="otp" name="otp_code" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" required>
           <div class="hint"><button type="button" class="resend" id="resend" disabled>Renvoyer le code</button> <span id="resend-timer"></span></div>
         </div>
         <div class="divider"></div>
         <div class="field" data-biz hidden><label for="business_name">Nom de l'entreprise</label><input id="business_name" name="business_name" autocomplete="organization" placeholder="Ex : Boutique Kin Mode"></div>
         <div class="field"><label for="full_name" id="name-label">Nom complet</label><input id="full_name" name="full_name" autocomplete="name" required placeholder="Ex : Grace Mbuyi"></div>
-        <div class="field"><label for="phone">Numéro Mobile Money <small>(facultatif)</small></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678">
-          <div class="hint">M-Pesa, Airtel Money ou Orange Money : utile pour recharger et retirer. Vous pourrez l'ajouter plus tard.</div></div>
+        <div class="field"><label for="phone">Mobile Money <small>(facultatif)</small></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678"></div>
         <div class="field"><label for="password">Mot de passe</label>
           <div class="pw"><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-toggle="password">Afficher</button></div>
-          <div class="meter"><i id="meter"></i></div><div class="hint" id="pw-hint">8 caractères minimum. Mélangez lettres, chiffres et symboles.</div></div>
+          <div class="meter"><i id="meter"></i></div><div class="hint" id="pw-hint">8 caractères minimum.</div></div>
         <div class="row2">
-          <div class="field"><label for="pin">PIN de transaction</label><input id="pin" name="pin" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required placeholder="4 à 6 chiffres"></div>
-          <div class="field"><label for="pin2">Confirmer le PIN</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
+          <div class="field"><label for="pin">PIN</label><input id="pin" name="pin" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required placeholder="4 à 6 chiffres"></div>
+          <div class="field"><label for="pin2">Confirmer</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
         </div>
         <label class="consent"><input type="checkbox" id="consent" required>
-          <span>J'accepte les conditions d'utilisation et la politique de confidentialité de Pay243, et je confirme avoir au moins 18 ans.</span></label>
+          <span>J'accepte les conditions et j'ai 18 ans ou plus.</span></label>
         <button class="btn full" id="create">Créer mon compte</button>
       </form>
     </section>
 
-    <p class="legal">© <span id="year"></span> Pay243 — Kinshasa, République démocratique du Congo. Les services de monnaie électronique seront proposés dans le cadre réglementaire de la Banque Centrale du Congo.</p>
+    <p class="legal">© <span id="year"></span> Pay243 · Kinshasa, RDC</p>
   </main>
 </div>
 
@@ -374,31 +378,26 @@ async function busy(btn, label, fn) {
 const SCENES = {
   personal: {
     kind: 'Compte personnel', label: 'Solde disponible', amount: 250000, currency: 'CDF',
-    words: ['payer en ligne', 'envoyer à vos proches', 'recharger en Mobile Money', 'gérer CDF et dollars'],
+    words: ['payer', 'envoyer', 'recharger', 'épargner'],
     notes: [
-      { ic: '↘', c: '#2fd27a', t: '+25 000 FC reçus', s: 'De Grace · à l’instant' },
-      { ic: 'M', c: '#ff4d4d', t: 'Recharge M-Pesa confirmée', s: '+50 000 FC · il y a 2 min' },
-      { ic: '↗', c: '#fdb813', t: 'Envoyé à Papa · 40 $', s: 'Gratuit et instantané' },
-      { ic: '✓', c: '#7aa7ff', t: 'Paiement en ligne réussi', s: 'Sans partager votre carte' },
-      { ic: 'O', c: '#ff8a1f', t: 'Retrait Orange Money', s: '20 000 FC · en cours' },
+      { ic: '↘', c: '#2fd27a', t: '+25 000 FC', s: 'Reçu de Grace' },
+      { ic: 'M', c: '#ff4d4d', t: 'Recharge M-Pesa', s: '+50 000 FC' },
+      { ic: '↗', c: '#fdb813', t: 'Envoyé · 40 $', s: 'Gratuit' },
+      { ic: '✓', c: '#7aa7ff', t: 'Paiement réussi', s: 'En ligne' },
+      { ic: 'O', c: '#ff8a1f', t: 'Retrait Orange', s: '20 000 FC' },
     ],
   },
   business: {
     kind: 'Compte entreprise', label: 'Ventes du jour', amount: 124580, currency: 'USD',
-    words: ['encaisser partout', 'vendre sur WhatsApp', 'accepter Mobile Money', 'intégrer notre API'],
+    words: ['vendre', 'encaisser', 'être payé', 'grandir'],
     notes: [
-      { ic: '$', c: '#2fd27a', t: 'Nouvelle vente · 45,00 $', s: 'Wallet Pay243 · à l’instant' },
-      { ic: '🔗', c: '#fdb813', t: 'Lien de paiement payé', s: 'Commande n°1024 · Airtel Money' },
-      { ic: 'M', c: '#ff4d4d', t: 'Paiement M-Pesa reçu', s: '+85 000 FC · il y a 1 min' },
-      { ic: '↘', c: '#7aa7ff', t: 'Ventes versées sur le wallet', s: '312,40 $ · instantané' },
-      { ic: '★', c: '#ff8a1f', t: 'Nouveau client fidèle', s: '3ᵉ achat ce mois-ci' },
+      { ic: '$', c: '#2fd27a', t: 'Vente · 45,00 $', s: 'Wallet Pay243' },
+      { ic: '🔗', c: '#fdb813', t: 'Lien payé', s: 'Commande n°1024' },
+      { ic: 'M', c: '#ff4d4d', t: 'M-Pesa reçu', s: '+85 000 FC' },
+      { ic: '↘', c: '#7aa7ff', t: 'Ventes versées', s: '312,40 $' },
+      { ic: '★', c: '#ff8a1f', t: 'Client fidèle', s: '3ᵉ achat' },
     ],
   },
-};
-const CAPTIONS = {
-  1: 'Particulier ou entreprise : un compte gratuit, en francs congolais et en dollars, relié aux trois opérateurs Mobile Money.',
-  2: 'Votre email sert à vous connecter et à recevoir les confirmations de vos opérations.',
-  3: 'Mot de passe pour vous connecter, PIN pour valider chaque paiement : votre argent reste protégé.',
 };
 const fmtMoney = (minor, cur) => cur === 'USD'
   ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
@@ -480,17 +479,15 @@ if (!REDUCED) {
 //  Parcours d'inscription
 // =====================================================================
 const HEADLINES = {
-  1: 'Payez, envoyez et encaissez en toute confiance.',
+  1: 'Ouvrez votre compte',
   personal: 'Créez votre compte personnel.',
   business: 'Créez votre compte entreprise.',
 };
-const STEP_TITLES = { 2: 'Quelle est votre adresse email ?', 3: 'Vérifiez votre email et sécurisez votre compte.' };
+const STEP_TITLES = { 2: 'Votre email', 3: 'Sécurisez votre compte' };
 function go(step) {
   $$('[data-step]').forEach((s) => s.classList.toggle('on', s.dataset.step === String(step)));
   $('#headline').textContent = step === 1 ? HEADLINES[1] : STEP_TITLES[step] || HEADLINES[state.type];
-  $('.kicker').textContent = step === 1 ? 'Ouvrir un compte Pay243' : HEADLINES[state.type].replace('.', '');
   $$('#progress li').forEach((li, i) => { li.classList.toggle('done', i + 1 < step); li.classList.toggle('now', i + 1 === step); });
-  const cap = $('#caption'); cap.style.opacity = 0; setTimeout(() => { cap.textContent = CAPTIONS[step]; cap.style.opacity = 1; }, 200);
   window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
   const focus = { 2: '#email', 3: '#otp' }[step];
   if (focus) setTimeout(() => $(focus).focus({ preventScroll: true }), 60);
@@ -505,7 +502,7 @@ $('#f-type').addEventListener('submit', (e) => {
   state.type = new FormData(e.target).get('account_type');
   const biz = state.type === 'business';
   $$('[data-biz]').forEach((el) => { el.hidden = !biz; el.querySelector('input').required = biz; });
-  $('#name-label').textContent = biz ? 'Votre nom complet (responsable du compte)' : 'Nom complet';
+  $('#name-label').textContent = biz ? 'Votre nom (responsable)' : 'Nom complet';
   go(2);
 });
 
@@ -554,7 +551,7 @@ $('#password').addEventListener('input', (e) => {
   const m = $('#meter');
   m.style.width = `${(score / 5) * 100}%`;
   m.style.background = score <= 2 ? '#ff6b6b' : score === 3 ? '#fdb813' : '#2fd27a';
-  $('#pw-hint').textContent = !v ? '8 caractères minimum. Mélangez lettres, chiffres et symboles.' : score <= 2 ? 'Mot de passe faible.' : score === 3 ? 'Mot de passe correct.' : 'Mot de passe solide.';
+  $('#pw-hint').textContent = !v ? '8 caractères minimum.' : score <= 2 ? 'Mot de passe faible.' : score === 3 ? 'Mot de passe correct.' : 'Mot de passe solide.';
 });
 $('#otp').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
 
@@ -589,7 +586,6 @@ $('#f-account').addEventListener('submit', (e) => {
 
 document.getElementById('year').textContent = new Date().getFullYear();
 renderScene(state.type);
-$('#caption').textContent = CAPTIONS[1];
 </script>
 </body>
 </html>
