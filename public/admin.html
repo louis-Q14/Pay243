@@ -70,7 +70,7 @@
   aside .me { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid var(--side-2); font-size: 13px; }
   aside .me b { color: #fff; display: block; }
   aside .me button { border: 0; background: none; color: #9fb0c8; padding: 6px 0 0; font-weight: 600; }
-  main { padding: 26px 30px 60px; min-width: 0; }
+  main { padding: 26px max(30px, calc((100% - 1360px) / 2)) 60px; min-width: 0; }
   .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
   .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
   .mode { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--warn-bg); color: var(--warn); }
