@@ -21,6 +21,45 @@
   .steps3 li b { display: block; color: var(--ink); margin-top: 4px; }
   @media (max-width: 560px) { .steps3 { grid-template-columns: 1fr; } }
 
+  /* ---------- Téléphone : tout plus compact ---------- */
+  @media (max-width: 560px) {
+    header.top { padding: 8px 12px; }
+    header.top .logo-img { height: 24px; }
+    #who { gap: 10px; flex-wrap: nowrap; }
+    #who .sep, #who .who-set { display: none; }
+    #who #logout { font-size: 13px; padding: 4px 0; }
+    #who .av { width: 28px; height: 28px; font-size: 11px; }
+    main#app { padding: 10px 12px 24px; }
+    .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 4px; margin-bottom: 10px; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tabs button { flex: none; padding: 7px 12px; font-size: 13.5px; }
+    .card { padding: 14px; margin-bottom: 10px; border-radius: 12px; }
+    .card h2 { font-size: 15px; margin-bottom: 8px; }
+    .gate { border-width: 1.5px; }
+    .gate h2 { font-size: 16px; }
+    .gate p { font-size: 13px; margin: 0 0 8px; }
+    .steps3 { gap: 6px; margin: 8px 0 2px; }
+    .steps3 li { display: flex; align-items: center; gap: 6px; padding: 8px 10px; font-size: 12.5px; border-radius: 10px; }
+    .steps3 li::before { width: 18px; height: 18px; font-size: 10px; margin: 0; flex: none; }
+    .steps3 li b { display: inline; margin: 0 0 0 auto; font-size: 12.5px; text-align: right; }
+    .gate .full { margin-top: 10px; padding: 10px; }
+    #tab-home > .grid, #m-bal { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .balance { padding: 12px 14px; border-radius: 12px; }
+    .balance::after { width: 70px; height: 70px; right: -20px; top: -20px; }
+    .balance small { font-size: 10px; letter-spacing: .06em; }
+    .balance .amt { font-size: 19px; margin-top: 2px; }
+    .balance button { padding: 6px 8px; font-size: 12px; }
+    .actions { grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0; }
+    .actions button { padding: 9px 2px; font-size: 11.5px; gap: 2px; border-radius: 10px; }
+    .actions button i { font-size: 16px; }
+    .list li { padding: 9px 0; gap: 8px; font-size: 13.5px; }
+    .muted { font-size: 12px; }
+    .pill { font-size: 10.5px; padding: 1px 6px; }
+    #limits { font-size: 11.5px; }
+    .modal { padding: 18px 16px; border-radius: 16px; }
+    .modal h3 { font-size: 17px; }
+  }
+
   /* ---------- Écran de connexion ---------- */
   body:has(#auth:not(.hidden)) { background: radial-gradient(120% 90% at 50% 0%, #3a3a3d 0%, #1c1c1e 55%, #111 100%); min-height: 100vh; }
   body:has(#auth:not(.hidden)) header.top { display: none; }
@@ -327,7 +366,7 @@ async function boot() {
     const me = await api('GET', '/v1/me'); ME = me.user;
     $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden');
     const av = ME.avatar_url ? `<span class="av" style="background-image:url('${esc(ME.avatar_url)}')"></span>` : `<span class="av">${esc(ME.full_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase())}</span>`;
-    $('#who').innerHTML = `<a href="/settings" class="me" title="Paramètres du compte">${av}<span>${esc(ME.full_name)}</span></a> · <a href="/settings">Paramètres</a> · <button class="link" id="logout">Déconnexion</button>`;
+    $('#who').innerHTML = `<a href="/settings" class="me" title="Paramètres du compte">${av}<span>${esc(ME.full_name)}</span></a><span class="sep"> · </span><a href="/settings" class="who-set">Paramètres</a><span class="sep"> · </span><button class="link" id="logout">Déconnexion</button>`;
     $('#logout').onclick = logout;
     const L = me.limits;
     VERIF = me.verification?.status || (ME.activated ? 'verified' : 'required');

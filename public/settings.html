@@ -138,14 +138,73 @@
     main.settings { padding: 24px 0 64px; }
   }
   @media (max-width: 560px) {
-    .wrap { padding: 0 16px; }
+    .wrap { padding: 0 12px; }
+    .topline { height: 3px; }
+    .bar .wrap { height: 50px; gap: 10px; }
+    .bar .logo-img { height: 24px; }
+    .me-chip { gap: 8px; }
     .me-chip .btn { display: none; }
-    .profile .cover { height: 130px; }
-    .line .name { font-size: 22px; }
-    .limits { grid-template-columns: 1fr; }
+    .mini-av { width: 28px; height: 28px; font-size: 11px; }
+    .me-chip .lk { font-size: 13px; }
+    .tabs-bar .wrap { padding-top: 6px; padding-bottom: 6px; gap: 2px; }
+    .tab { font-size: 13.5px; padding: 7px 12px; }
+    main.settings { padding: 14px 0 36px; }
+    .cols { gap: 20px; }
+    .panel { border-radius: 14px; padding: 10px 12px; }
+    .sec-title { margin-bottom: 8px; }
+    .sec-title h2 { font-size: 18px; }
+    .sec-title.space { margin-top: 20px; }
+    .add { padding: 5px 11px; font-size: 12.5px; }
+    .add svg { width: 13px; height: 13px; }
+    .profile { padding: 0; }
+    .profile .cover { height: 74px; padding: 10px 14px; font-size: 12px; }
+    .profile .cover::after { width: 120px; height: 120px; right: -30px; bottom: -50px; }
+    .avatar-wrap, .avatar { width: 64px; height: 64px; }
+    .avatar-wrap { margin: -34px 0 0 14px; }
+    .avatar { font-size: 22px; border-width: 3px; }
+    .avatar-edit { width: 26px; height: 26px; right: -4px; bottom: 0; }
+    .avatar-edit svg { width: 13px; height: 13px; }
+    .profile .body { padding: 8px 14px 14px; }
+    .line { padding: 4px 0; gap: 10px; }
+    .line .name { font-size: 18px; }
+    .lk { font-size: 13.5px; }
+    .handle { font-size: 13.5px; }
+    .opt { gap: 10px; padding: 10px 12px; margin-top: 8px; border-radius: 12px; }
+    .opt svg { width: 18px; height: 18px; margin-top: 1px; }
+    .opt b { font-size: 13.5px; }
+    .opt small, .opt .u { font-size: 12px; }
+    .tag { font-size: 10px; padding: 1px 6px; }
+    .field-box { padding: 6px 10px 4px; border-radius: 10px; }
+    .field-box label { font-size: 11.5px; }
+    .kv { padding-top: 10px; }
+    .kv dt { font-size: 11.5px; }
+    .kv dd { font-size: 14px; margin-bottom: 8px; gap: 8px; }
+    .mono { font-size: 12px; }
+    .copy { font-size: 11px; padding: 2px 7px; }
+    .item { gap: 10px; padding: 10px 6px; }
+    .item svg.ic { width: 20px; height: 20px; margin-top: 2px; }
+    .item .txt { font-size: 14px; }
+    .item .txt small { font-size: 12px; }
+    .item .acts { gap: 10px; }
+    .empty { font-size: 13.5px; padding: 10px 6px; }
+    .stack { gap: 12px; }
+    .row-set { flex-wrap: wrap; gap: 8px 12px; padding: 10px 6px; }
+    .row-set h3 { font-size: 14.5px; }
+    .row-set p { font-size: 12.5px; }
+    .switch { width: 44px; height: 26px; }
+    .switch span::after { width: 20px; height: 20px; }
+    .switch input:checked + span::after { transform: translateX(18px); }
+    .intro { font-size: 13px; margin: -2px 0 10px; }
+    .limits { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px 6px 8px; }
+    .limits div { padding: 8px; border-radius: 10px; }
+    .limits small { font-size: 10.5px; }
+    .limits b { font-size: 14px; }
+    .btn-sm { padding: 7px 12px; font-size: 13px; }
     .f2 { grid-template-columns: 1fr; }
-    .row-set { flex-wrap: wrap; }
-    .modal { padding: 22px 18px; }
+    .modal { padding: 18px 16px; border-radius: 16px; }
+    .modal h3 { font-size: 19px; }
+    .modal .sub { font-size: 13.5px; margin-bottom: 12px; }
+    .toast { font-size: 13.5px; padding: 11px 16px; }
   }
 </style>
 </head>
@@ -165,7 +224,7 @@
     <div class="wrap" role="tablist">
       <button class="tab on" data-tab="compte" role="tab">Compte</button>
       <button class="tab" data-tab="securite" role="tab">Sécurité</button>
-      <button class="tab" data-tab="confidentialite" role="tab">Données et confidentialité</button>
+      <button class="tab" data-tab="confidentialite" role="tab">Confidentialité</button>
       <button class="tab" data-tab="paiements" role="tab">Paiements</button>
       <button class="tab" data-tab="notifications" role="tab">Notifications</button>
       <button class="tab" data-tab="vendeur" role="tab">Outils vendeur</button>
