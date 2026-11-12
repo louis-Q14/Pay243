@@ -21,40 +21,11 @@
   .steps3 li b { display: block; color: var(--ink); margin-top: 4px; }
   @media (max-width: 560px) { .steps3 { grid-template-columns: 1fr; } }
 
-  /* ---------- Support ---------- */
-  textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; resize: vertical; min-height: 80px; box-sizing: border-box; }
-  textarea:focus { outline: 2px solid rgba(0,112,224,.25); border-color: var(--blue); }
+  /* ---------- Lien vers le centre d'aide (pastille des réponses du support) ---------- */
   .tabs .badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #ce1021; color: #fff; font-size: 11px; font-weight: 800; margin-left: 4px; }
-  .sup-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .sup-head h2 { margin: 0; } .sup-head button { padding: 8px 14px; }
-  .sup-item { cursor: pointer; } .sup-item:hover b { color: var(--blue); }
-  .dot-new { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ce1021; vertical-align: middle; }
-  .msgs { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; max-height: 55vh; overflow-y: auto; padding: 2px; }
-  .msg { max-width: 85%; padding: 9px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; }
-  .msg small { display: block; font-size: 11px; opacity: .75; margin-bottom: 2px; white-space: normal; }
-  .msg.me { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
-  .msg.them { align-self: flex-start; background: #eef3fb; border-bottom-left-radius: 4px; }
-  /* Pièces jointes du support */
-  .sa-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
-  .sa-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px dashed #b9c6da; border-radius: 99px; font-size: 13px; font-weight: 600; color: #0057d9; cursor: pointer; background: #fff; margin: 0; }
-  .sa-btn svg { width: 15px; height: 15px; }
-  .sa-list { display: contents; }
-  .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 10px; border-radius: 99px; background: #eef3fb; font-size: 12px; color: #0b1424; }
-  .sa-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
-  .sa-chip.busy { opacity: .6; } .sa-chip.busy::after { content: "envoi…"; font-size: 11px; color: #5d6879; margin-right: 4px; }
-  .sa-chip button { all: unset; cursor: pointer; padding: 0 6px; font-size: 16px; line-height: 1; color: #5d6879; }
-  .sa-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; white-space: normal; }
-  .sa-files img { width: 128px; height: 96px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: rgba(0,0,0,.08); }
-  .sa-doc { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 8px; background: #fff; color: #0b1424 !important; font-size: 12px; text-decoration: none; border: 1px solid rgba(0,0,0,.08); max-width: 220px; }
-  .sa-doc b { font-size: 10px; padding: 2px 5px; border-radius: 4px; background: #ce1021; color: #fff; }
-  .sa-doc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sa-zoom { position: fixed; inset: 0; z-index: 90; background: rgba(11,20,36,.85); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
-  .sa-zoom[hidden] { display: none; }
-  .sa-zoom img { max-width: 94vw; max-height: 82vh; border-radius: 8px; }
-  .sa-zoom a { margin-top: 10px; color: #fff; font-size: 14px; font-weight: 600; }
-  .sa-zoom div { display: grid; justify-items: center; }
-  @media (max-width: 560px) { .sa-files img { width: 104px; height: 78px; } }
-  .msg.system { align-self: center; background: none; color: var(--muted); font-size: 12px; text-align: center; padding: 2px 8px; }
+  .tabs .badge[hidden] { display: none; }
+  .tabs a.tab-link { display: inline-flex; align-items: center; padding: 10px 16px; border-radius: 10px; color: var(--muted); font-weight: 600; text-decoration: none; margin-left: auto; }
+  .tabs a.tab-link:hover { color: var(--ink); background: var(--card); }
 
   /* ---------- Téléphone : tout plus compact ---------- */
   @media (max-width: 560px) {
@@ -67,7 +38,7 @@
     main#app { padding: 10px 12px 24px; }
     .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 4px; margin-bottom: 10px; }
     .tabs::-webkit-scrollbar { display: none; }
-    .tabs button { flex: none; padding: 7px 12px; font-size: 13.5px; }
+    .tabs button, .tabs a.tab-link { flex: none; padding: 7px 12px; font-size: 13.5px; }
     .card { padding: 14px; margin-bottom: 10px; border-radius: 12px; }
     .card h2 { font-size: 15px; margin-bottom: 8px; }
     .gate { border-width: 1.5px; }
@@ -212,7 +183,7 @@
     <button class="on" data-tab="home">Wallet</button>
     <button data-tab="cards">Mes cartes</button>
     <button data-tab="merchant">Espace marchand</button>
-    <button data-tab="support">Support <span class="badge" id="sup-badge" hidden></span></button>
+    <a class="tab-link" href="/aide" title="Centre d'aide et messages du support">Aide <span class="badge" id="sup-badge" hidden></span></a>
   </div>
 
   <section id="tab-home">
@@ -297,41 +268,8 @@
     </div>
   </section>
 
-  <section id="tab-support" class="hidden">
-    <div id="sup-list" class="card">
-      <div class="sup-head"><h2>Support Pay243</h2><button id="sup-new-btn">Nouvelle demande</button></div>
-      <p class="muted">Écrivez-nous : un conseiller vous répond ici et vous êtes prévenu par email. Pay243 ne vous demandera jamais votre mot de passe, votre PIN ni un code de vérification.</p>
-      <ul class="list" id="sup-tickets"></ul>
-    </div>
-    <div id="sup-new" class="card hidden">
-      <button class="link" data-sup-back>← Mes demandes</button>
-      <h2>Nouvelle demande</h2>
-      <form id="f-sup-new">
-        <label>Rubrique</label><select name="category"></select>
-        <label>Objet</label><input name="subject" maxlength="120" required placeholder="Ex : Ma recharge M-Pesa n'est pas arrivée">
-        <label>Opération concernée (facultatif)</label><select name="transaction_id"><option value="">Aucune</option></select>
-        <label>Message</label><textarea name="message" rows="5" maxlength="4000" required placeholder="Décrivez votre problème : date, montant, numéro utilisé…"></textarea>
-        <div class="sa-row"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
-        <p class="muted">Capture d'écran, reçu… : photo ou PDF, 5 Mo max. N'indiquez jamais votre mot de passe, votre PIN ni un code reçu par SMS ou email.</p>
-        <button class="full">Envoyer ma demande</button>
-      </form>
-    </div>
-    <div id="sup-thread" class="card hidden">
-      <button class="link" data-sup-back>← Mes demandes</button>
-      <h2 id="sup-title" style="margin-top:6px"></h2>
-      <div id="sup-meta"></div>
-      <div class="msgs" id="sup-msgs"></div>
-      <p class="muted hidden" id="sup-closed-note">Cette demande est résolue. Écrivez un nouveau message pour la rouvrir.</p>
-      <form id="f-sup-reply">
-        <textarea name="body" rows="3" maxlength="4000" placeholder="Votre message…"></textarea>
-        <div class="sa-row"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
-        <div class="row" style="margin-top:8px"><button>Envoyer</button><button type="button" class="ghost" id="sup-close">Marquer comme résolue</button></div>
-      </form>
-    </div>
-  </section>
 </main>
 
-<div id="sa-zoom" class="sa-zoom" hidden><div><img alt=""><a href="#" download>Télécharger</a></div></div>
 <div id="modal" class="modal-bg hidden"><div class="modal" id="modal-body"></div></div>
 
 <script>
@@ -417,7 +355,7 @@ $('#f-reset').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
 function setSession(t) {
   TOKEN = t; try { sessionStorage.setItem('pay243_token', t); } catch {}
   const next = new URLSearchParams(location.search).get('next');
-  if (next && /^\/settings(#[a-z]+)?$/.test(next)) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
+  if (next && /^\/(settings|aide)(#[a-z]+)?$/.test(next)) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
   boot();
 }
 function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'); } catch {} $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#who').textContent = ''; }
@@ -425,9 +363,8 @@ function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'
 // ---------------- Onglets ----------------
 $$('[data-tab]').forEach((b) => b.onclick = () => {
   $$('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
-  ['home', 'cards', 'merchant', 'support'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+  ['home', 'cards', 'merchant'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
   if (b.dataset.tab === 'merchant') loadMerchant();
-  if (b.dataset.tab === 'support') loadSupport().catch((e) => toast(e.message, true));
   if (b.dataset.tab === 'cards') loadCards();
 });
 
@@ -454,7 +391,7 @@ async function boot() {
       if (newKey) { showKey(newKey); toast('Bienvenue ! Votre compte entreprise est prêt.'); }
       history.replaceState(null, '', '/app');
     } else if (location.hash === '#support') {
-      $('[data-tab="support"]').click(); history.replaceState(null, '', '/app');
+      location.replace('/aide#support'); return; // le support a sa page : le centre d'aide
     } else if (location.hash === '#cards') {
       $('[data-tab="cards"]').click(); history.replaceState(null, '', '/app');
     } else if (location.hash === '#kyc') {
@@ -680,150 +617,13 @@ $$('[data-open]').forEach((b) => b.onclick = () => {
 });
 
 // ---------------- Support ----------------
-const SUP = { open: null, count: 0, timer: null, categories: [] };
-const SUP_STATUS = { open: ['En attente du support', 'pending'], answered: ['Le support a répondu', 'succeeded'], closed: ['Résolue', ''] };
-const supPill = (s) => `<span class="pill ${SUP_STATUS[s]?.[1] || ''}">${esc(SUP_STATUS[s]?.[0] || s)}</span>`;
+// Le centre de messages est sur /aide ; ici, seulement la pastille des réponses non lues sur le lien « Aide ».
+const SUP = { timer: null };
 function setSupBadge(n) { const b = $('#sup-badge'); b.hidden = !n; b.textContent = n || ''; }
 async function refreshSupportBadge() { try { setSupBadge((await api('GET', '/v1/support/unread')).unread); } catch {} }
-function supView(v) {
-  ['list', 'new', 'thread'].forEach((x) => $('#sup-' + x).classList.toggle('hidden', x !== v));
-  if (v !== 'thread') SUP.open = null;
-}
-async function loadSupport() {
-  supView('list');
-  const r = await api('GET', '/v1/support/tickets');
-  SUP.categories = r.categories; setSupBadge(r.unread);
-  $('#sup-tickets').innerHTML = r.data.length ? r.data.map((t) => `<li class="sup-item" data-tkt="${esc(t.id)}"><div><b>#${esc(t.number)} · ${esc(t.subject)}</b>${t.unread ? ' <span class="dot-new" title="Nouvelle réponse"></span>' : ''}<div class="muted">${esc(t.category_label)} · ${when(t.last_message_at)}</div></div>${supPill(t.status)}</li>`).join('')
-    : '<li class="muted">Aucune demande pour l\'instant. Une question, un problème ? Cliquez sur « Nouvelle demande ».</li>';
-  $$('[data-tkt]').forEach((li) => li.onclick = () => openTicket(li.dataset.tkt).catch((e) => toast(e.message, true)));
-}
-async function openNewTicket() {
-  supView('new');
-  const f = $('#f-sup-new'); f.reset(); ATT_NEW.reset();
-  f.category.innerHTML = SUP.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
-  try {
-    const t = await api('GET', '/v1/transactions?limit=20');
-    f.transaction_id.innerHTML = '<option value="">Aucune</option>' + t.data.map((x) => `<option value="${esc(x.id)}">${esc(TYPE_LABEL[x.type] || x.type)} · ${fmt(x.amount, x.currency)} · ${when(x.created_at)}</option>`).join('');
-  } catch {}
-  f.subject.focus();
-}
-// ---- Pièces jointes ----
-const SA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-const SA_MAX = 5 * 1024 * 1024;
-const fsize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' ko');
-/** Photo lourde (téléphone) : réduite à 1600 px en JPEG avant l'envoi. */
-async function shrinkImage(file) {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1048576) return file;
-  try {
-    const bmp = await createImageBitmap(file);
-    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-    const b = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
-    return b && b.size < file.size ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
-  } catch { return file; }
-}
-/** Sélecteur de fichiers d'un formulaire : envoi immédiat de chaque fichier, puis ids joints au message. */
-function attacher(form) {
-  let items = [];
-  const input = form.querySelector('input[type=file]'); const list = form.querySelector('.sa-list');
-  const render = () => {
-    list.innerHTML = items.map((it, i) => `<span class="sa-chip ${it.id ? '' : 'busy'}"><span title="${esc(it.name)}">${esc(it.name)}</span><button type="button" data-i="${i}" aria-label="Retirer">×</button></span>`).join('');
-    list.querySelectorAll('[data-i]').forEach((b) => b.onclick = () => { items.splice(+b.dataset.i, 1); render(); });
-  };
-  input.onchange = async () => {
-    const files = [...input.files]; input.value = '';
-    for (const f of files) {
-      if (items.length >= 3) { toast('3 pièces jointes maximum par message.', true); break; }
-      if (!SA_TYPES.includes(f.type)) { toast(`${f.name} : photo (JPEG, PNG, WebP) ou PDF uniquement.`, true); continue; }
-      const it = { name: f.name }; items.push(it); render();
-      try {
-        const blob = await shrinkImage(f);
-        if (blob.size > SA_MAX) throw new Error(`${f.name} : 5 Mo maximum.`);
-        const r = await fetch('/v1/support/files', { method: 'POST', headers: { 'Content-Type': blob.type, Authorization: 'Bearer ' + TOKEN, 'X-File-Name': encodeURIComponent(f.name) }, body: blob });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error?.message || 'Envoi du fichier impossible.');
-        it.id = j.id; it.name = j.name;
-      } catch (e) { const i = items.indexOf(it); if (i >= 0) items.splice(i, 1); toast(e.message, true); }
-      render();
-    }
-  };
-  return { ids: () => items.filter((x) => x.id).map((x) => x.id), pending: () => items.some((x) => !x.id), reset: () => { items = []; render(); } };
-}
-const ATT_NEW = attacher($('#f-sup-new')); const ATT_REPLY = attacher($('#f-sup-reply'));
-const SA_URLS = new Map();
-function supFileUrl(p) {
-  if (!SA_URLS.has(p)) {
-    SA_URLS.set(p, fetch(p, { headers: { Authorization: 'Bearer ' + TOKEN } })
-      .then((r) => { if (!r.ok) throw new Error('Fichier indisponible.'); return r.blob(); })
-      .then((b) => URL.createObjectURL(b))
-      .catch((e) => { SA_URLS.delete(p); throw e; }));
-  }
-  return SA_URLS.get(p);
-}
-const msgFiles = (m) => (m.attachments?.length ? `<div class="sa-files">${m.attachments.map((a) => {
-  const p = `/v1/support/tickets/${encodeURIComponent(SUP.open)}/files/${encodeURIComponent(a.id)}`;
-  return a.mime.startsWith('image/') ? `<img data-src="${esc(p)}" data-name="${esc(a.name)}" alt="${esc(a.name)}">`
-    : `<a href="#" class="sa-doc" data-src="${esc(p)}" data-name="${esc(a.name)}"><b>PDF</b><span>${esc(a.name)}</span> ${fsize(a.size)}</a>`;
-}).join('')}</div>` : '');
-function saveBlob(u, name) { const l = document.createElement('a'); l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove(); }
-function hydrateFiles(box) {
-  box.querySelectorAll('img[data-src]').forEach((img) => {
-    supFileUrl(img.dataset.src).then((u) => { img.onload = () => { box.scrollTop = box.scrollHeight; }; img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
-    img.onclick = () => supFileUrl(img.dataset.src).then((u) => {
-      const z = $('#sa-zoom'); z.querySelector('img').src = u; const a = z.querySelector('a'); a.href = u; a.download = img.dataset.name; z.hidden = false;
-    }).catch((e) => toast(e.message, true));
-  });
-  box.querySelectorAll('a.sa-doc').forEach((a) => a.onclick = (e) => { e.preventDefault(); supFileUrl(a.dataset.src).then((u) => saveBlob(u, a.dataset.name)).catch((x) => toast(x.message, true)); });
-}
-$('#sa-zoom').onclick = (e) => { if (e.target.tagName !== 'A') $('#sa-zoom').hidden = true; };
-
-function renderThread(d) {
-  const t = d.ticket; SUP.open = t.id; SUP.count = d.messages.length;
-  $('#sup-title').textContent = `#${t.number} · ${t.subject}`;
-  $('#sup-meta').innerHTML = `${supPill(t.status)} <span class="muted">${esc(t.category_label)}${t.transaction_id ? ' · opération ' + esc(t.transaction_id) : ''}</span>`;
-  $('#sup-msgs').innerHTML = d.messages.map((m) => (m.author === 'system'
-    ? `<div class="msg system">${esc(m.body)} · ${when(m.created_at)}</div>`
-    : `<div class="msg ${m.author === 'user' ? 'me' : 'them'}"><small>${m.author === 'user' ? 'Vous' : esc(m.author_name || 'Support Pay243')} · ${when(m.created_at)}</small>${esc(m.body)}${msgFiles(m)}</div>`)).join('');
-  hydrateFiles($('#sup-msgs'));
-  $('#sup-close').classList.toggle('hidden', t.status === 'closed');
-  $('#sup-closed-note').classList.toggle('hidden', t.status !== 'closed');
-  const box = $('#sup-msgs'); box.scrollTop = box.scrollHeight;
-}
-async function openTicket(id) {
-  supView('thread'); ATT_REPLY.reset(); $('#f-sup-reply').reset();
-  renderThread(await api('GET', '/v1/support/tickets/' + encodeURIComponent(id)));
-  refreshSupportBadge();
-}
-$('#sup-new-btn').onclick = () => openNewTicket();
-$$('[data-sup-back]').forEach((b) => b.onclick = () => loadSupport().catch((e) => toast(e.message, true)));
-$('#f-sup-new').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
-  if (ATT_NEW.pending()) throw new Error('Patientez : envoi du fichier en cours.');
-  const d = formData(e.target); if (!d.transaction_id) delete d.transaction_id;
-  d.attachments = ATT_NEW.ids();
-  const r = await api('POST', '/v1/support/tickets', d);
-  ATT_NEW.reset(); supView('thread'); renderThread(r); toast(`Demande #${r.ticket.number} envoyée`);
-}); };
-$('#f-sup-reply').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
-  if (ATT_REPLY.pending()) throw new Error('Patientez : envoi du fichier en cours.');
-  const attachments = ATT_REPLY.ids();
-  if (!e.target.body.value.trim() && !attachments.length) throw new Error('Écrivez un message ou joignez un fichier.');
-  const r = await api('POST', `/v1/support/tickets/${encodeURIComponent(SUP.open)}/messages`, { body: e.target.body.value, attachments });
-  e.target.reset(); ATT_REPLY.reset(); renderThread(r);
-}); };
-$('#sup-close').onclick = (e) => busy(e.currentTarget, async () => {
-  renderThread(await api('POST', `/v1/support/tickets/${encodeURIComponent(SUP.open)}/close`)); toast('Demande marquée comme résolue');
-});
-/** Toutes les 20 s : pastille des réponses non lues, et nouveaux messages de la conversation ouverte. */
 function startSupportPolling() {
   if (SUP.timer) return;
-  SUP.timer = setInterval(async () => {
-    if (!TOKEN || document.hidden) return;
-    refreshSupportBadge();
-    if (SUP.open && !$('#tab-support').classList.contains('hidden')) {
-      try { const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(SUP.open)); if (d.messages.length !== SUP.count) renderThread(d); } catch {}
-    }
-  }, 20000);
+  SUP.timer = setInterval(() => { if (TOKEN && !document.hidden) refreshSupportBadge(); }, 30000);
 }
 
 // ---------------- Cartes ----------------

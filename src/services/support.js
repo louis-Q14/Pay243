@@ -232,7 +232,7 @@ export async function createTicket(user, body) {
     title: 'Votre demande est enregistrée',
     paragraphs: ['Nous avons bien reçu votre demande. Un conseiller Pay243 vous répond dès que possible, directement dans votre espace : vous serez prévenu par email à chaque réponse.'],
     details: [['Demande', `#${t.number}`], ['Objet', subject], ['Rubrique', CATEGORIES[category]]],
-    cta: { label: 'Suivre ma demande', url: appUrl('/app#support') },
+    cta: { label: 'Suivre ma demande', url: appUrl('/aide#support') },
   });
   notifySupportTeam(t, user, message + attachmentNote(attachments.length));
   return getUserTicket(user, id);
@@ -356,7 +356,7 @@ export async function staffReply(admin, id, body) {
       notifyUser(user, 'account', `Réponse du support Pay243 — demande #${ticket.number}`, `Le support Pay243 a répondu à votre demande « ${ticket.subject} ».`, {
         title: 'Le support vous a répondu',
         paragraphs: [`Un conseiller a répondu à votre demande #${ticket.number} « ${ticket.subject} » :`, excerpt, 'Répondez directement depuis votre espace Pay243 (pas par email).'],
-        cta: { label: 'Lire et répondre', url: appUrl('/app#support') },
+        cta: { label: 'Lire et répondre', url: appUrl('/aide#support') },
         footer: 'Pay243 ne vous demandera jamais votre mot de passe, votre PIN ni un code de vérification, y compris par le support.',
       });
     }

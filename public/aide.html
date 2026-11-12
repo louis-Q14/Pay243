@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centre d'aide — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Centre d'aide Pay243 : réponses aux questions fréquentes et messagerie avec le support.">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="/assets/landing.css">
+<style>
+  body { background: #fff; }
+  .nav .link-help.on { color: var(--blue); }
+  .nav-badge, .card-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font: 800 11px/1 var(--text); margin-left: 4px; vertical-align: 2px; }
+  .nav-badge[hidden], .card-badge[hidden] { display: none; }
+
+  /* ---------- En-tête ---------- */
+  .h-hero { text-align: center; padding: 72px 0 40px; }
+  .eyebrow { font-weight: 600; font-size: 15px; margin: 0 0 18px; color: var(--ink); }
+  .h-hero h1 { font: 800 clamp(34px, 5vw, 64px)/1.06 var(--display); letter-spacing: -.045em; margin: 0 auto; max-width: 16ch; text-wrap: balance; }
+  .h-hero h1 .name { color: var(--blue); }
+  .h-hero h1 .wave { display: inline-block; animation: wave 2.4s ease-in-out 1s 2; transform-origin: 70% 70%; }
+  @keyframes wave { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(6deg); } 20%, 40% { transform: rotate(-4deg); } }
+  .search { position: relative; max-width: 750px; margin: 32px auto 0; }
+  .search input { width: 100%; height: 64px; border: 1px solid #cfd5df; border-radius: 999px; padding: 0 76px 0 26px; font: 16px var(--text); background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+  .search input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 4px rgba(0, 87, 217, .12); }
+  .search button { position: absolute; right: 8px; top: 8px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--ink); color: #fff; display: grid; place-items: center; cursor: pointer; transition: transform .15s; }
+  .search button:hover { transform: scale(1.06); }
+  .search button svg { width: 22px; height: 22px; }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+  .chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 14px; font: 600 14px var(--text); color: var(--ink-2); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  .chip:hover { border-color: #c5ccd8; }
+  .chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  /* ---------- Articles ---------- */
+  .narrow { max-width: 1010px; margin: 0 auto; }
+  .sec { padding: 56px 0 24px; }
+  .sec h2 { font: 800 clamp(26px, 3vw, 34px)/1.15 var(--display); letter-spacing: -.035em; margin: 0 0 22px; }
+  .articles { list-style: none; margin: 0; padding: 0; }
+  .art { border-bottom: 1px solid #d9dee6; }
+  .art > button { all: unset; box-sizing: border-box; display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 8px; cursor: pointer; font-weight: 600; font-size: 16px; color: var(--ink); }
+  .art > button:hover .q { text-decoration: underline; text-underline-offset: 3px; }
+  .art > button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+  .art .tag { flex: none; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--soft); border-radius: 999px; padding: 4px 10px; }
+  .art .chev { flex: none; width: 18px; height: 18px; transition: transform .2s; color: var(--muted); }
+  .art.open .chev { transform: rotate(180deg); }
+  .art .ans { display: none; padding: 0 8px 24px; color: var(--ink-2); font-size: 15.5px; max-width: 78ch; }
+  .art.open .ans { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .ans p { margin: 0 0 10px; } .ans ul, .ans ol { margin: 0 0 10px; padding-left: 20px; } .ans li { margin: 4px 0; }
+  .ans a { color: var(--blue); font-weight: 600; }
+  .helpful { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--muted); }
+  .helpful button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 14px; font: 600 13px var(--text); cursor: pointer; color: var(--ink); }
+  .helpful button:hover { background: var(--soft); }
+  .more { display: flex; justify-content: flex-end; margin-top: 18px; }
+  .more button { all: unset; cursor: pointer; font-weight: 700; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+  .empty { padding: 28px 8px; color: var(--muted); }
+  .empty button { all: unset; cursor: pointer; color: var(--blue); font-weight: 700; text-decoration: underline; }
+
+  /* ---------- Autres façons d'obtenir de l'aide ---------- */
+  .ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
+  .way { vertical-align: top; }
+  .way { all: unset; box-sizing: border-box; display: block; cursor: pointer; }
+  .way .pic { position: relative; aspect-ratio: 312 / 192; border-radius: 18px; overflow: hidden; }
+  .way .pic svg { width: 100%; height: 100%; transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+  .way:hover .pic svg, .way:focus-visible .pic svg { transform: scale(1.06); }
+  .way:focus-visible .pic { outline: 3px solid var(--blue); outline-offset: 3px; }
+  .way h3 { font: 800 23px/1.2 var(--display); letter-spacing: -.03em; margin: 14px 8px 0; display: flex; align-items: center; gap: 6px; }
+  .way p { margin: 4px 8px 0; color: var(--muted); font-size: 14px; }
+  .float { animation: float 5s ease-in-out infinite; }
+  .float.d2 { animation-delay: -2.5s; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+  /* ---------- Centre de messages (support) ---------- */
+  .support-box { background: var(--soft); border-radius: 28px; padding: 28px; }
+  .sup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .sup-head h2 { margin: 0; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: 15px; }
+  .panel { background: #fff; border-radius: 20px; padding: 22px; }
+  .tickets { list-style: none; margin: 0; padding: 0; }
+  .tickets li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .tickets li:last-child { border-bottom: 0; }
+  .tickets li:hover b { text-decoration: underline; text-underline-offset: 3px; }
+  .tickets .muted { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .dot-new { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); margin-left: 6px; vertical-align: middle; }
+  .pill { display: inline-block; flex: none; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: #eef3fb; color: var(--navy); white-space: nowrap; }
+  .pill.pending { background: #fff4dc; color: #8a5200; } .pill.succeeded { background: #e6f6ee; color: #0f7a40; }
+  .back { all: unset; cursor: pointer; color: var(--blue); font-weight: 700; font-size: 14px; }
+  .panel h3 { font: 800 21px/1.25 var(--display); letter-spacing: -.02em; margin: 10px 0 6px; }
+  .f label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+  .f input, .f select, .f textarea { width: 100%; border: 1px solid #cfd5df; border-radius: 12px; padding: 12px 14px; font: 15px var(--text); background: #fff; color: var(--ink); }
+  .f textarea { resize: vertical; min-height: 110px; }
+  .f input:focus, .f select:focus, .f textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 87, 217, .12); }
+  .f .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+  .f .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .msgs { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; max-height: 60vh; overflow-y: auto; padding: 2px; }
+  .msg { max-width: 80%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.45; }
+  .msg small { display: block; font-size: 11.5px; opacity: .75; margin-bottom: 3px; white-space: normal; }
+  .msg.me { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.them { align-self: flex-start; background: var(--soft); border-bottom-left-radius: 4px; }
+  .msg.system { align-self: center; background: none; color: var(--muted); font-size: 12.5px; text-align: center; padding: 2px 8px; }
+  .guest { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .guest p { margin: 0; max-width: 52ch; color: var(--ink-2); }
+
+  /* Pièces jointes */
+  .sa-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+  .sa-btn { display: inline-flex !important; align-items: center; gap: 5px; padding: 7px 13px; border: 1px dashed #b9c6da; border-radius: 99px; font-size: 13px !important; font-weight: 600; color: var(--blue); cursor: pointer; background: #fff; margin: 0 !important; }
+  .sa-btn svg { width: 15px; height: 15px; }
+  .sa-list { display: contents; }
+  .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 10px; border-radius: 99px; background: #eef3fb; font-size: 12px; }
+  .sa-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+  .sa-chip.busy { opacity: .6; } .sa-chip.busy::after { content: "envoi…"; font-size: 11px; color: var(--muted); margin-right: 4px; }
+  .sa-chip button { all: unset; cursor: pointer; padding: 0 6px; font-size: 16px; line-height: 1; color: var(--muted); }
+  .sa-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; white-space: normal; }
+  .sa-files img { width: 132px; height: 98px; object-fit: cover; border-radius: 10px; cursor: zoom-in; background: rgba(0, 0, 0, .08); }
+  .sa-doc { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 10px; background: #fff; color: var(--ink) !important; font-size: 12px; text-decoration: none; border: 1px solid rgba(0, 0, 0, .08); max-width: 230px; }
+  .sa-doc b { font-size: 10px; padding: 2px 5px; border-radius: 4px; background: var(--red); color: #fff; }
+  .sa-doc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sa-zoom { position: fixed; inset: 0; z-index: 90; background: rgba(11, 20, 36, .85); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+  .sa-zoom[hidden] { display: none; }
+  .sa-zoom > div { display: grid; justify-items: center; }
+  .sa-zoom img { max-width: 94vw; max-height: 82vh; border-radius: 8px; }
+  .sa-zoom a { margin-top: 10px; color: #fff; font-size: 14px; font-weight: 600; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; max-width: 92vw; z-index: 99; box-shadow: 0 10px 30px rgba(0, 0, 0, .2); font-size: 14.5px; }
+  .toast.err { background: #c0262d; }
+  .hidden { display: none !important; }
+  .h-foot { margin-top: 72px; padding: 28px 0 40px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 13.5px; }
+  .h-foot a { color: var(--muted); text-decoration: none; margin-left: 16px; } .h-foot a:hover { color: var(--ink); }
+
+  /* ---------- Tablette et téléphone ---------- */
+  @media (max-width: 900px) { .ways { grid-template-columns: repeat(2, 1fr); gap: 18px; } }
+  @media (max-width: 640px) {
+    .h-hero { padding: 34px 0 18px; }
+    .eyebrow { font-size: 13px; margin-bottom: 10px; }
+    .h-hero h1 { font-size: 31px; letter-spacing: -.04em; }
+    .search { margin-top: 20px; }
+    .search input { height: 52px; padding: 0 62px 0 18px; font-size: 15px; }
+    .search button { width: 40px; height: 40px; right: 6px; top: 6px; }
+    .search button svg { width: 18px; height: 18px; }
+    .chips { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; margin: 14px -16px 0; padding: 0 16px 4px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: none; padding: 7px 12px; font-size: 13px; }
+    .sec { padding: 30px 0 10px; }
+    .sec h2 { font-size: 23px; margin-bottom: 10px; }
+    .art > button { padding: 16px 2px; font-size: 14.5px; gap: 10px; }
+    .art .tag { display: none; }
+    .art .ans { padding: 0 2px 16px; font-size: 14.5px; }
+    .ways { gap: 14px; }
+    .way .pic { border-radius: 14px; }
+    .way h3 { font-size: 16.5px; margin: 8px 2px 0; }
+    .way p { display: none; }
+    .support-box { padding: 16px 12px; border-radius: 20px; margin: 0 -4px; }
+    .panel { padding: 16px 14px; border-radius: 16px; }
+    .panel h3 { font-size: 18px; }
+    .sub { font-size: 13.5px; margin-bottom: 12px; }
+    .sup-head .btn { padding: 9px 14px; font-size: 13.5px; }
+    .tickets li { padding: 12px 2px; font-size: 14px; }
+    .msg { max-width: 88%; font-size: 14px; padding: 9px 12px; }
+    .f label { font-size: 13px; margin: 10px 0 4px; }
+    .f input, .f select, .f textarea { padding: 10px 12px; font-size: 14.5px; }
+    .f .btns .btn { flex: 1; padding: 13px 14px; font-size: 14.5px; }
+    .sa-files img { width: 104px; height: 78px; }
+    .h-foot { margin-top: 40px; font-size: 12.5px; }
+    .h-foot a { margin: 0 14px 0 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <nav aria-label="Navigation principale">
+      <ul class="menu">
+        <li><a href="/#particuliers">Particuliers</a></li>
+        <li><a href="/#entreprises">Entreprises</a></li>
+        <li><a href="/docs">Développeurs</a></li>
+      </ul>
+    </nav>
+    <div class="nav-cta">
+      <a class="link-help on" href="/aide" aria-current="page">Aide<span class="nav-badge" data-unread hidden></span></a>
+      <a class="btn btn-light" href="/app?next=%2Faide" data-guest>Se connecter</a>
+      <a class="btn btn-dark" href="/signup" data-guest>Créer un compte</a>
+      <a class="btn btn-dark" href="/app" data-member hidden>Mon wallet</a>
+    </div>
+    <button class="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu"><span></span></button>
+  </div>
+</header>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/#particuliers">Particuliers</a>
+  <a href="/#entreprises">Entreprises</a>
+  <a href="/docs">Développeurs</a>
+  <a href="#support">Mes demandes au support<span class="nav-badge" data-unread hidden></span></a>
+  <div class="btns">
+    <a class="btn btn-light" href="/app?next=%2Faide" data-guest>Se connecter</a>
+    <a class="btn btn-dark" href="/signup" data-guest>Créer un compte</a>
+    <a class="btn btn-dark" href="/app" data-member hidden>Mon wallet</a>
+  </div>
+</div>
+
+<main>
+  <!-- ======================= Accueil du centre d'aide ======================= -->
+  <section class="h-hero">
+    <div class="wrap">
+      <p class="eyebrow" id="eyebrow">Centre d'aide Pay243</p>
+      <h1 id="hello"><span class="wave">Bonjour.</span><br>Comment pouvons-nous vous aider ?</h1>
+      <form class="search" id="f-search" role="search">
+        <input id="q" type="search" placeholder="Rechercher : recharge, retrait, code, vérification…" aria-label="Rechercher dans l'aide" autocomplete="off">
+        <button aria-label="Rechercher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </form>
+      <div class="chips" id="chips" role="group" aria-label="Sujets"></div>
+    </div>
+  </section>
+
+  <!-- ======================= Articles ======================= -->
+  <section class="sec" id="articles">
+    <div class="wrap narrow">
+      <h2 id="art-title">Articles recommandés</h2>
+      <ul class="articles" id="art-list"></ul>
+      <div class="more" id="art-more"><button type="button">Voir plus</button></div>
+    </div>
+  </section>
+
+  <!-- ======================= Autres façons d'obtenir de l'aide ======================= -->
+  <section class="sec">
+    <div class="wrap narrow">
+      <h2>Autres façons d'obtenir de l'aide</h2>
+      <div class="ways">
+        <button class="way" type="button" data-way="topics">
+          <div class="pic"><svg viewBox="0 0 312 192" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9b8"/><stop offset="1" stop-color="#f7c873"/></linearGradient></defs>
+            <rect width="312" height="192" fill="url(#g1)"/>
+            <g class="float"><g transform="rotate(-8 118 108)"><rect x="58" y="38" width="120" height="140" rx="12" fill="#fff"/><rect x="74" y="64" width="80" height="8" rx="4" fill="#0b1424"/><rect x="74" y="84" width="64" height="6" rx="3" fill="#c9cfd9"/><rect x="74" y="98" width="72" height="6" rx="3" fill="#c9cfd9"/><rect x="74" y="112" width="56" height="6" rx="3" fill="#c9cfd9"/></g></g>
+            <g class="float d2"><rect x="136" y="28" width="124" height="146" rx="12" fill="#0b1424"/><rect x="152" y="50" width="70" height="9" rx="4.5" fill="#f7d618"/><rect x="152" y="72" width="90" height="6" rx="3" fill="#56627a"/><rect x="152" y="86" width="80" height="6" rx="3" fill="#56627a"/><rect x="152" y="100" width="88" height="6" rx="3" fill="#56627a"/><circle cx="234" cy="148" r="14" fill="#0057d9"/><path d="m228 148 4 4 8-8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+          </svg></div>
+          <h3>Tous les sujets</h3><p>Compte, paiements, recharges, cartes, marchands…</p>
+        </button>
+        <button class="way" type="button" data-way="support">
+          <div class="pic"><svg viewBox="0 0 312 192" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfe2ff"/><stop offset="1" stop-color="#7fb1ff"/></linearGradient></defs>
+            <rect width="312" height="192" fill="url(#g2)"/>
+            <rect x="112" y="18" width="88" height="170" rx="16" fill="#0b1424"/><rect x="118" y="30" width="76" height="150" rx="10" fill="#fff"/>
+            <g class="float"><rect x="124" y="46" width="52" height="20" rx="10" fill="#eef3fb"/><rect x="138" y="74" width="50" height="20" rx="10" fill="#0057d9"/><rect x="124" y="102" width="44" height="20" rx="10" fill="#eef3fb"/></g>
+            <g class="float d2"><rect x="196" y="52" width="86" height="40" rx="14" fill="#fff"/><circle cx="218" cy="72" r="4" fill="#0057d9"/><circle cx="232" cy="72" r="4" fill="#0057d9" opacity=".6"/><circle cx="246" cy="72" r="4" fill="#0057d9" opacity=".3"/><path d="m206 90-6 12 16-10z" fill="#fff"/></g>
+            <g class="float"><rect x="30" y="112" width="82" height="36" rx="14" fill="#f7d618"/><path d="m50 130 6 6 12-12" stroke="#0b1424" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="74" y="126" width="26" height="6" rx="3" fill="#0b1424" opacity=".5"/></g>
+          </svg></div>
+          <h3>Mes demandes <span class="card-badge" data-unread hidden></span></h3><p>Écrivez au support et suivez ses réponses.</p>
+        </button>
+        <button class="way" type="button" data-way="security">
+          <div class="pic"><svg viewBox="0 0 312 192" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7f5e3"/><stop offset="1" stop-color="#7fd4a5"/></linearGradient></defs>
+            <rect width="312" height="192" fill="url(#g3)"/>
+            <circle cx="156" cy="100" r="74" fill="#fff" opacity=".35"/>
+            <g class="float"><path d="M156 32 206 50v40c0 34-22 56-50 68-28-12-50-34-50-68V50z" fill="#0b1424"/><path d="M156 46 194 60v30c0 25-16 42-38 52z" fill="#12a150"/><rect x="136" y="88" width="40" height="32" rx="6" fill="#f7d618"/><path d="M144 88v-8a12 12 0 0 1 24 0v8" stroke="#f7d618" stroke-width="6" fill="none"/><circle cx="156" cy="103" r="4" fill="#0b1424"/></g>
+            <g class="float d2"><rect x="222" y="120" width="62" height="30" rx="10" fill="#fff"/><circle cx="238" cy="135" r="4" fill="#0b1424"/><circle cx="250" cy="135" r="4" fill="#0b1424"/><circle cx="262" cy="135" r="4" fill="#0b1424"/><circle cx="274" cy="135" r="4" fill="#0b1424" opacity=".3"/></g>
+          </svg></div>
+          <h3>Sécurité du compte</h3><p>Codes, appareils, mot de passe, arnaques.</p>
+        </button>
+        <button class="way" type="button" data-way="merchant">
+          <div class="pic"><svg viewBox="0 0 312 192" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd9dc"/><stop offset="1" stop-color="#ff9aa3"/></linearGradient></defs>
+            <rect width="312" height="192" fill="url(#g4)"/>
+            <rect x="70" y="70" width="172" height="110" rx="8" fill="#fff"/>
+            <path d="M62 52h188l-10 30H72z" fill="#ce1021"/><path d="M90 52h22l-4 30H86zM134 52h22v30h-22zM178 52h22l4 30h-22z" fill="#fff" opacity=".85"/>
+            <rect x="92" y="104" width="52" height="76" rx="6" fill="#0b1424"/><rect x="160" y="100" width="62" height="42" rx="6" fill="#eef3fb"/>
+            <g class="float"><rect x="196" y="22" width="92" height="56" rx="10" fill="#0b1424"/><rect x="206" y="34" width="22" height="16" rx="3" fill="#f7d618"/><rect x="206" y="60" width="54" height="6" rx="3" fill="#56627a"/><circle cx="272" cy="40" r="7" fill="#ce1021"/><circle cx="264" cy="40" r="7" fill="#f7d618" opacity=".9"/></g>
+          </svg></div>
+          <h3>Espace marchand</h3><p>Encaisser, verser ses ventes, clés API.</p>
+        </button>
+        <button class="way" type="button" data-way="docs">
+          <div class="pic"><svg viewBox="0 0 312 192" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a2a66"/><stop offset="1" stop-color="#1f6fff"/></linearGradient></defs>
+            <rect width="312" height="192" fill="url(#g5)"/>
+            <rect x="46" y="30" width="220" height="140" rx="12" fill="#0b1424"/><circle cx="64" cy="46" r="4" fill="#ce1021"/><circle cx="78" cy="46" r="4" fill="#f7d618"/><circle cx="92" cy="46" r="4" fill="#12a150"/>
+            <g font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700"><text x="64" y="80" fill="#7fb1ff">POST</text><text x="104" y="80" fill="#fff">/v1/payments</text><text x="64" y="102" fill="#8a97b1">{ "amount": 2500,</text><text x="76" y="120" fill="#8a97b1">"currency": "CDF" }</text><text x="64" y="146" fill="#7fd4a5">201 Created</text></g>
+            <g class="float"><rect x="226" y="120" width="64" height="40" rx="12" fill="#f7d618"/><text x="258" y="146" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="16" font-weight="800" fill="#0b1424">&lt;/&gt;</text></g>
+          </svg></div>
+          <h3>Aide technique</h3><p>Documentation de l'API, webhooks, SDK.</p>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= Centre de messages (support) ======================= -->
+  <section class="sec" id="support">
+    <div class="wrap narrow">
+      <div class="support-box">
+        <div class="sup-head"><h2>Centre de messages</h2><button class="btn btn-dark hidden" id="sup-new-btn" type="button">Nouvelle demande</button></div>
+        <p class="sub">Un conseiller Pay243 vous répond ici, et vous êtes prévenu par email. Pay243 ne vous demandera jamais votre mot de passe, votre PIN ni un code de vérification.</p>
+
+        <div class="panel guest" id="sup-guest">
+          <p>Connectez-vous pour écrire au support, joindre une capture ou un reçu et suivre vos demandes.</p>
+          <a class="btn btn-dark" href="/app?next=%2Faide%23support">Se connecter</a>
+        </div>
+
+        <div class="panel hidden" id="sup-list"><ul class="tickets" id="sup-tickets"></ul></div>
+
+        <div class="panel hidden" id="sup-new">
+          <button class="back" type="button" data-sup-back>← Mes demandes</button>
+          <h3>Nouvelle demande</h3>
+          <form class="f" id="f-sup-new">
+            <label>Rubrique</label><select name="category"></select>
+            <label>Objet</label><input name="subject" maxlength="120" required placeholder="Ex : Ma recharge M-Pesa n'est pas arrivée">
+            <label>Opération concernée (facultatif)</label><select name="transaction_id"><option value="">Aucune</option></select>
+            <label>Message</label><textarea name="message" rows="5" maxlength="4000" required placeholder="Décrivez votre problème : date, montant, numéro utilisé…"></textarea>
+            <div class="sa-row"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
+            <p class="hint">Capture d'écran, reçu… : photo ou PDF, 5 Mo max. N'indiquez jamais votre mot de passe, votre PIN ni un code reçu par SMS ou email.</p>
+            <div class="btns"><button class="btn btn-dark">Envoyer ma demande</button></div>
+          </form>
+        </div>
+
+        <div class="panel hidden" id="sup-thread">
+          <button class="back" type="button" data-sup-back>← Mes demandes</button>
+          <h3 id="sup-title"></h3>
+          <div id="sup-meta"></div>
+          <div class="msgs" id="sup-msgs"></div>
+          <p class="hidden" id="sup-closed-note" style="color:var(--muted);font-size:13.5px;margin:0 0 6px">Cette demande est résolue. Écrivez un nouveau message pour la rouvrir.</p>
+          <form class="f" id="f-sup-reply">
+            <textarea name="body" rows="3" maxlength="4000" placeholder="Votre message…"></textarea>
+            <div class="sa-row"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
+            <div class="btns"><button class="btn btn-dark">Envoyer</button><button type="button" class="btn btn-light" id="sup-close">Marquer comme résolue</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap narrow">
+    <footer class="h-foot">
+      <span>© <span id="year"></span> Pay243 · Kinshasa, RDC</span>
+      <span><a href="/">Accueil</a><a href="/docs">Développeurs</a><a href="/health">État du service</a></span>
+    </footer>
+  </div>
+</main>
+</div>
+
+<div id="sa-zoom" class="sa-zoom" hidden><div><img alt=""><a href="#" download>Télécharger</a></div></div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let TOKEN = null; let ME = null;
+try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+$('#year').textContent = new Date().getFullYear();
+
+function toast(msg, err) {
+  $$('.toast').forEach((x) => x.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401) { TOKEN = null; ME = null; try { sessionStorage.removeItem('pay243_token'); } catch {} showGuest(); }
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code });
+  }
+  return j;
+}
+async function busy(btn, fn) { if (btn) btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { if (btn) btn.disabled = false; } }
+const formData = (f) => Object.fromEntries(new FormData(f));
+const fmt = (minor, cur) => cur === 'USD'
+  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: ME?.timezone, dateStyle: 'short', timeStyle: 'short' }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
+const TYPE_LABEL = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
+
+// Menu téléphone
+const burger = $('.burger'); const mobile = $('#mobile-menu');
+burger.onclick = () => { const open = mobile.classList.toggle('open'); burger.setAttribute('aria-expanded', String(open)); };
+$$('a', mobile).forEach((a) => a.addEventListener('click', () => { mobile.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); }));
+
+// =====================================================================
+//  Articles d'aide. Les sujets reprennent les rubriques du support :
+//  « Non, écrire au support » ouvre une demande dans la bonne rubrique.
+// =====================================================================
+const TOPICS = { account: 'Compte et connexion', verification: "Vérification d'identité", payment: 'Paiements et transferts', topup: 'Recharges et retraits', cards: 'Cartes', merchant: 'Espace marchand', security: 'Sécurité' };
+const SUPPORT_CAT = { cards: 'payment', security: 'account' }; // sujet d'aide -> rubrique du support
+const A = [
+  { t: 'payment', q: 'Pourquoi mon paiement est-il « en attente » ? Puis-je l\'annuler ?', k: 'pending attente bloqué annuler',
+    a: `<p>Une opération Mobile Money reste <b>en attente</b> le temps que l'opérateur (M-Pesa, Airtel Money ou Orange Money) la confirme. Cela prend en général quelques secondes, parfois plus quand le réseau est chargé.</p>
+        <ul><li>Si une demande de confirmation s'affiche sur votre téléphone, validez-la avec votre code Mobile Money.</li><li>Sans confirmation de l'opérateur, l'opération passe à « Échoué » et rien n'est débité.</li><li>Un retrait qui échoue vous est intégralement restitué, frais compris.</li></ul>
+        <p>Une opération en attente ne peut pas être annulée à la main : Pay243 vérifie son sort auprès de l'opérateur et la règle automatiquement.</p>` },
+  { t: 'payment', q: 'Que signifie le statut de mon opération ?', k: 'statut réussi échoué remboursé expiré en cours',
+    a: `<ul><li><b>Réussi</b> : l'argent est arrivé, l'opération est définitive.</li><li><b>En attente / En cours</b> : nous attendons la confirmation de l'opérateur.</li><li><b>Échoué</b> : l'opération n'a pas abouti, aucun montant n'a été prélevé (ou il vous a été rendu).</li><li><b>Remboursé / Remb. partiel</b> : le marchand vous a rendu tout ou partie du paiement.</li><li><b>Expiré</b> : un lien de paiement n'a pas été réglé à temps.</li></ul>` },
+  { t: 'payment', q: 'Comment envoyer de l\'argent ?', k: 'envoyer transfert ami famille identifiant',
+    a: `<ol><li>Ouvrez <a href="/app">votre wallet</a> et touchez <b>Envoyer</b>.</li><li>Indiquez le destinataire : son email, son numéro ou son identifiant @.</li><li>Saisissez le montant, en francs congolais ou en dollars, puis confirmez avec votre PIN.</li></ol>
+        <p>Les transferts entre wallets Pay243 sont <b>gratuits et instantanés</b>. Votre compte doit être activé (identité vérifiée).</p>` },
+  { t: 'payment', q: 'Comment recevoir de l\'argent sur Pay243 ?', k: 'recevoir encaisser identifiant',
+    a: `<p>Communiquez à l'expéditeur l'email, le numéro ou l'identifiant @ de votre compte (vous pouvez choisir votre identifiant dans les <a href="/settings">paramètres</a>). L'argent arrive aussitôt sur votre wallet et vous êtes prévenu.</p><p>Vous pouvez ensuite le garder, le convertir, payer en ligne ou le retirer vers votre Mobile Money.</p>` },
+  { t: 'topup', q: 'Comment recharger mon wallet avec M-Pesa, Airtel Money ou Orange Money ?', k: 'recharger recharge mpesa airtel orange mobile money dépôt',
+    a: `<ol><li>Dans <a href="/app">votre wallet</a>, touchez <b>Recharger</b>.</li><li>Saisissez le montant et le numéro Mobile Money à débiter : l'opérateur est reconnu automatiquement.</li><li>Validez la demande qui s'affiche sur votre téléphone avec votre code Mobile Money.</li></ol><p>Le montant apparaît sur votre solde dès que l'opérateur confirme le paiement.</p>` },
+  { t: 'topup', q: 'Ma recharge n\'est pas arrivée sur mon solde', k: 'recharge pas arrivée manquante débité',
+    a: `<p>Vérifiez d'abord son statut dans votre historique. Si elle est <b>en attente</b>, patientez : nous interrogeons l'opérateur régulièrement et la créditons dès sa confirmation.</p><p>Si votre Mobile Money a été débité mais que l'opération est « Échoué » ou bloquée depuis plus d'une heure, écrivez au support en choisissant l'opération concernée et en joignant la capture du SMS de l'opérateur.</p>` },
+  { t: 'topup', q: 'Comment retirer de l\'argent vers mon Mobile Money ? Combien ça coûte ?', k: 'retrait retirer frais 1% mobile money',
+    a: `<p>Touchez <b>Retirer</b> dans votre wallet, indiquez le montant et le numéro qui recevra l'argent, puis confirmez avec votre PIN. Les frais de retrait sont de <b>1 %</b>, affichés avant la confirmation.</p><p>Si l'opérateur refuse le retrait, le montant et les frais vous sont restitués automatiquement.</p>` },
+  { t: 'verification', q: 'Pourquoi mon compte n\'est-il pas encore activé ?', k: 'activation activé compte bloqué vérification kyc',
+    a: `<p>Avant toute opération, l'équipe de conformité vérifie votre identité. Envoyez depuis <a href="/app#kyc">votre wallet</a> votre pièce d'identité et un selfie : vous recevrez un email dès que votre compte sera activé.</p><p>Si votre demande a été refusée, le motif vous est indiqué et vous pouvez en envoyer une nouvelle.</p>` },
+  { t: 'verification', q: 'Quelles pièces d\'identité sont acceptées ?', k: 'pièce identité carte électeur passeport permis',
+    a: `<ul><li>Carte d'électeur (CENI), recto et verso</li><li>Carte nationale d'identité, recto et verso</li><li>Passeport</li><li>Permis de conduire, recto et verso</li></ul><p>Prenez les photos en pleine lumière, sans reflet, avec les quatre coins visibles. Vos documents sont chiffrés et seule l'équipe de conformité y a accès.</p>` },
+  { t: 'verification', q: 'Quels sont mes plafonds et comment les augmenter ?', k: 'plafond limite maximum niveau',
+    a: `<p>Vos plafonds (par opération, par jour et solde maximum) dépendent de votre niveau de vérification et sont affichés en haut de votre wallet. Une fois votre pièce d'identité vérifiée, ils augmentent automatiquement.</p>` },
+  { t: 'account', q: 'J\'ai oublié mon mot de passe', k: 'mot de passe oublié réinitialiser connexion',
+    a: `<p>Sur la page de <a href="/app">connexion</a>, touchez <b>Mot de passe oublié ?</b> et saisissez votre adresse email. Vous recevrez un code pour choisir un nouveau mot de passe. Par sécurité, vos autres sessions sont alors fermées.</p>` },
+  { t: 'account', q: 'Pourquoi me demande-t-on un code à la connexion ?', k: 'code otp nouvel appareil connexion',
+    a: `<p>Quand vous vous connectez depuis un nouvel appareil ou un nouveau navigateur, nous vous envoyons un code de vérification. C'est une protection : même avec votre mot de passe, personne ne peut entrer sans ce code.</p><p>Vous pouvez voir et retirer vos appareils de confiance dans <a href="/settings#securite">Paramètres › Sécurité</a>.</p>` },
+  { t: 'account', q: 'Comment modifier mon email, mon numéro ou fermer mon compte ?', k: 'modifier email numéro téléphone fermer supprimer compte',
+    a: `<p>Tout se fait dans les <a href="/settings">paramètres</a> : chaque changement d'email ou de numéro est confirmé par un code. La fermeture du compte est possible quand votre solde est à zéro.</p><p>Votre nom ne peut plus être modifié après la vérification d'identité : écrivez au support avec un justificatif.</p>` },
+  { t: 'security', q: 'Comment reconnaître une arnaque et protéger mon compte ?', k: 'arnaque fraude sécurité pin code piratage',
+    a: `<p><b>Pay243 ne vous demandera jamais</b> votre mot de passe, votre PIN ni un code reçu par SMS ou email, y compris par le support, par téléphone ou sur WhatsApp.</p><ul><li>Ne communiquez jamais un code de vérification.</li><li>Vérifiez que l'adresse du site est bien pay243.com.</li><li>En cas de doute, changez votre mot de passe dans <a href="/settings#securite">Paramètres › Sécurité</a> : vos autres sessions sont fermées.</li></ul>` },
+  { t: 'security', q: 'Mon PIN est bloqué', k: 'pin bloqué erreurs',
+    a: `<p>Après plusieurs erreurs, votre PIN est bloqué pour vous protéger. Écrivez au support : un conseiller pourra le débloquer après vérification. Vous pouvez aussi changer votre PIN dans <a href="/settings#securite">Paramètres › Sécurité</a>.</p>` },
+  { t: 'cards', q: 'Comment ajouter une carte bancaire ?', k: 'carte visa mastercard ajouter',
+    a: `<p>Ouvrez l'onglet <b>Mes cartes</b> de votre wallet et ajoutez votre carte. Ses numéros ne sont jamais stockés par Pay243 : seuls la marque et les 4 derniers chiffres sont conservés.</p><p>Dans la version de démonstration, seules des cartes de test sont acceptées.</p>` },
+  { t: 'merchant', q: 'Comment accepter les paiements Pay243 sur mon site ?', k: 'marchand accepter paiement site boutique api intégration',
+    a: `<p>Ouvrez un compte entreprise (ou passez en entreprise depuis les <a href="/settings">paramètres</a>), puis suivez la <a href="/docs">documentation de l'API</a>. Vos clients paient par wallet Pay243, Mobile Money ou carte. La commission est de <b>2,5 %</b> par paiement reçu, sans abonnement.</p>` },
+  { t: 'merchant', q: 'Comment verser mes ventes sur mon wallet ?', k: 'ventes verser marchand solde wallet',
+    a: `<p>Dans votre <a href="/app#merchant">espace marchand</a>, touchez <b>Verser sur mon wallet</b> sous le solde de vos ventes, puis confirmez avec votre PIN. C'est instantané et gratuit ; vous pouvez ensuite retirer vers Mobile Money, envoyer ou payer.</p>` },
+  { t: 'merchant', q: 'Je ne reçois pas les notifications (webhooks) sur mon serveur', k: 'webhook notification serveur signature',
+    a: `<p>Vérifiez que l'adresse de votre webhook est en HTTPS et accessible publiquement, et que votre serveur répond par un code 2xx. Chaque envoi est signé : contrôlez la signature avec votre secret <code>whsec_…</code>. Les détails sont dans la <a href="/docs">documentation</a>.</p>` },
+];
+const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const RECOMMENDED = 5;
+const VIEW = { topic: '', q: '', all: false, open: null };
+$('#chips').innerHTML = `<button class="chip on" type="button" data-topic="">Tout</button>` + Object.entries(TOPICS).map(([k, v]) => `<button class="chip" type="button" data-topic="${k}">${esc(v)}</button>`).join('');
+$$('[data-topic]').forEach((c) => c.onclick = () => { VIEW.topic = c.dataset.topic; VIEW.all = !!VIEW.topic; VIEW.open = null; renderArticles(); });
+
+function renderArticles() {
+  $$('[data-topic]').forEach((c) => c.classList.toggle('on', c.dataset.topic === VIEW.topic));
+  const words = norm(VIEW.q).split(/\s+/).filter((w) => w.length > 1);
+  let list = A.map((a, i) => ({ ...a, i })).filter((a) => !VIEW.topic || a.t === VIEW.topic);
+  if (words.length) {
+    list = list.map((a) => {
+      const title = norm(a.q + ' ' + a.k); const hay = title + ' ' + norm(a.a.replace(/<[^>]+>/g, ' '));
+      return { ...a, hits: words.filter((w) => hay.includes(w)).length, score: words.reduce((n, w) => n + (title.includes(w) ? 3 : hay.includes(w) ? 1 : 0), 0) };
+    }).filter((a) => a.hits === words.length).sort((x, y) => y.score - x.score);
+  }
+  const filtering = !!words.length || !!VIEW.topic;
+  $('#art-title').textContent = words.length ? `Résultats pour « ${VIEW.q.trim()} »` : VIEW.topic ? TOPICS[VIEW.topic] : 'Articles recommandés';
+  const shown = filtering || VIEW.all ? list : list.slice(0, RECOMMENDED);
+  $('#art-more').classList.toggle('hidden', filtering || VIEW.all || list.length <= RECOMMENDED);
+  $('#art-list').innerHTML = shown.length ? shown.map((a) => `<li class="art ${VIEW.open === a.i ? 'open' : ''}" data-i="${a.i}">
+      <button type="button" aria-expanded="${VIEW.open === a.i}"><span class="q">${esc(a.q)}</span><span style="display:flex;align-items:center;gap:12px">${words.length && !VIEW.topic ? `<span class="tag">${esc(TOPICS[a.t])}</span>` : ''}<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span></button>
+      <div class="ans">${a.a}<div class="helpful">Cette réponse vous a-t-elle aidé ? <button type="button" data-yes>Oui</button><button type="button" data-no>Non, écrire au support</button></div></div></li>`).join('')
+    : `<li class="empty">Aucun article ne correspond à votre recherche. <button type="button" data-write>Écrivez au support</button> : un conseiller vous répond.</li>`;
+  $$('.art > button').forEach((b) => b.onclick = () => { const i = +b.parentElement.dataset.i; VIEW.open = VIEW.open === i ? null : i; renderArticles(); });
+  $$('[data-yes]').forEach((b) => b.onclick = () => { b.parentElement.textContent = 'Merci pour votre retour !'; });
+  $$('[data-no]').forEach((b) => b.onclick = () => { const a = A[+b.closest('.art').dataset.i]; writeToSupport(SUPPORT_CAT[a.t] || a.t, a.q); });
+  $('[data-write]')?.addEventListener('click', () => writeToSupport('other', VIEW.q.trim()));
+}
+$('#art-more button').onclick = () => { VIEW.all = true; renderArticles(); };
+let searchTimer;
+$('#q').oninput = (e) => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { VIEW.q = e.target.value; VIEW.open = null; renderArticles(); }, 120); };
+$('#f-search').onsubmit = (e) => { e.preventDefault(); VIEW.q = $('#q').value; VIEW.open = null; renderArticles(); $('#articles').scrollIntoView({ behavior: 'smooth' }); };
+const q0 = new URLSearchParams(location.search).get('q'); if (q0) { $('#q').value = q0; VIEW.q = q0; }
+renderArticles();
+
+$$('[data-way]').forEach((b) => b.onclick = () => {
+  const w = b.dataset.way;
+  if (w === 'docs') { location.href = '/docs'; return; }
+  if (w === 'support') { $('#support').scrollIntoView({ behavior: 'smooth' }); return; }
+  VIEW.topic = w === 'topics' ? '' : w; VIEW.q = ''; $('#q').value = ''; VIEW.all = true; VIEW.open = null;
+  renderArticles(); $('#articles').scrollIntoView({ behavior: 'smooth' });
+});
+
+// =====================================================================
+//  Session : salutation personnalisée, menus, centre de messages
+// =====================================================================
+function showGuest() {
+  $$('[data-guest]').forEach((e) => { e.hidden = false; e.style.display = ''; });
+  $$('[data-member]').forEach((e) => { e.hidden = true; });
+  $('#sup-guest').classList.remove('hidden'); $('#sup-new-btn').classList.add('hidden');
+  ['list', 'new', 'thread'].forEach((x) => $('#sup-' + x).classList.add('hidden'));
+  $('#eyebrow').textContent = "Centre d'aide Pay243";
+  $('#hello').innerHTML = '<span class="wave">Bonjour.</span><br>Comment pouvons-nous vous aider ?';
+  setUnread(0);
+}
+function showMember() {
+  $$('[data-guest]').forEach((e) => { e.hidden = true; e.style.display = 'none'; });
+  $$('[data-member]').forEach((e) => { e.hidden = false; });
+  $('#sup-guest').classList.add('hidden');
+  const first = ME.full_name.trim().split(/\s+/)[0];
+  $('#eyebrow').textContent = `Centre d'aide – ${ME.account_type === 'business' ? 'Compte entreprise' : 'Compte personnel'}`;
+  $('#hello').innerHTML = `<span class="wave">Bonjour,</span> <span class="name">${esc(first)}.</span><br>Comment pouvons-nous vous aider ?`;
+}
+function setUnread(n) { $$('[data-unread]').forEach((b) => { b.hidden = !n; b.textContent = n || ''; }); }
+
+// ---------------- Centre de messages ----------------
+const SUP = { open: null, count: 0, categories: [] };
+const SUP_STATUS = { open: ['En attente du support', 'pending'], answered: ['Le support a répondu', 'succeeded'], closed: ['Résolue', ''] };
+const supPill = (s) => `<span class="pill ${SUP_STATUS[s]?.[1] || ''}">${esc(SUP_STATUS[s]?.[0] || s)}</span>`;
+function supView(v) {
+  ['list', 'new', 'thread'].forEach((x) => $('#sup-' + x).classList.toggle('hidden', x !== v));
+  $('#sup-new-btn').classList.toggle('hidden', v !== 'list');
+  if (v !== 'thread') SUP.open = null;
+}
+async function loadSupport() {
+  const r = await api('GET', '/v1/support/tickets');
+  SUP.categories = r.categories; setUnread(r.unread);
+  supView('list');
+  $('#sup-tickets').innerHTML = r.data.length ? r.data.map((t) => `<li data-tkt="${esc(t.id)}"><div><b>#${esc(t.number)} · ${esc(t.subject)}</b>${t.unread ? '<span class="dot-new" title="Nouvelle réponse"></span>' : ''}<div class="muted">${esc(t.category_label)} · ${when(t.last_message_at)}</div></div>${supPill(t.status)}</li>`).join('')
+    : '<li style="cursor:default;color:var(--muted)">Aucune demande pour l\'instant. Une question sans réponse dans les articles ? Cliquez sur « Nouvelle demande ».</li>';
+  $$('[data-tkt]').forEach((li) => li.onclick = () => openTicket(li.dataset.tkt).catch((e) => toast(e.message, true)));
+}
+async function openNewTicket(category, subject) {
+  if (!SUP.categories.length) await loadSupport();
+  supView('new');
+  const f = $('#f-sup-new'); f.reset(); ATT_NEW.reset();
+  f.category.innerHTML = SUP.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
+  if (category && SUP.categories.some((c) => c.id === category)) f.category.value = category;
+  if (subject) f.subject.value = subject.slice(0, 120);
+  try {
+    const t = await api('GET', '/v1/transactions?limit=20');
+    f.transaction_id.innerHTML = '<option value="">Aucune</option>' + t.data.map((x) => `<option value="${esc(x.id)}">${esc(TYPE_LABEL[x.type] || x.type)} · ${fmt(x.amount, x.currency)} · ${when(x.created_at)}</option>`).join('');
+  } catch {}
+}
+function writeToSupport(category, subject) {
+  $('#support').scrollIntoView({ behavior: 'smooth' });
+  if (!ME) { toast('Connectez-vous pour écrire au support.'); return; }
+  openNewTicket(category, subject).then(() => setTimeout(() => $('#f-sup-new [name=message]').focus({ preventScroll: true }), 400)).catch((e) => toast(e.message, true));
+}
+
+// ---- Pièces jointes ----
+const SA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const SA_MAX = 5 * 1024 * 1024;
+const fsize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' ko');
+/** Photo lourde (téléphone) : réduite à 1600 px en JPEG avant l'envoi. */
+async function shrinkImage(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1048576) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const b = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+    return b && b.size < file.size ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+  } catch { return file; }
+}
+function attacher(form) {
+  let items = [];
+  const input = $('input[type=file]', form); const list = $('.sa-list', form);
+  const render = () => {
+    list.innerHTML = items.map((it, i) => `<span class="sa-chip ${it.id ? '' : 'busy'}"><span title="${esc(it.name)}">${esc(it.name)}</span><button type="button" data-i="${i}" aria-label="Retirer">×</button></span>`).join('');
+    $$('[data-i]', list).forEach((b) => b.onclick = () => { items.splice(+b.dataset.i, 1); render(); });
+  };
+  input.onchange = async () => {
+    const files = [...input.files]; input.value = '';
+    for (const f of files) {
+      if (items.length >= 3) { toast('3 pièces jointes maximum par message.', true); break; }
+      if (!SA_TYPES.includes(f.type)) { toast(`${f.name} : photo (JPEG, PNG, WebP) ou PDF uniquement.`, true); continue; }
+      const it = { name: f.name }; items.push(it); render();
+      try {
+        const blob = await shrinkImage(f);
+        if (blob.size > SA_MAX) throw new Error(`${f.name} : 5 Mo maximum.`);
+        const r = await fetch('/v1/support/files', { method: 'POST', headers: { 'Content-Type': blob.type, Authorization: 'Bearer ' + TOKEN, 'X-File-Name': encodeURIComponent(f.name) }, body: blob });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error?.message || 'Envoi du fichier impossible.');
+        it.id = j.id; it.name = j.name;
+      } catch (e) { const i = items.indexOf(it); if (i >= 0) items.splice(i, 1); toast(e.message, true); }
+      render();
+    }
+  };
+  return { ids: () => items.filter((x) => x.id).map((x) => x.id), pending: () => items.some((x) => !x.id), reset: () => { items = []; render(); } };
+}
+const ATT_NEW = attacher($('#f-sup-new')); const ATT_REPLY = attacher($('#f-sup-reply'));
+const SA_URLS = new Map();
+function supFileUrl(p) {
+  if (!SA_URLS.has(p)) {
+    SA_URLS.set(p, fetch(p, { headers: { Authorization: 'Bearer ' + TOKEN } })
+      .then((r) => { if (!r.ok) throw new Error('Fichier indisponible.'); return r.blob(); })
+      .then((b) => URL.createObjectURL(b))
+      .catch((e) => { SA_URLS.delete(p); throw e; }));
+  }
+  return SA_URLS.get(p);
+}
+const msgFiles = (m) => (m.attachments?.length ? `<div class="sa-files">${m.attachments.map((a) => {
+  const p = `/v1/support/tickets/${encodeURIComponent(SUP.open)}/files/${encodeURIComponent(a.id)}`;
+  return a.mime.startsWith('image/') ? `<img data-src="${esc(p)}" data-name="${esc(a.name)}" alt="${esc(a.name)}">`
+    : `<a href="#" class="sa-doc" data-src="${esc(p)}" data-name="${esc(a.name)}"><b>PDF</b><span>${esc(a.name)}</span> ${fsize(a.size)}</a>`;
+}).join('')}</div>` : '');
+function saveBlob(u, name) { const l = document.createElement('a'); l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove(); }
+function hydrateFiles(box) {
+  $$('img[data-src]', box).forEach((img) => {
+    supFileUrl(img.dataset.src).then((u) => { img.onload = () => { box.scrollTop = box.scrollHeight; }; img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
+    img.onclick = () => supFileUrl(img.dataset.src).then((u) => {
+      const z = $('#sa-zoom'); $('img', z).src = u; const a = $('a', z); a.href = u; a.download = img.dataset.name; z.hidden = false;
+    }).catch((e) => toast(e.message, true));
+  });
+  $$('a.sa-doc', box).forEach((a) => a.onclick = (e) => { e.preventDefault(); supFileUrl(a.dataset.src).then((u) => saveBlob(u, a.dataset.name)).catch((x) => toast(x.message, true)); });
+}
+$('#sa-zoom').onclick = (e) => { if (e.target.tagName !== 'A') $('#sa-zoom').hidden = true; };
+
+function renderThread(d) {
+  const t = d.ticket; SUP.open = t.id; SUP.count = d.messages.length;
+  $('#sup-title').textContent = `#${t.number} · ${t.subject}`;
+  $('#sup-meta').innerHTML = `${supPill(t.status)} <span style="color:var(--muted);font-size:13px">${esc(t.category_label)}${t.transaction_id ? ' · opération ' + esc(t.transaction_id) : ''}</span>`;
+  $('#sup-msgs').innerHTML = d.messages.map((m) => (m.author === 'system'
+    ? `<div class="msg system">${esc(m.body)} · ${when(m.created_at)}</div>`
+    : `<div class="msg ${m.author === 'user' ? 'me' : 'them'}"><small>${m.author === 'user' ? 'Vous' : esc(m.author_name || 'Support Pay243')} · ${when(m.created_at)}</small>${esc(m.body)}${msgFiles(m)}</div>`)).join('');
+  hydrateFiles($('#sup-msgs'));
+  $('#sup-close').classList.toggle('hidden', t.status === 'closed');
+  $('#sup-closed-note').classList.toggle('hidden', t.status !== 'closed');
+  const box = $('#sup-msgs'); box.scrollTop = box.scrollHeight;
+}
+async function openTicket(id) {
+  supView('thread'); ATT_REPLY.reset(); $('#f-sup-reply').reset();
+  renderThread(await api('GET', '/v1/support/tickets/' + encodeURIComponent(id)));
+  refreshUnread();
+}
+async function refreshUnread() { try { setUnread((await api('GET', '/v1/support/unread')).unread); } catch {} }
+$('#sup-new-btn').onclick = () => openNewTicket().catch((e) => toast(e.message, true));
+$$('[data-sup-back]').forEach((b) => b.onclick = () => loadSupport().catch((e) => toast(e.message, true)));
+$('#f-sup-new').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  if (ATT_NEW.pending()) throw new Error('Patientez : envoi du fichier en cours.');
+  const d = formData(e.target); if (!d.transaction_id) delete d.transaction_id;
+  d.attachments = ATT_NEW.ids();
+  const r = await api('POST', '/v1/support/tickets', d);
+  ATT_NEW.reset(); supView('thread'); renderThread(r); toast(`Demande #${r.ticket.number} envoyée`);
+}); };
+$('#f-sup-reply').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  if (ATT_REPLY.pending()) throw new Error('Patientez : envoi du fichier en cours.');
+  const attachments = ATT_REPLY.ids();
+  if (!e.target.body.value.trim() && !attachments.length) throw new Error('Écrivez un message ou joignez un fichier.');
+  const r = await api('POST', `/v1/support/tickets/${encodeURIComponent(SUP.open)}/messages`, { body: e.target.body.value, attachments });
+  e.target.reset(); ATT_REPLY.reset(); renderThread(r);
+}); };
+$('#sup-close').onclick = (e) => busy(e.currentTarget, async () => {
+  renderThread(await api('POST', `/v1/support/tickets/${encodeURIComponent(SUP.open)}/close`)); toast('Demande marquée comme résolue');
+});
+/** Toutes les 20 s : compteur des réponses non lues, et nouveaux messages de la conversation ouverte. */
+setInterval(async () => {
+  if (!TOKEN || !ME || document.hidden) return;
+  refreshUnread();
+  if (SUP.open) { try { const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(SUP.open)); if (d.messages.length !== SUP.count) renderThread(d); } catch {} }
+  else if (!$('#sup-list').classList.contains('hidden')) loadSupport().catch(() => {});
+}, 20000);
+
+(async () => {
+  if (!TOKEN) { showGuest(); return; }
+  try {
+    ME = (await api('GET', '/v1/me')).user;
+    showMember();
+    await loadSupport();
+  } catch { if (!ME) showGuest(); }
+  if (location.hash === '#support') setTimeout(() => $('#support').scrollIntoView({ behavior: 'smooth' }), 60);
+})();
+</script>
+</body>
+</html>
