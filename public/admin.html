@@ -121,6 +121,14 @@
   .modal { background: #fff; border-radius: 18px; padding: 24px; width: 100%; max-width: 480px; max-height: 92vh; overflow: auto; }
   .modal h3 { margin: 0 0 6px; font-size: 20px; }
   .modal .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .thread { display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow-y: auto; padding: 2px; }
+  .bubble { max-width: 85%; padding: 9px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; }
+  .bubble small { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; white-space: normal; }
+  .bubble.user { align-self: flex-start; background: var(--soft); }
+  .bubble.support { align-self: flex-end; background: #e7efff; }
+  .bubble.note { align-self: flex-end; background: #fff6cc; border: 1px dashed #e0c25a; }
+  .bubble.system { align-self: center; background: none; color: var(--muted); font-size: 12px; text-align: center; }
+  .lk-btn { border: 0; background: none; color: var(--blue); font-weight: 700; cursor: pointer; padding: 0 0 0 6px; font-size: 13px; }
   #zoom { cursor: zoom-out; } #zoom img { max-width: 96vw; max-height: 92vh; }
   .burger { display: none; }
   @media (max-width: 980px) {
@@ -290,6 +298,7 @@ const IC = {
   staff: '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   audit: '<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/>',
+  support: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
 };
 const SECTIONS = [
   { id: 'dashboard', label: 'Tableau de bord', perm: 'dashboard.view', render: renderDashboard },
@@ -297,6 +306,7 @@ const SECTIONS = [
   { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions },
   { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants },
   { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
+  { id: 'support', label: 'Support', perm: 'support.view', render: renderSupport },
   { id: 'recon', label: 'Rapprochement', perm: 'recon.view', render: renderRecon },
   { id: 'staff', label: 'Équipe', perm: 'staff.view', render: renderStaff },
   { id: 'settings', label: 'Paramètres', perm: 'settings.view', render: renderSettings },
@@ -311,7 +321,7 @@ function go(id) {
   $('#view').innerHTML = '<p class="muted">Chargement…</p>';
   history.replaceState(null, '', '#' + s.id);
   $('#side').classList.remove('open');
-  s.render().catch((e) => { $('#view').innerHTML = `<div class="card flag">${esc(e.message)}</div>`; });
+  return s.render().catch((e) => { $('#view').innerHTML = `<div class="card flag">${esc(e.message)}</div>`; });
 }
 $('#burger').onclick = () => $('#side').classList.toggle('open');
 
@@ -324,16 +334,105 @@ async function start() {
   $('#mode').textContent = ME.mode === 'live' ? 'PRODUCTION' : 'MODE DÉMO'; $('#mode').classList.toggle('live', ME.mode === 'live');
   $('#nav').innerHTML = SECTIONS.filter((s) => can(s.perm)).map((s) => `<button data-go="${s.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s.id]}</svg>${s.label}<span class="count" data-count="${s.id}" hidden></span></button>`).join('');
   $$('#nav button').forEach((b) => b.onclick = () => go(b.dataset.go));
+  if (can('support.view')) api('GET', '/support/summary').then((s) => badge('support', s.open)).catch(() => {});
   go(location.hash.slice(1) || 'dashboard');
 }
 
 // =====================================================================
 //  Tableau de bord
 // =====================================================================
+// =====================================================================
+//  Support : demandes des utilisateurs
+// =====================================================================
+function badge(id, n) { const el = $(`[data-count="${id}"]`); if (el) { el.hidden = !n; el.textContent = n; } }
+const T_STATUS = { open: ['À traiter', 'warn'], answered: ['Répondu', 'ok'], closed: ['Clos', ''] };
+const tpill = (s) => `<span class="pill ${T_STATUS[s]?.[1] || ''}">${esc(T_STATUS[s]?.[0] || s)}</span>`;
+let SUP_FILTER = { status: 'open', assigned: '', q: '' }; let SUP_CURRENT = null; let SUP_COUNT = -1;
+async function renderSupport() {
+  $('#view').innerHTML = `
+    <div class="toolbar">${[['open', 'À traiter'], ['answered', 'Répondues'], ['closed', 'Closes'], ['', 'Toutes']].map(([k, v]) => `<button class="btn ${SUP_FILTER.status === k ? '' : 'light'}" data-sst="${k}">${v}</button>`).join('')}
+      <select id="sup-assigned"><option value="">Toutes les demandes</option><option value="me">Mes demandes</option><option value="none">Non attribuées</option></select></div>
+    <form class="toolbar" id="f-sup"><input name="q" placeholder="N° de demande, objet, nom ou email du client" value="${esc(SUP_FILTER.q)}"><button class="btn">Rechercher</button></form>
+    <div class="split"><div class="card" id="sup-list"></div><div id="sup-detail"><div class="card muted">Sélectionnez une demande.</div></div></div>`;
+  $('#sup-assigned').value = SUP_FILTER.assigned;
+  $$('[data-sst]').forEach((b) => b.onclick = () => { SUP_FILTER.status = b.dataset.sst; renderSupport().catch((e) => toast(e.message, true)); });
+  $('#sup-assigned').onchange = (e) => { SUP_FILTER.assigned = e.target.value; loadSupList().catch((x) => toast(x.message, true)); };
+  $('#f-sup').onsubmit = (e) => { e.preventDefault(); SUP_FILTER.q = e.target.q.value.trim(); loadSupList().catch((x) => toast(x.message, true)); };
+  SUP_COUNT = -1;
+  await loadSupList();
+  if (SUP_CURRENT) await openSupTicket(SUP_CURRENT).catch(() => { SUP_CURRENT = null; });
+}
+async function loadSupList() {
+  const qs = new URLSearchParams(Object.entries(SUP_FILTER).filter(([, v]) => v));
+  const r = await api('GET', '/support/tickets?' + qs);
+  badge('support', r.summary.open);
+  const el = $('#sup-list'); if (!el) return;
+  el.innerHTML = r.data.length ? `<ul class="list">${r.data.map((t) => `<li class="click ${SUP_CURRENT === t.id ? 'sel' : ''}" data-tid="${esc(t.id)}"><div><b>#${esc(t.number)} · ${esc(t.subject)}</b>${t.unread ? ` <span class="pill err">${esc(t.unread)} nouveau${t.unread > 1 ? 'x' : ''}</span>` : ''}
+      <div class="muted">${esc(t.user.full_name || '')} · ${esc(t.category_label)} · ${dt(t.last_message_at)}${t.assigned ? ' · ' + esc(t.assigned.name || '') : ''}</div></div>${tpill(t.status)}</li>`).join('')}</ul>` : '<p class="muted">Aucune demande.</p>';
+  $$('[data-tid]').forEach((li) => li.onclick = () => { SUP_COUNT = -1; openSupTicket(li.dataset.tid).catch((x) => toast(x.message, true)); });
+}
+async function refreshSupport() { await loadSupList(); if (SUP_CURRENT) await openSupTicket(SUP_CURRENT, true); }
+async function openSupTicket(id, silent = false) {
+  const reply = can('support.reply');
+  const d = await api('GET', `/support/tickets/${encodeURIComponent(id)}${reply ? '?read=1' : ''}`);
+  if (silent && d.messages.length === SUP_COUNT) return;
+  // Rafraîchissement automatique : le brouillon en cours de saisie est conservé.
+  const keep = silent && SUP_CURRENT === id;
+  const draft = keep ? $('#sup-body')?.value || '' : ''; const wasInternal = keep && $('#sup-internal')?.checked;
+  SUP_CURRENT = id; SUP_COUNT = d.messages.length;
+  $$('[data-tid]').forEach((li) => li.classList.toggle('sel', li.dataset.tid === id));
+  const t = d.ticket; const u = t.user;
+  const mine = t.assigned && (t.assigned.id ? t.assigned.id === ME.id : t.assigned.name === ME.name);
+  $('#sup-detail').innerHTML = `<div class="card"><h2>#${esc(t.number)} · ${esc(t.subject)} ${tpill(t.status)}</h2>
+    <dl class="kv">
+      <dt>Client</dt><dd>${esc(u.full_name || '—')} <span class="muted">${esc(u.email || u.phone || '')}</span>${u.status && u.status !== 'active' ? ' ' + pill(u.status) : ''}${u.activated === false ? ' <span class="pill warn">non activé</span>' : ''}${can('users.view') ? '<button class="lk-btn" id="sup-user">Voir la fiche</button>' : ''}</dd>
+      <dt>Rubrique</dt><dd>${esc(t.category_label)}</dd>
+      ${t.transaction_id ? `<dt>Opération</dt><dd class="mono">${esc(t.transaction_id)}</dd>` : ''}
+      <dt>Prise en charge</dt><dd>${t.assigned ? esc(t.assigned.name || '') : '<span class="muted">personne</span>'}</dd>
+      <dt>Ouverte le</dt><dd>${dt(t.created_at)}${u.other_tickets ? ` · <span class="muted">${esc(u.other_tickets)} autre(s) demande(s)</span>` : ''}</dd>
+    </dl>
+    ${reply ? `<div class="actions" style="margin-top:14px">${mine ? '<button class="btn light sm" data-tact="none">Remettre dans la file</button>' : '<button class="btn light sm" data-tact="me">Prendre en charge</button>'}${t.status === 'closed' ? '<button class="btn light sm" data-tact="open">Rouvrir</button>' : '<button class="btn sm" data-tact="closed">Clore</button>'}</div>` : ''}
+  </div>
+  <div class="card"><div class="thread" id="sup-thread">${d.messages.map((m) => (m.author === 'system'
+    ? `<div class="bubble system">${esc(m.body)} · ${dt(m.created_at)}</div>`
+    : `<div class="bubble ${m.author === 'user' ? 'user' : m.internal ? 'note' : 'support'}"><small>${m.internal ? 'Note interne · ' : ''}${esc(m.author_name || (m.author === 'user' ? 'Client' : 'Support'))} · ${dt(m.created_at)}</small>${esc(m.body)}</div>`)).join('')}</div>
+    ${reply ? `<form id="f-sup-reply" style="margin-top:14px"><textarea id="sup-body" maxlength="4000" required placeholder="Votre réponse au client…"></textarea>
+      <div class="actions" style="margin-top:10px;align-items:center;justify-content:space-between"><label class="switch" style="margin:0"><input type="checkbox" id="sup-internal"> Note interne (invisible pour le client)</label><button class="btn">Envoyer</button></div>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">Ne demandez jamais au client son mot de passe, son PIN ni un code de vérification.</p></form>`
+    : '<p class="muted" style="margin-top:12px">Lecture seule : votre rôle ne permet pas de répondre.</p>'}</div>`;
+  const th = $('#sup-thread'); th.scrollTop = th.scrollHeight;
+  $('#sup-user')?.addEventListener('click', () => {
+    USER_FILTER = { q: u.id, status: '', kyc: '', type: '', activation: '' };
+    go('users').then(() => openUser(u.id)).catch(() => {});
+  });
+  if (!reply) return;
+  const body = $('#sup-body'); const internal = $('#sup-internal');
+  body.value = draft; internal.checked = !!wasInternal;
+  const hint = () => { body.placeholder = internal.checked ? 'Note visible uniquement par l’équipe…' : 'Votre réponse au client…'; };
+  internal.onchange = hint; hint();
+  const reload = async () => { SUP_COUNT = -1; await openSupTicket(id); await loadSupList(); };
+  $('#f-sup-reply').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => {
+    const note = internal.checked;
+    await api('POST', `/support/tickets/${encodeURIComponent(id)}/messages`, { body: body.value, internal: note });
+    await reload(); toast(note ? 'Note interne ajoutée.' : 'Réponse envoyée au client.');
+  }); };
+  $$('[data-tact]').forEach((b) => b.onclick = () => run(b, async () => {
+    const a = b.dataset.tact;
+    if (a === 'me' || a === 'none') await api('POST', `/support/tickets/${encodeURIComponent(id)}/assign`, { to: a });
+    else await api('POST', `/support/tickets/${encodeURIComponent(id)}/status`, { status: a });
+    await reload();
+  }));
+}
+// Toutes les 20 s : compteur du menu, et nouveaux messages si la section Support est ouverte.
+setInterval(() => {
+  if (!ME || document.hidden || !can('support.view')) return;
+  if (CURRENT === 'support') refreshSupport().catch(() => {});
+  else api('GET', '/support/summary').then((s) => badge('support', s.open)).catch(() => {});
+}, 20000);
+
 async function renderDashboard() {
   const d = await api('GET', '/dashboard');
-  const badge = (id, n) => { const el = $(`[data-count="${id}"]`); if (el) { el.hidden = !n; el.textContent = n; } };
-  badge('kyc', d.kyc_pending); badge('recon', d.recon_open);
+  badge('kyc', d.kyc_pending); badge('recon', d.recon_open); badge('support', d.support_open);
   const days = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 864e5).toISOString().slice(0, 10));
   const counts = days.map((day) => d.signups_7d.find((x) => x.day === day)?.n || 0);
   const max = Math.max(1, ...counts);
@@ -348,6 +447,7 @@ async function renderDashboard() {
       <div class="kpi ${d.recon_open ? 'alert' : ''}"><small>Écarts de rapprochement</small><b>${d.recon_open}</b><span>à traiter</span></div>
       <div class="kpi"><small>Opérations en attente</small><b>${d.pending_transactions}</b><span>Mobile Money</span></div>
       <div class="kpi ${d.users.suspended ? 'alert' : ''}"><small>Comptes suspendus</small><b>${d.users.suspended}</b><span>par l'équipe</span></div>
+      <div class="kpi ${d.support_open ? 'alert' : ''}"><small>Support</small><b>${d.support_open}</b><span>demandes à traiter</span></div>
       <div class="kpi ${balanced ? '' : 'alert'}"><small>Grand livre</small><b style="font-size:20px;margin-top:8px">${balanced ? '✓ Équilibré' : '⚠ Déséquilibré'}</b><span>partie double</span></div>
     </div>
     <div class="grid2">

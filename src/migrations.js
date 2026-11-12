@@ -397,4 +397,42 @@ ALTER TABLE merchants ADD COLUMN website TEXT;
 CREATE UNIQUE INDEX idx_merchants_rccm ON merchants (rccm) WHERE rccm IS NOT NULL;
 `,
   },
+  {
+    version: 7,
+    name: 'support : demandes des utilisateurs et conversation avec l\'équipe',
+    sql: `
+CREATE TABLE support_tickets (
+  id TEXT PRIMARY KEY,
+  number BIGSERIAL UNIQUE,                 -- numéro lisible communiqué à l'utilisateur (#1001…)
+  user_id TEXT NOT NULL REFERENCES users(id),
+  subject TEXT NOT NULL,
+  category TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','answered','closed')),
+  transaction_id TEXT,
+  assigned_staff_id TEXT,
+  assigned_name TEXT,
+  user_unread INTEGER NOT NULL DEFAULT 0,  -- réponses du support non lues par l'utilisateur
+  staff_unread INTEGER NOT NULL DEFAULT 0, -- messages de l'utilisateur non lus par l'équipe
+  last_author TEXT,
+  last_message_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  closed_at TEXT
+);
+ALTER SEQUENCE support_tickets_number_seq RESTART WITH 1001;
+CREATE INDEX idx_support_tickets_user ON support_tickets (user_id, last_message_at);
+CREATE INDEX idx_support_tickets_status ON support_tickets (status, last_message_at);
+CREATE TABLE support_messages (
+  id TEXT PRIMARY KEY,
+  ticket_id TEXT NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  author_type TEXT NOT NULL CHECK (author_type IN ('user','staff','system')),
+  author_id TEXT,
+  author_name TEXT,
+  body TEXT NOT NULL,
+  internal BOOLEAN NOT NULL DEFAULT FALSE, -- note interne : jamais montrée à l'utilisateur
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_support_messages_ticket ON support_messages (ticket_id, created_at);
+`,
+  },
 ];

@@ -464,6 +464,72 @@ test('sécurité : outil sandbox réservé à l\'équipe, jetons invalides, cart
   assert.equal(err?.code, 'EFORBIDDEN');
 });
 
+test('support : demande, réponse du conseiller, note interne invisible, droits', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const u = await register({ activate: false, email: 'client.support@test.cd', full_name: 'Client Support', password: 'motdepasse5', pin: '6402' });
+  assert.equal(u.status, 201);
+  const tok = u.body.token;
+  const other = await register({ email: 'curieux.support@test.cd', full_name: 'Curieux Support', password: 'motdepasse5', pin: '6402' });
+
+  // Un compte non activé peut écrire au support (c'est souvent lui qui en a besoin).
+  const bad = await api('POST', '/v1/support/tickets', { token: tok, body: { subject: '', message: 'x' } });
+  assert.equal(bad.body.error.code, 'invalid_subject');
+  const foreign = await api('POST', '/v1/support/tickets', { token: tok, body: { subject: 'Paiement', message: 'Bonjour', transaction_id: 'txn_inconnu' } });
+  assert.equal(foreign.body.error.code, 'invalid_transaction');
+  const created = await api('POST', '/v1/support/tickets', { token: tok, body: { category: 'payment', subject: '<b>Paiement bloqué</b>', message: 'Ma recharge de 10 $ n’est pas arrivée.' } });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const t = created.body.ticket;
+  assert.ok(t.number >= 1001);
+  assert.equal(t.status, 'open');
+  assert.equal(created.body.messages.length, 1);
+  assert.ok(outbox.some((m) => m.to === 'client.support@test.cd' && m.subject.includes(`#${t.number}`)));
+
+  // Personne d'autre ne peut lire la demande ; un utilisateur n'a pas accès à la file du support.
+  assert.equal((await api('GET', `/v1/support/tickets/${t.id}`, { token: other.body.token })).status, 404);
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: other.body.token, body: { body: 'intrusion' } })).status, 404);
+  assert.equal((await api('GET', '/v1/admin/support/tickets', { token: tok })).status, 401);
+
+  // L'équipe voit la demande dans la file, ajoute une note interne puis répond.
+  const sa = bo(ADMIN_KEY);
+  const queue = await sa('GET', '/support/tickets?status=open');
+  const inQueue = queue.body.data.find((x) => x.id === t.id);
+  assert.equal(inQueue.unread, 1);
+  assert.equal(inQueue.user.email, 'client.support@test.cd');
+  assert.equal((await sa('POST', `/support/tickets/${t.id}/messages`, { body: 'Vérifier le relevé Airtel du jour.', internal: true })).status, 201);
+  const replied = await sa('POST', `/support/tickets/${t.id}/messages`, { body: 'Bonjour, nous vérifions votre recharge.' });
+  assert.equal(replied.body.ticket.status, 'answered');
+  assert.equal(replied.body.ticket.assigned.name, 'conformite'); // répondre attribue la demande
+  assert.ok(outbox.some((m) => m.to === 'client.support@test.cd' && m.subject.startsWith('Réponse du support')));
+
+  // Côté utilisateur : réponse visible, note interne jamais transmise, non-lus remis à zéro à la lecture.
+  assert.equal((await api('GET', '/v1/support/unread', { token: tok })).body.unread, 1);
+  const seen = await api('GET', `/v1/support/tickets/${t.id}`, { token: tok });
+  assert.deepEqual(seen.body.messages.map((m) => m.author), ['user', 'support']);
+  assert.ok(!JSON.stringify(seen.body).includes('relevé Airtel'));
+  assert.equal(seen.body.messages[1].author_name, 'conformite · Support Pay243'); // prénom du conseiller seulement
+  assert.equal((await api('GET', '/v1/support/unread', { token: tok })).body.unread, 0);
+
+  // L'utilisateur répond : la demande revient dans la file. Close par l'équipe, rouverte par un nouveau message.
+  const back = await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Merci, j’attends.' } });
+  assert.equal(back.body.ticket.status, 'open');
+  assert.equal((await sa('POST', `/support/tickets/${t.id}/status`, { status: 'closed' })).body.ticket.status, 'closed');
+  const reopened = await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Toujours rien.' } });
+  assert.equal(reopened.body.ticket.status, 'open');
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/close`, { token: tok })).body.ticket.status, 'closed');
+
+  // Vue équipe : tout l'historique, notes internes comprises ; actions journalisées.
+  const full = await sa('GET', `/support/tickets/${t.id}`);
+  assert.ok(full.body.messages.some((m) => m.internal && m.body.includes('relevé Airtel')));
+  const audit = await sa('GET', '/audit?action=support');
+  assert.ok(audit.body.data.some((a) => a.action === 'support.reply' && a.target === t.id));
+
+  // Limite : 5 nouvelles demandes par heure et par utilisateur.
+  const codes = [];
+  for (let i = 0; i < 6; i++) codes.push((await api('POST', '/v1/support/tickets', { token: other.body.token, body: { subject: `Question ${i}`, message: 'Bonjour' } })).status);
+  assert.deepEqual(codes.slice(0, 5), [201, 201, 201, 201, 201]);
+  assert.ok([409, 429].includes(codes[5]));
+});
+
 test('retrait Mobile Money échoué -> fonds et frais restitués', async () => {
   const before = (await api('GET', '/v1/wallets', { token: state.bob })).body.data.find((x) => x.currency === 'USD').balance;
   const w = await api('POST', '/v1/withdrawals', { token: state.bob, body: { amount: 1000, currency: 'USD', pin: '9137', phone: '0990000000' } });

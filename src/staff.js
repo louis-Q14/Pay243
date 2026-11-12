@@ -13,7 +13,7 @@ export const ROLES = {
   admin: { label: 'Administrateur', rank: 80, description: 'Toutes les opérations ; gère les membres de rang inférieur.' },
   compliance: { label: 'Conformité', rank: 50, description: "Vérification d'identité (KYC), consultation des comptes." },
   finance: { label: 'Finance', rank: 50, description: 'Rapprochement, cantonnement, transactions et marchands.' },
-  support: { label: 'Support', rank: 40, description: 'Consultation des comptes et transactions, déblocage du PIN, déconnexion des sessions.' },
+  support: { label: 'Support', rank: 40, description: 'Réponse aux demandes des utilisateurs, consultation des comptes et transactions, déblocage du PIN, déconnexion des sessions.' },
   auditor: { label: 'Auditeur', rank: 30, description: 'Lecture seule de toute la plateforme et du journal.' },
 };
 
@@ -32,6 +32,8 @@ export const PERMISSIONS = {
   'kyc.review': ['admin', 'compliance'],
   'recon.view': ['admin', 'finance', 'auditor'],
   'recon.manage': ['admin', 'finance'],
+  'support.view': ['admin', 'support', 'compliance', 'finance', 'auditor'], // lire les demandes des utilisateurs
+  'support.reply': ['admin', 'support', 'compliance', 'finance'], // répondre, attribuer, clore
   'audit.view': ['admin', 'auditor'],
   'staff.view': ['admin'],
   'staff.manage': ['admin'], // limité aux rangs inférieurs, voir canManageRole

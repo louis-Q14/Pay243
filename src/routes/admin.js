@@ -89,6 +89,7 @@ backofficeRouter.get('/admin/dashboard', can('dashboard.view'), async (_req, res
     merchants: (await q.get('SELECT COUNT(*)::int AS n FROM merchants')).n,
     kyc_pending: (await q.get("SELECT COUNT(*)::int AS n FROM kyc_submissions WHERE status='pending'")).n,
     recon_open: (await q.get("SELECT COUNT(*)::int AS n FROM recon_exceptions WHERE status='open'")).n,
+    support_open: (await q.get("SELECT COUNT(*)::int AS n FROM support_tickets WHERE status='open'")).n,
     pending_transactions: (await q.get("SELECT COUNT(*)::int AS n FROM transactions WHERE status='pending'")).n,
     volume_24h: volume.map((v) => ({ ...v, amount: Number(v.amount) })),
     signups_7d: signups,

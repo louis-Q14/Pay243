@@ -21,6 +21,21 @@
   .steps3 li b { display: block; color: var(--ink); margin-top: 4px; }
   @media (max-width: 560px) { .steps3 { grid-template-columns: 1fr; } }
 
+  /* ---------- Support ---------- */
+  textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; resize: vertical; min-height: 80px; box-sizing: border-box; }
+  textarea:focus { outline: 2px solid rgba(0,112,224,.25); border-color: var(--blue); }
+  .tabs .badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #ce1021; color: #fff; font-size: 11px; font-weight: 800; margin-left: 4px; }
+  .sup-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .sup-head h2 { margin: 0; } .sup-head button { padding: 8px 14px; }
+  .sup-item { cursor: pointer; } .sup-item:hover b { color: var(--blue); }
+  .dot-new { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ce1021; vertical-align: middle; }
+  .msgs { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; max-height: 55vh; overflow-y: auto; padding: 2px; }
+  .msg { max-width: 85%; padding: 9px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; }
+  .msg small { display: block; font-size: 11px; opacity: .75; margin-bottom: 2px; white-space: normal; }
+  .msg.me { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.them { align-self: flex-start; background: #eef3fb; border-bottom-left-radius: 4px; }
+  .msg.system { align-self: center; background: none; color: var(--muted); font-size: 12px; text-align: center; padding: 2px 8px; }
+
   /* ---------- Téléphone : tout plus compact ---------- */
   @media (max-width: 560px) {
     header.top { padding: 8px 12px; }
@@ -177,6 +192,7 @@
     <button class="on" data-tab="home">Wallet</button>
     <button data-tab="cards">Mes cartes</button>
     <button data-tab="merchant">Espace marchand</button>
+    <button data-tab="support">Support <span class="badge" id="sup-badge" hidden></span></button>
   </div>
 
   <section id="tab-home">
@@ -258,6 +274,37 @@
         <p class="muted">Documentation : <a href="/docs">/docs</a> · SDK navigateur : <code>/sdk/pay243.js</code></p>
       </div>
       <div class="card"><h2>Derniers paiements reçus</h2><ul class="list" id="m-payments"></ul></div>
+    </div>
+  </section>
+
+  <section id="tab-support" class="hidden">
+    <div id="sup-list" class="card">
+      <div class="sup-head"><h2>Support Pay243</h2><button id="sup-new-btn">Nouvelle demande</button></div>
+      <p class="muted">Écrivez-nous : un conseiller vous répond ici et vous êtes prévenu par email. Pay243 ne vous demandera jamais votre mot de passe, votre PIN ni un code de vérification.</p>
+      <ul class="list" id="sup-tickets"></ul>
+    </div>
+    <div id="sup-new" class="card hidden">
+      <button class="link" data-sup-back>← Mes demandes</button>
+      <h2>Nouvelle demande</h2>
+      <form id="f-sup-new">
+        <label>Rubrique</label><select name="category"></select>
+        <label>Objet</label><input name="subject" maxlength="120" required placeholder="Ex : Ma recharge M-Pesa n'est pas arrivée">
+        <label>Opération concernée (facultatif)</label><select name="transaction_id"><option value="">Aucune</option></select>
+        <label>Message</label><textarea name="message" rows="5" maxlength="4000" required placeholder="Décrivez votre problème : date, montant, numéro utilisé…"></textarea>
+        <p class="muted">N'indiquez jamais votre mot de passe, votre PIN ni un code reçu par SMS ou email.</p>
+        <button class="full">Envoyer ma demande</button>
+      </form>
+    </div>
+    <div id="sup-thread" class="card hidden">
+      <button class="link" data-sup-back>← Mes demandes</button>
+      <h2 id="sup-title" style="margin-top:6px"></h2>
+      <div id="sup-meta"></div>
+      <div class="msgs" id="sup-msgs"></div>
+      <p class="muted hidden" id="sup-closed-note">Cette demande est résolue. Écrivez un nouveau message pour la rouvrir.</p>
+      <form id="f-sup-reply">
+        <textarea name="body" rows="3" maxlength="4000" required placeholder="Votre message…"></textarea>
+        <div class="row" style="margin-top:8px"><button>Envoyer</button><button type="button" class="ghost" id="sup-close">Marquer comme résolue</button></div>
+      </form>
     </div>
   </section>
 </main>
@@ -355,8 +402,9 @@ function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'
 // ---------------- Onglets ----------------
 $$('[data-tab]').forEach((b) => b.onclick = () => {
   $$('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
-  ['home', 'cards', 'merchant'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+  ['home', 'cards', 'merchant', 'support'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
   if (b.dataset.tab === 'merchant') loadMerchant();
+  if (b.dataset.tab === 'support') loadSupport().catch((e) => toast(e.message, true));
   if (b.dataset.tab === 'cards') loadCards();
 });
 
@@ -375,12 +423,15 @@ async function boot() {
       ? `Compte activé · niveau ${L.kyc_level} (${L.label}) — plafonds : ${L.perTxnUsd} $ par opération, ${L.dailyUsd} $ par jour, solde max ${L.maxBalanceUsd} $ (contre-valeur).`
       : 'Compte non activé : vérification d\'identité requise avant toute opération.';
     await Promise.all([loadWallets(), loadHistory(), loadCards(), loadKyc().catch(() => {})]);
+    refreshSupportBadge(); startSupportPolling();
     let newKey = null;
     try { newKey = sessionStorage.getItem('pay243_new_key'); sessionStorage.removeItem('pay243_new_key'); } catch {}
     if (location.hash === '#merchant' || newKey) {
       $('[data-tab="merchant"]').click();
       if (newKey) { showKey(newKey); toast('Bienvenue ! Votre compte entreprise est prêt.'); }
       history.replaceState(null, '', '/app');
+    } else if (location.hash === '#support') {
+      $('[data-tab="support"]').click(); history.replaceState(null, '', '/app');
     } else if (location.hash === '#cards') {
       $('[data-tab="cards"]').click(); history.replaceState(null, '', '/app');
     } else if (location.hash === '#kyc') {
@@ -604,6 +655,76 @@ $$('[data-open]').forEach((b) => b.onclick = () => {
   }
   ACTIONS[b.dataset.open]();
 });
+
+// ---------------- Support ----------------
+const SUP = { open: null, count: 0, timer: null, categories: [] };
+const SUP_STATUS = { open: ['En attente du support', 'pending'], answered: ['Le support a répondu', 'succeeded'], closed: ['Résolue', ''] };
+const supPill = (s) => `<span class="pill ${SUP_STATUS[s]?.[1] || ''}">${esc(SUP_STATUS[s]?.[0] || s)}</span>`;
+function setSupBadge(n) { const b = $('#sup-badge'); b.hidden = !n; b.textContent = n || ''; }
+async function refreshSupportBadge() { try { setSupBadge((await api('GET', '/v1/support/unread')).unread); } catch {} }
+function supView(v) {
+  ['list', 'new', 'thread'].forEach((x) => $('#sup-' + x).classList.toggle('hidden', x !== v));
+  if (v !== 'thread') SUP.open = null;
+}
+async function loadSupport() {
+  supView('list');
+  const r = await api('GET', '/v1/support/tickets');
+  SUP.categories = r.categories; setSupBadge(r.unread);
+  $('#sup-tickets').innerHTML = r.data.length ? r.data.map((t) => `<li class="sup-item" data-tkt="${esc(t.id)}"><div><b>#${esc(t.number)} · ${esc(t.subject)}</b>${t.unread ? ' <span class="dot-new" title="Nouvelle réponse"></span>' : ''}<div class="muted">${esc(t.category_label)} · ${when(t.last_message_at)}</div></div>${supPill(t.status)}</li>`).join('')
+    : '<li class="muted">Aucune demande pour l\'instant. Une question, un problème ? Cliquez sur « Nouvelle demande ».</li>';
+  $$('[data-tkt]').forEach((li) => li.onclick = () => openTicket(li.dataset.tkt).catch((e) => toast(e.message, true)));
+}
+async function openNewTicket() {
+  supView('new');
+  const f = $('#f-sup-new'); f.reset();
+  f.category.innerHTML = SUP.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
+  try {
+    const t = await api('GET', '/v1/transactions?limit=20');
+    f.transaction_id.innerHTML = '<option value="">Aucune</option>' + t.data.map((x) => `<option value="${esc(x.id)}">${esc(TYPE_LABEL[x.type] || x.type)} · ${fmt(x.amount, x.currency)} · ${when(x.created_at)}</option>`).join('');
+  } catch {}
+  f.subject.focus();
+}
+function renderThread(d) {
+  const t = d.ticket; SUP.open = t.id; SUP.count = d.messages.length;
+  $('#sup-title').textContent = `#${t.number} · ${t.subject}`;
+  $('#sup-meta').innerHTML = `${supPill(t.status)} <span class="muted">${esc(t.category_label)}${t.transaction_id ? ' · opération ' + esc(t.transaction_id) : ''}</span>`;
+  $('#sup-msgs').innerHTML = d.messages.map((m) => (m.author === 'system'
+    ? `<div class="msg system">${esc(m.body)} · ${when(m.created_at)}</div>`
+    : `<div class="msg ${m.author === 'user' ? 'me' : 'them'}"><small>${m.author === 'user' ? 'Vous' : esc(m.author_name || 'Support Pay243')} · ${when(m.created_at)}</small>${esc(m.body)}</div>`)).join('');
+  $('#sup-close').classList.toggle('hidden', t.status === 'closed');
+  $('#sup-closed-note').classList.toggle('hidden', t.status !== 'closed');
+  const box = $('#sup-msgs'); box.scrollTop = box.scrollHeight;
+}
+async function openTicket(id) {
+  supView('thread');
+  renderThread(await api('GET', '/v1/support/tickets/' + encodeURIComponent(id)));
+  refreshSupportBadge();
+}
+$('#sup-new-btn').onclick = () => openNewTicket();
+$$('[data-sup-back]').forEach((b) => b.onclick = () => loadSupport().catch((e) => toast(e.message, true)));
+$('#f-sup-new').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const d = formData(e.target); if (!d.transaction_id) delete d.transaction_id;
+  const r = await api('POST', '/v1/support/tickets', d);
+  supView('thread'); renderThread(r); toast(`Demande #${r.ticket.number} envoyée`);
+}); };
+$('#f-sup-reply').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  const r = await api('POST', `/v1/support/tickets/${encodeURIComponent(SUP.open)}/messages`, { body: e.target.body.value });
+  e.target.reset(); renderThread(r);
+}); };
+$('#sup-close').onclick = (e) => busy(e.currentTarget, async () => {
+  renderThread(await api('POST', `/v1/support/tickets/${encodeURIComponent(SUP.open)}/close`)); toast('Demande marquée comme résolue');
+});
+/** Toutes les 20 s : pastille des réponses non lues, et nouveaux messages de la conversation ouverte. */
+function startSupportPolling() {
+  if (SUP.timer) return;
+  SUP.timer = setInterval(async () => {
+    if (!TOKEN || document.hidden) return;
+    refreshSupportBadge();
+    if (SUP.open && !$('#tab-support').classList.contains('hidden')) {
+      try { const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(SUP.open)); if (d.messages.length !== SUP.count) renderThread(d); } catch {}
+    }
+  }, 20000);
+}
 
 // ---------------- Cartes ----------------
 async function loadCards() {
