@@ -24,7 +24,7 @@
     background: var(--panel); border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); }
 
   /* ================= Panneau visuel ================= */
-  .art { position: relative; min-height: min(680px, calc(100vh - 68px)); border-radius: 30px; overflow: hidden; isolation: isolate;
+  .art { -webkit-mask-image: -webkit-radial-gradient(white, black); transform: translateZ(0); position: relative; min-height: min(680px, calc(100vh - 68px)); border-radius: 30px; overflow: hidden; isolation: isolate;
     display: flex; flex-direction: column; justify-content: space-between; padding: 36px 40px 40px; background: #0b0716; perspective: 1200px; }
   .art::before { content: ""; position: absolute; inset: -30%; z-index: -2;
     background:

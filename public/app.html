@@ -27,7 +27,7 @@
   #auth.login-stage { max-width: none; margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; box-sizing: border-box; }
   .login-shell { width: min(1180px, 100%); min-height: min(720px, calc(100vh - 64px)); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
     background: #000; border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); box-sizing: border-box; }
-  .login-art { position: relative; overflow: hidden; border-radius: 30px; background: #0b0716; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; }
+  .login-art { -webkit-mask-image: -webkit-radial-gradient(white, black); transform: translateZ(0); position: relative; overflow: hidden; border-radius: 30px; background: #0b0716; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; }
   .login-art::before { content: ""; position: absolute; inset: -30%; z-index: -2;
     background:
       radial-gradient(40% 30% at 22% 28%, rgba(255,120,60,.55), transparent 70%),
@@ -67,13 +67,22 @@
   .login-panel .notice { background: #2a2410; border-color: #5a4a12; color: #f3e3b0; }
   .login-panel .muted { color: #bdbdbd; }
   @media (max-width: 860px) {
-    .login-shell { grid-template-columns: 1fr; border-radius: 28px; min-height: 0; }
-    .login-art { min-height: 200px; border-radius: 20px; padding: 26px; }
-    .login-art h1 { font-size: 30px; }
-    .login-mark { width: 52px; height: 52px; }
-    .login-panel { padding: 30px 14px 34px; }
-    .login-panel h2 { font-size: 32px; }
-    .login-panel .sub { margin-bottom: 20px; }
+    #auth.login-stage { padding: 16px 12px; }
+    .login-shell { grid-template-columns: 1fr; border-radius: 26px; min-height: 0; width: min(520px, 100%); gap: 6px; padding: 6px; }
+    .login-art { min-height: 0; border-radius: 20px; padding: 16px 18px; flex-direction: row; align-items: center; gap: 14px; justify-content: flex-start; }
+    .login-art h1 { font-size: 21px; line-height: 1.15; }
+    .login-art h1 br { display: none; }
+    .login-mark { width: 44px; height: 44px; flex: none; }
+    .login-mark img { width: 22px; height: 22px; }
+    .login-panel { padding: 22px 14px 24px; }
+    .login-panel h2 { font-size: 26px; margin-bottom: 4px; }
+    .login-panel .sub { font-size: 14px; margin-bottom: 14px; }
+    .login-panel label { font-size: 14px; margin: 14px 0 6px; }
+    .login-panel input { padding: 12px 14px; }
+    .login-panel .row-forgot { margin-top: 8px; }
+    .login-panel .row-forgot button { font-size: 13px; }
+    .login-panel button.full { margin-top: 18px; padding: 13px; font-size: 16px; }
+    .login-panel .alt { margin-top: 16px; font-size: 14px; }
   }
 </style>
 </head>
@@ -88,12 +97,12 @@
  <div class="login-shell">
   <aside class="login-art" aria-hidden="true">
     <a href="/" class="login-mark" tabindex="-1"><img src="/favicon.png" alt=""></a>
-    <h1>Payez, encaissez,<br>envoyez. <b>Simplement.</b></h1>
+    <h1>Payez, encaissez, <br>envoyez. <b>Simplement.</b></h1>
   </aside>
   <div class="login-panel">
   <div class="card" id="login-card">
     <h2>Connexion</h2>
-    <p class="sub">Saisissez vos identifiants pour accéder à votre compte</p>
+    <p class="sub">Accédez à votre compte Pay243</p>
     <form id="f-login">
       <label>Email ou téléphone</label><input name="identifier" placeholder="vous@exemple.com" required autocomplete="username">
       <label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
