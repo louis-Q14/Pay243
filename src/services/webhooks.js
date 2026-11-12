@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
+import http from 'node:http';
+import https from 'node:https';
 import { afterCommit, q } from '../db.js';
-import { assertPublicUrl } from '../netguard.js';
+import { assertPublicUrl, guardedLookup, ssrfGuardEnabled } from '../netguard.js';
 import { newId, now, parseJson } from '../util.js';
 
 const MAX_ATTEMPTS = 8; // ~ 10s, 20s, 40s ... jusqu'à ~ 21 min entre les essais
@@ -14,6 +16,28 @@ const LEASE_MS = 60_000; // un événement réservé par une instance n'est pas 
 export function signPayload(secret, body, t = Math.floor(Date.now() / 1000)) {
   const v1 = crypto.createHmac('sha256', secret).update(`${t}.${body}`).digest('hex');
   return `t=${t},v1=${v1}`;
+}
+
+/**
+ * POST sortant vers l'URL d'un marchand. Aucune redirection n'est suivie, et l'adresse de destination est
+ * contrôlée à la connexion (guardedLookup) : jamais d'appel vers le réseau interne. Renvoie le code HTTP.
+ */
+function postWebhook(rawUrl, headers, body, timeoutMs = 10_000) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(rawUrl);
+    const req = (url.protocol === 'https:' ? https : http).request(url, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Length': Buffer.byteLength(body) },
+      ...(ssrfGuardEnabled() ? { lookup: guardedLookup } : {}),
+    }, (res) => {
+      res.resume(); // la réponse du marchand n'est pas lue
+      res.on('end', () => { clearTimeout(timer); resolve(res.statusCode); });
+      res.on('error', (e) => { clearTimeout(timer); reject(e); });
+    });
+    const timer = setTimeout(() => req.destroy(new Error('délai de 10 s dépassé')), timeoutMs);
+    req.on('error', (e) => { clearTimeout(timer); reject(e); });
+    req.end(body);
+  });
 }
 
 /** Enregistre l'événement (dans la transaction courante) et déclenche l'envoi après validation. */
@@ -52,18 +76,12 @@ export async function deliverDue() {
       let error = null;
       try {
         await assertPublicUrl(m.webhook_url); // revérifié à chaque envoi (le DNS peut changer)
-        const r = await fetch(m.webhook_url, {
-          redirect: 'manual', // une redirection pourrait viser une adresse interne
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Pay243-Webhooks/1.0',
-            'Pay243-Signature': signPayload(m.webhook_secret, e.payload),
-          },
-          body: e.payload,
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!r.ok) error = `HTTP ${r.status}`;
+        const status = await postWebhook(m.webhook_url, {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Pay243-Webhooks/1.0',
+          'Pay243-Signature': signPayload(m.webhook_secret, e.payload),
+        }, e.payload);
+        if (status < 200 || status >= 300) error = `HTTP ${status}`; // une redirection (3xx) n'est jamais suivie
       } catch (err) {
         error = err.message;
       }

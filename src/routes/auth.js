@@ -13,6 +13,16 @@ import { HttpError, detectOperator, isEmail, newId, normalizeEmail, normalizePho
 export const authRouter = Router();
 const limiter = rateLimit({ name: 'auth', max: config.rateLimits.auth });
 const otpLimiter = rateLimit({ name: 'otp', max: config.rateLimits.otp });
+// Limite par compte visé (en plus de la limite par adresse IP) : freine la recherche d'un mot de passe
+// menée depuis de nombreuses adresses.
+const accountKey = (req) => {
+  const id = req.body?.identifier ?? req.body?.email ?? req.body?.phone;
+  return id ? String(id).trim().toLowerCase().slice(0, 254) : `ip:${req.ip}`;
+};
+const accountLimiter = (name) => rateLimit({
+  name, windowMs: 15 * 60_000, max: config.rateLimits.loginPerAccount, keyOf: accountKey,
+  message: 'Trop de tentatives pour ce compte. Réessayez dans un quart d’heure.',
+});
 
 // Empreinte factice : la vérification d'un compte inconnu prend autant de temps qu'un vrai mot de passe.
 const DUMMY_HASH = await hashSecret('pay243-timing-equalizer');
@@ -73,9 +83,11 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
   }
   const e = normalizeEmail(email);
   const p = phone ? normalizePhone(phone) : null;
-  if (!full_name || String(full_name).trim().length < 3) throw new HttpError(400, 'invalid_name', 'Nom complet requis (3 caractères min.).');
-  if (account_type === 'business' && (!business_name || String(business_name).trim().length < 2)) {
-    throw new HttpError(400, 'invalid_business_name', "Nom de l'entreprise requis.");
+  const nameLen = String(full_name || '').trim().length;
+  if (nameLen < 3 || nameLen > 80) throw new HttpError(400, 'invalid_name', 'Nom complet requis (3 à 80 caractères).');
+  const bizLen = String(business_name || '').trim().length;
+  if (account_type === 'business' && (bizLen < 2 || bizLen > 80)) {
+    throw new HttpError(400, 'invalid_business_name', "Nom de l'entreprise requis (2 à 80 caractères).");
   }
   const profile = account_type === 'business' ? parseBusinessProfile(req.body.business) : null;
   if (profile && await q.get('SELECT id FROM merchants WHERE rccm=?', profile.rccm)) throw rccmTaken();
@@ -118,7 +130,7 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
  * Connexion par email (ou par numéro de téléphone). Depuis un appareil inconnu, le mot de passe ne suffit pas :
  * un code est envoyé par email (ou par SMS à défaut) et la requête doit être rejouée avec otp_code.
  */
-authRouter.post('/auth/login', limiter, async (req, res) => {
+authRouter.post('/auth/login', limiter, accountLimiter('login_account'), async (req, res) => {
   const { password, otp_code, device_id, device_label } = req.body || {};
   const identifier = req.body?.identifier ?? req.body?.email ?? req.body?.phone;
   let user;
@@ -173,7 +185,7 @@ authRouter.post('/auth/password/forgot', otpLimiter, async (req, res) => {
 });
 
 /** Étape 2 : nouveau mot de passe. Toutes les sessions ouvertes sont fermées ; cet appareil devient de confiance. */
-authRouter.post('/auth/password/reset', limiter, async (req, res) => {
+authRouter.post('/auth/password/reset', limiter, accountLimiter('reset_account'), async (req, res) => {
   const { otp_code, new_password, device_id, device_label } = req.body || {};
   const e = normalizeEmail(req.body?.email);
   assertNewPassword(new_password);

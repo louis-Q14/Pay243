@@ -54,7 +54,7 @@ export function idempotent(scopeOf) {
  * Limiteur de débit à fenêtre fixe, partagé entre instances via PostgreSQL.
  * `name` distingue les limiteurs (connexion, paiement…).
  */
-export function rateLimit({ name, windowMs = 60_000, max = 20, keyOf = (req) => req.ip } = {}) {
+export function rateLimit({ name, windowMs = 60_000, max = 20, keyOf = (req) => req.ip, message = 'Trop de requêtes. Réessayez dans une minute.' } = {}) {
   if (!name) throw new Error('rateLimit : name requis');
   return async (req, _res, next) => {
     const win = Math.floor(Date.now() / windowMs);
@@ -63,7 +63,7 @@ export function rateLimit({ name, windowMs = 60_000, max = 20, keyOf = (req) => 
        ON CONFLICT (key, window_start) DO UPDATE SET hits = rate_limits.hits + 1 RETURNING hits`,
       `${name}:${keyOf(req)}`, win, new Date((win + 2) * windowMs).toISOString(),
     );
-    if (row.hits > max) throw new HttpError(429, 'rate_limited', 'Trop de requêtes. Réessayez dans une minute.');
+    if (row.hits > max) throw new HttpError(429, 'rate_limited', message);
     next();
   };
 }
@@ -80,7 +80,9 @@ export function securityHeaders(_req, res, next) {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'",
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), payment=(), usb=()',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   });
   next();
 }

@@ -24,7 +24,8 @@ async function validWebhookUrl(u) {
   let url;
   try { url = new URL(u); } catch { throw new HttpError(400, 'invalid_url', 'webhook_url invalide.'); }
   if (!['http:', 'https:'].includes(url.protocol)) throw new HttpError(400, 'invalid_url', 'webhook_url doit être une URL http(s).');
-  if (config.mode === 'live' && url.protocol !== 'https:') throw new HttpError(400, 'invalid_url', 'webhook_url doit être en HTTPS en production.');
+  if (config.exposed && url.protocol !== 'https:') throw new HttpError(400, 'invalid_url', 'webhook_url doit être en HTTPS.');
+  if (String(u).length > 500) throw new HttpError(400, 'invalid_url', 'webhook_url trop longue (500 caractères max.).');
   try {
     await assertPublicUrl(url.toString());
   } catch (e) {
@@ -62,7 +63,7 @@ const merchantExists = () => new HttpError(409, 'merchant_exists', 'Vous avez d�
 
 merchantAdminRouter.post('/merchants', requireActivated, async (req, res) => {
   const { name, webhook_url } = req.body || {};
-  if (!name || String(name).trim().length < 2) throw new HttpError(400, 'invalid_name', 'Nom commercial requis.');
+  if (!name || String(name).trim().length < 2 || String(name).trim().length > 80) throw new HttpError(400, 'invalid_name', 'Nom commercial requis (2 à 80 caractères).');
   if (await q.get('SELECT id FROM merchants WHERE owner_user_id=?', req.user.id)) throw merchantExists();
   const hookUrl = await validWebhookUrl(webhook_url);
   let id; let secretKey;
@@ -83,6 +84,7 @@ merchantAdminRouter.get('/merchants/me', async (req, res) => {
 merchantAdminRouter.patch('/merchants/me', async (req, res) => {
   const m = await merchantOfUser(req.user);
   const { name, webhook_url } = req.body || {};
+  if (name != null && name !== '' && (String(name).trim().length < 2 || String(name).trim().length > 80)) throw new HttpError(400, 'invalid_name', 'Nom commercial : 2 à 80 caractères.');
   const hookUrl = webhook_url === undefined ? m.webhook_url : await validWebhookUrl(webhook_url);
   await q.run('UPDATE merchants SET name=COALESCE(?, name), webhook_url=? WHERE id=?',
     name ? String(name).trim() : null, hookUrl, m.id);
@@ -92,6 +94,8 @@ merchantAdminRouter.patch('/merchants/me', async (req, res) => {
 merchantAdminRouter.post('/merchants/me/keys', requireActivated, async (req, res) => {
   const m = await merchantOfUser(req.user);
   const mode = req.body?.mode === 'live' ? 'live' : 'test';
+  const { n } = await q.get('SELECT COUNT(*)::int AS n FROM api_keys WHERE merchant_id=? AND revoked_at IS NULL', m.id);
+  if (n >= 10) throw new HttpError(400, 'too_many_keys', '10 clés actives maximum : révoquez-en une avant d’en créer une nouvelle.');
   res.status(201).json({ secret_key: await issueKey(m.id, mode), notice: 'Conservez cette clé secrète : elle ne sera plus affichée.' });
 });
 

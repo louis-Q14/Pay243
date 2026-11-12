@@ -8,6 +8,8 @@ process.env.MOCK_DELAY_MS = '30';
 process.env.RATE_LIMIT_AUTH = '1000'; // la suite enchaîne beaucoup d'inscriptions et de connexions
 process.env.RATE_LIMIT_OTP = '1000';
 process.env.RATE_LIMIT_KYC_UPLOAD = '1000';
+process.env.RATE_LIMIT_LOGIN_ACCOUNT = '1000';
+process.env.RATE_LIMIT_MONEY = '1000';
 const ADMIN_KEY = 'adm_test_0123456789abcdefghijkl';
 process.env.ADMIN_KEYS = `conformite:${ADMIN_KEY}`;
 const fs = await import('node:fs');
@@ -417,12 +419,49 @@ test('remboursement carte : pas de dépassement en concurrence, restitution si l
 });
 
 test('SSRF : adresses internes reconnues', () => {
-  for (const ip of ['127.0.0.1', '10.1.2.3', '172.20.0.1', '192.168.1.10', '169.254.169.254', '100.64.0.1', '0.0.0.0', '::1', 'fe80::1', 'fd00::1', '::ffff:127.0.0.1']) {
+  for (const ip of ['127.0.0.1', '10.1.2.3', '172.20.0.1', '192.168.1.10', '169.254.169.254', '100.64.0.1', '0.0.0.0', '::1', 'fe80::1', 'fd00::1', '::ffff:127.0.0.1',
+    '::ffff:7f00:1', '::ffff:a9fe:a9fe', '::ffff:c0a8:10a', '::', '64:ff9b::7f00:1', '2002:7f00:1::', '2001:db8::1', '2001::1', '::7f00:1']) {
     assert.equal(isPrivateAddress(ip), true, ip);
   }
-  for (const ip of ['8.8.8.8', '41.243.1.1', '172.32.0.1', '2001:4860:4860::8888']) {
+  for (const ip of ['8.8.8.8', '41.243.1.1', '172.32.0.1', '2001:4860:4860::8888', '::ffff:8.8.8.8', '::ffff:808:808', '2a00:1450:4007::200e']) {
     assert.equal(isPrivateAddress(ip), false, ip);
   }
+});
+
+test('sécurité : outil sandbox réservé à l\'équipe, jetons invalides, cartes de test, mots de passe courants', async () => {
+  // L'outil qui change le niveau KYC (et active un compte) n'est plus accessible sans authentification de l'équipe.
+  const open = await api('POST', '/sandbox/users/0811111111/kyc', { body: { level: 3 } });
+  assert.equal(open.status, 401);
+  const asUser = await api('POST', '/sandbox/users/0811111111/kyc', { token: state.bob, body: { level: 3 } });
+  assert.equal(asUser.status, 401);
+
+  // Jetons de session malformés ou falsifiés : refus propre (401), jamais d'erreur interne.
+  for (const bad of ['a.b.c', 'eyJhbGciOiJub25lIn0.eyJzdWIiOiJ1c3JfeCJ9.', `${state.bob.split('.').slice(0, 2).join('.')}.AAAA`, 'x'.repeat(5000)]) {
+    assert.equal((await api('GET', '/v1/me', { token: bad })).status, 401, bad.slice(0, 20));
+    assert.equal((await api('GET', '/v1/admin/me', { token: bad })).status, 401, bad.slice(0, 20));
+  }
+
+  // Réponses de l'API jamais mises en cache.
+  const me = await fetch(`${base}/v1/me`, { headers: { Authorization: `Bearer ${state.bob}` } });
+  assert.equal(me.headers.get('cache-control'), 'no-store');
+  assert.match(me.headers.get('content-security-policy'), /object-src 'none'/);
+
+  // Démonstration : seules les cartes de test sont acceptées ; un jeton fabriqué à la main est refusé.
+  const real = await api('POST', '/sandbox/cards/tokenize', { body: { number: '4111 1111 1111 1111', exp_month: 12, exp_year: 2030, cvc: '123' } });
+  assert.equal(real.body.error.code, 'test_card_required');
+  const forged = `tok_test_${Buffer.from(JSON.stringify({ b: '<img src=x onerror=alert(1)>', l: '<b>1</b>', m: 12, y: 2030, o: 'ok' })).toString('base64url')}`;
+  const add = await api('POST', '/v1/cards', { token: state.bob, body: { token: forged } });
+  assert.equal(add.body.error.code, 'invalid_card_token');
+
+  // Mots de passe trop courants refusés à l'inscription.
+  const otp = await api('POST', '/v1/auth/otp', { body: { email: 'mdp.faible@test.cd', purpose: 'register' } });
+  const weak = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', email: 'mdp.faible@test.cd', otp_code: otp.body.sandbox_code, full_name: 'Mot Depasse', password: 'Password1', pin: '4826' } });
+  assert.equal(weak.body.error.code, 'weak_password');
+
+  // Résolution DNS contrôlée : une destination interne est refusée au moment de la connexion.
+  const { guardedLookup } = await import('../src/netguard.js');
+  const err = await new Promise((resolve) => guardedLookup('localhost', {}, (e) => resolve(e)));
+  assert.equal(err?.code, 'EFORBIDDEN');
 });
 
 test('retrait Mobile Money échoué -> fonds et frais restitués', async () => {

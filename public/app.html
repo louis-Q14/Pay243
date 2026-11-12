@@ -559,7 +559,7 @@ const ACTIONS = {
     openModal(`<h3>Recharger mon wallet</h3><p class="muted">Par Mobile Money ou par carte enregistrée.</p>
       <form><label>Moyen</label><select name="method" id="tm"><option value="mobile_money">Mobile Money</option><option value="card" ${CARDS.length ? '' : 'disabled'}>Carte enregistrée${CARDS.length ? '' : ' (aucune)'}</option></select>
       <div id="mm">${opPicker(def)}<label>Numéro Mobile Money</label><input name="phone" value="${ME.phone || ''}" placeholder="0812345678" inputmode="tel" id="tp"></div>
-      <div id="cc" class="hidden"><label>Carte</label><select name="card_id">${CARDS.map((c) => `<option value="${c.id}">${c.brand.toUpperCase()} •••• ${c.last4}</option>`).join('')}</select></div>
+      <div id="cc" class="hidden"><label>Carte</label><select name="card_id">${CARDS.map((c) => `<option value="${esc(c.id)}">${esc(String(c.brand).toUpperCase())} •••• ${esc(c.last4)}</option>`).join('')}</select></div>
       ${amountInput}${curSelect}<button class="full">Recharger</button></form>`, async (d) => {
         const body = { method: d.method, amount: toMinor(d.amount), currency: d.currency };
         if (d.method === 'mobile_money') Object.assign(body, { phone: d.phone, operator: d.operator }); else body.card_id = d.card_id;
@@ -608,7 +608,7 @@ $$('[data-open]').forEach((b) => b.onclick = () => {
 // ---------------- Cartes ----------------
 async function loadCards() {
   const c = await api('GET', '/v1/cards'); CARDS = c.data;
-  $('#cards').innerHTML = CARDS.length ? CARDS.map((x) => `<li><div><b>${x.brand.toUpperCase()}</b> •••• ${x.last4}<div class="muted">Expire ${String(x.exp_month).padStart(2, '0')}/${x.exp_year}</div></div><button class="link" data-del="${x.id}">Supprimer</button></li>`).join('') : '<li class="muted">Aucune carte enregistrée.</li>';
+  $('#cards').innerHTML = CARDS.length ? CARDS.map((x) => `<li><div><b>${esc(String(x.brand).toUpperCase())}</b> •••• ${esc(x.last4)}<div class="muted">Expire ${esc(String(x.exp_month).padStart(2, '0'))}/${esc(x.exp_year)}</div></div><button class="link" data-del="${esc(x.id)}">Supprimer</button></li>`).join('') : '<li class="muted">Aucune carte enregistrée.</li>';
   $$('[data-del]').forEach((b) => b.onclick = () => busy(b, async () => { await api('DELETE', '/v1/cards/' + b.dataset.del); loadCards(); }));
 }
 $('#f-card').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {

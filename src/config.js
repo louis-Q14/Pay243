@@ -23,6 +23,9 @@ export const config = {
   port,
   baseUrl: env.BASE_URL || `http://localhost:${port}`,
   mode: env.PAY243_MODE || env.KONGO_MODE || 'sandbox', // 'sandbox' | 'live' (KONGO_MODE : ancien nom, encore accepté)
+  // Serveur exposé à Internet (image Docker : NODE_ENV=production), même en mode démonstration :
+  // les protections ne dépendent plus seulement du mode « live ».
+  exposed: env.NODE_ENV === 'production' || (env.PAY243_MODE || env.KONGO_MODE) === 'live',
   db: { url: databaseUrl, pgliteDir },
   jwtSecret: env.JWT_SECRET || 'dev-only-secret-change-me',
   callbackSecret: env.CALLBACK_SECRET || 'dev-callback-secret',
@@ -129,7 +132,11 @@ export const config = {
   },
 
   // Requêtes par minute et par adresse IP sur la connexion et l'inscription.
-  rateLimits: { auth: Number(env.RATE_LIMIT_AUTH || 20), otp: Number(env.RATE_LIMIT_OTP || 10), kycUpload: Number(env.RATE_LIMIT_KYC_UPLOAD || 20) },
+  rateLimits: {
+    auth: Number(env.RATE_LIMIT_AUTH || 20), otp: Number(env.RATE_LIMIT_OTP || 10), kycUpload: Number(env.RATE_LIMIT_KYC_UPLOAD || 20),
+    loginPerAccount: Number(env.RATE_LIMIT_LOGIN_ACCOUNT || 10), // essais de connexion par compte et par quart d'heure
+    money: Number(env.RATE_LIMIT_MONEY || 30), // opérations d'argent par utilisateur et par minute
+  },
 
   sms: {
     driver: env.SMS_DRIVER || 'mock', // mock | africastalking
@@ -157,8 +164,16 @@ export function assertProductionConfig() {
   if (config.email.driver === 'resend' && !config.email.resend.apiKey) throw new Error('EMAIL_DRIVER=resend exige RESEND_API_KEY.');
   if (config.email.driver !== 'mock' && !/<[^@\s]+@[^>\s]+>$|^[^@\s]+@[^@\s]+$/.test(config.email.from)) throw new Error('EMAIL_FROM invalide (ex. "Pay243 <no-reply@pay243.com>").');
   if (config.sms.driver === 'africastalking' && !config.sms.africastalking.apiKey) throw new Error('SMS_DRIVER=africastalking exige AT_API_KEY.');
+  const weak = ['dev-only-secret-change-me', 'dev-callback-secret', 'change-me', ''];
+  if (config.exposed) {
+    // Serveur en ligne, même en démonstration : aucun secret par défaut (ils sont publics dans le code source).
+    if (weak.includes(config.jwtSecret) || config.jwtSecret.length < 32) throw new Error('JWT_SECRET (32 caractères min.) doit être défini sur un serveur en ligne.');
+    if (weak.includes(config.callbackSecret) || config.callbackSecret.length < 24) throw new Error('CALLBACK_SECRET (24 caractères min.) doit être défini sur un serveur en ligne.');
+    if (!/^[0-9a-f]{64}$/i.test(config.kycReview.encryptionKey) || config.kycReview.encryptionKey === config.kycReview.devKey) {
+      throw new Error('KYC_ENCRYPTION_KEY (64 caractères hexadécimaux) doit être défini sur un serveur en ligne : les pièces d’identité ne doivent jamais être chiffrées avec la clé de développement.');
+    }
+  }
   if (config.mode !== 'live') return;
-  const weak = ['dev-only-secret-change-me', 'change-me', ''];
   if (weak.includes(config.jwtSecret) || weak.includes(config.callbackSecret)) {
     throw new Error('JWT_SECRET et CALLBACK_SECRET doivent être définis en mode live.');
   }

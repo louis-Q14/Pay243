@@ -71,8 +71,9 @@ function verifyStaffToken(token) {
   if (!h || !b || !s) return null;
   const expected = crypto.createHmac('sha256', `${config.jwtSecret}:staff`).update(`${h}.${b}`).digest('base64url');
   if (!safeEqual(s, expected)) return null;
-  const p = JSON.parse(Buffer.from(b, 'base64url').toString());
-  if (p.typ !== 'staff' || p.exp < Date.now() / 1000) return null;
+  let p;
+  try { p = JSON.parse(Buffer.from(b, 'base64url').toString()); } catch { return null; }
+  if (!p || p.typ !== 'staff' || typeof p.sub !== 'string' || !(p.exp >= Date.now() / 1000)) return null;
   return p;
 }
 

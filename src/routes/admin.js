@@ -17,6 +17,11 @@ import { HttpError, now, parseJson } from '../util.js';
 
 export const backofficeRouter = Router();
 const loginLimiter = rateLimit({ name: 'staff_login', max: config.rateLimits.auth });
+const staffAccountLimiter = rateLimit({
+  name: 'staff_login_account', windowMs: 15 * 60_000, max: config.rateLimits.loginPerAccount,
+  keyOf: (req) => (req.body?.email ? String(req.body.email).trim().toLowerCase().slice(0, 254) : `ip:${req.ip}`),
+  message: 'Trop de tentatives pour ce compte. Réessayez dans un quart d’heure.',
+});
 
 /** Journal d'audit : qui, quoi, sur quoi, depuis où. */
 export async function logAction(req, action, target, details) {
@@ -27,7 +32,7 @@ export async function logAction(req, action, target, details) {
 // =====================================================================
 //  Connexion de l'équipe : email + mot de passe, puis code envoyé par email (à chaque connexion)
 // =====================================================================
-backofficeRouter.post('/admin/auth/login', loginLimiter, async (req, res) => {
+backofficeRouter.post('/admin/auth/login', loginLimiter, staffAccountLimiter, async (req, res) => {
   const { email, password, otp_code } = req.body || {};
   const s = await checkStaffPassword(email, password);
   if (!otp_code) {

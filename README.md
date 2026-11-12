@@ -336,9 +336,11 @@ Chaque opérateur se configure indépendamment avec `MPESA_DRIVER`, `AIRTEL_DRIV
 - Mots de passe et PIN hachés avec **scrypt** ; PIN bloqué après 5 erreurs.
 - **OTP SMS** à l'inscription et sur tout nouvel appareil : code à 6 chiffres stocké en HMAC, 5 essais, 5 min de validité, 60 s entre deux envois et 5 envois par heure au maximum par numéro. Aucun SMS n'est envoyé sans le bon mot de passe.
 - **Pièces KYC** chiffrées au repos (AES-256-GCM, rattachées à leur identifiant), servies uniquement aux agents et jamais mises en cache. Type réel vérifié par signature d'octets. Les images sont ré-encodées dans le navigateur, ce qui supprime les métadonnées EXIF, dont la position GPS. Doublons de numéro de pièce et d'image détectés entre comptes.
-- **Anti-SSRF** sur les webhooks marchands en production : adresses privées, de loopback et link-local refusées (DNS vérifié à chaque envoi), redirections non suivies.
+- **Anti-SSRF** sur les webhooks marchands dès que le serveur est en ligne (`NODE_ENV=production`, même en démonstration) : HTTPS obligatoire, adresses privées, de loopback et link-local refusées en IPv4 comme en IPv6 (y compris les formes `::ffff:…`), adresse contrôlée **au moment de la connexion** (pas de « DNS rebinding »), redirections non suivies.
 - Clés API stockées en **SHA-256** et affichées une seule fois ; révocables.
 - Webhooks signés **HMAC-SHA256** avec horodatage contre le rejeu.
 - Cartes : seul un **jeton** est stocké, avec la marque, les 4 derniers chiffres et la date d'expiration.
-- Limitation de débit sur la connexion et le paiement, en-têtes de sécurité (CSP, HSTS, anti-iframe).
-- Mode `live` refusé si des pilotes simulés ou des secrets par défaut sont configurés (`assertProductionConfig`).
+- Limitation de débit sur la connexion (par adresse IP **et par compte visé** : 10 essais par quart d'heure), sur les opérations d'argent (30 par minute et par utilisateur) et sur le paiement ; en-têtes de sécurité (CSP, HSTS, anti-iframe) ; réponses de l'API jamais mises en cache.
+- **Callbacks opérateurs** : un callback annonçant un succès n'est jamais cru sur parole. Le statut est confirmé auprès de l'opérateur avant tout crédit ; le jeton peut être transmis dans l'en-tête `X-Callback-Token` plutôt que dans l'URL.
+- **Outils sandbox** : le changement de niveau KYC (`/sandbox/users/:phone/kyc`) exige une authentification de l'équipe. Le simulateur de cartes n'accepte que les cartes de test.
+- Mode `live` refusé si des pilotes simulés ou des secrets par défaut sont configurés (`assertProductionConfig`). Sur un serveur en ligne, même en démonstration, le démarrage est refusé sans `JWT_SECRET`, `CALLBACK_SECRET` et `KYC_ENCRYPTION_KEY` propres.

@@ -38,6 +38,8 @@ export default function mockCards() {
       let y = Number(exp_year);
       if (y < 100) y += 2000;
       if (n.length < 13 || !luhn(n)) throw new HttpError(400, 'invalid_card_number', 'Numéro de carte invalide.');
+      // Démonstration : seules les cartes de test sont acceptées, pour qu'aucune vraie carte ne soit saisie ici.
+      if (!TEST_CARDS.has(n)) throw new HttpError(400, 'test_card_required', 'Mode démonstration : utilisez une carte de test (4242 4242 4242 4242). Ne saisissez jamais une vraie carte ici.');
       if (!(m >= 1 && m <= 12)) throw new HttpError(400, 'invalid_expiry', "Mois d'expiration invalide.");
       const expEnd = new Date(y, m, 1);
       if (expEnd < new Date()) throw new HttpError(400, 'card_expired', 'Carte expirée.');
@@ -63,11 +65,17 @@ export default function mockCards() {
   };
 }
 
+const TEST_CARDS = new Set(['4242424242424242', '5555555555554444', '4000000000000002']);
+
+/** Décode et valide le jeton : son contenu vient du client, il est donc contrôlé champ par champ. */
 function decode(token) {
-  if (!String(token).startsWith('tok_test_')) throw new HttpError(400, 'invalid_card_token', 'Jeton de carte invalide.');
-  try {
-    return JSON.parse(Buffer.from(String(token).slice(9), 'base64url').toString());
-  } catch {
-    throw new HttpError(400, 'invalid_card_token', 'Jeton de carte invalide.');
-  }
+  const invalid = () => new HttpError(400, 'invalid_card_token', 'Jeton de carte invalide.');
+  if (typeof token !== 'string' || !token.startsWith('tok_test_') || token.length > 300) throw invalid();
+  let p;
+  try { p = JSON.parse(Buffer.from(token.slice(9), 'base64url').toString()); } catch { throw invalid(); }
+  if (!p || typeof p !== 'object'
+    || !['visa', 'mastercard', 'amex', 'unknown'].includes(p.b) || !/^\d{4}$/.test(String(p.l))
+    || !Number.isInteger(p.m) || p.m < 1 || p.m > 12 || !Number.isInteger(p.y) || p.y < 2000 || p.y > 2100
+    || !['ok', 'decline'].includes(p.o)) throw invalid();
+  return { b: p.b, l: String(p.l), m: p.m, y: p.y, o: p.o };
 }

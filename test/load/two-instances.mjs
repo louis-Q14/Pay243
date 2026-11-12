@@ -30,7 +30,7 @@ const check = (cond, msg) => { console.log(`${cond ? 'OK  ' : 'ÉCHEC'} ${msg}`)
 for (const port of ports) {
   const p = spawn(process.execPath, ['src/server.js'], {
     cwd: projectDir,
-    env: { ...process.env, DATABASE_URL: dbUrl, PORT: String(port), BASE_URL: `http://localhost:${port}`, MOCK_DELAY_MS: '50', PAY243_MODE: 'sandbox', DB_POOL_MAX: '10' },
+    env: { ...process.env, DATABASE_URL: dbUrl, PORT: String(port), BASE_URL: `http://localhost:${port}`, MOCK_DELAY_MS: '50', RATE_LIMIT_MONEY: '100000', RATE_LIMIT_AUTH: '100000', RATE_LIMIT_OTP: '100000', RATE_LIMIT_LOGIN_ACCOUNT: '100000', PAY243_MODE: 'sandbox', DB_POOL_MAX: '10' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let errOut = '';

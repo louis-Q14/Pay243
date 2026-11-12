@@ -86,7 +86,7 @@ function pane() {
   const el = $('#pane');
   if (METHOD === 'mobile_money') {
     el.innerHTML = `<form id="f"><label>Votre numéro Mobile Money</label><input name="phone" inputmode="tel" placeholder="0812345678" required id="ph">
-      <div class="op" style="margin-top:10px">${P.operators.map((o) => `<label><input type="radio" name="operator" value="${o.id}"><span><i class="dot ${o.id}"></i>${o.label.replace(' (Vodacom)', '')}</span></label>`).join('')}</div>
+      <div class="op" style="margin-top:10px">${P.operators.map((o) => `<label><input type="radio" name="operator" value="${esc(o.id)}"><span><i class="dot ${esc(o.id)}"></i>${esc(o.label.replace(' (Vodacom)', ''))}</span></label>`).join('')}</div>
       <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
       ${P.sandbox ? '<p class="muted">Test : un numéro finissant par 0000 simule un refus.</p>' : ''}</form>`;
     $('#ph').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
@@ -117,7 +117,7 @@ function pane() {
   } else {
     const saved = P.customer?.cards || [];
     el.innerHTML = `<form id="f">
-      ${saved.length ? `<label>Carte enregistrée</label><select name="card_id"><option value="">— Nouvelle carte —</option>${saved.map((c) => `<option value="${c.id}">${c.brand.toUpperCase()} •••• ${c.last4}</option>`).join('')}</select>` : ''}
+      ${saved.length ? `<label>Carte enregistrée</label><select name="card_id"><option value="">— Nouvelle carte —</option>${saved.map((c) => `<option value="${esc(c.id)}">${esc(String(c.brand).toUpperCase())} •••• ${esc(c.last4)}</option>`).join('')}</select>` : ''}
       <div id="newcard"><label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number">
       <div class="row"><div><label>MM</label><input name="exp_month"></div><div><label>AAAA</label><input name="exp_year"></div><div><label>CVC</label><input name="cvc"></div></div></div>
       <div id="pinbox" class="hidden"><label>PIN Pay243</label><input name="pin" type="password" inputmode="numeric"></div>

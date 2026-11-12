@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { q, tx } from '../db.js';
 import { createTxn, getTxn, getWallet, lockWallet, move, serializeTxn, systemWallet, updateTxn } from '../ledger.js';
 import { checkIncoming, checkOutgoing, lockUsers } from '../limits.js';
-import { idempotent } from '../middleware.js';
+import { idempotent, rateLimit } from '../middleware.js';
 import { cardProcessor } from '../providers/cards/index.js';
 import { listOperators } from '../providers/mobileMoney/index.js';
 import { refreshPending, startCollection, startPayout } from '../services/mobileMoney.js';
@@ -15,6 +15,11 @@ export const walletRouter = Router();
 walletRouter.use(['/wallets', '/transactions', '/topups', '/transfers', '/withdrawals', '/conversions', '/cards'], requireUser);
 // Aucune opération d'argent avant l'activation du compte (identité validée par l'équipe).
 walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], requireActivated);
+// Débit maximal par utilisateur : freine l'automatisation (demandes USSD en rafale vers des numéros tiers, essais de PIN).
+walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], rateLimit({
+  name: 'money', max: config.rateLimits.money, keyOf: (req) => req.user.id,
+  message: 'Trop d’opérations en peu de temps. Patientez une minute.',
+}));
 const idem = idempotent((req) => `user:${req.user.id}`);
 
 const userWalletIds = async (userId) => (await q.all("SELECT id FROM wallets WHERE owner_type='user' AND owner_id=?", userId)).map((w) => w.id);

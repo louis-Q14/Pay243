@@ -16,8 +16,9 @@ export async function hashSecret(secret) {
 export async function verifySecret(secret, stored) {
   const [, saltHex, hashHex] = String(stored).split('$');
   if (!saltHex || !hashHex) return false;
+  const expected = Buffer.from(hashHex, 'hex');
   const hash = await scrypt(String(secret), Buffer.from(saltHex, 'hex'), 64);
-  return crypto.timingSafeEqual(hash, Buffer.from(hashHex, 'hex'));
+  return expected.length === hash.length && crypto.timingSafeEqual(hash, expected);
 }
 
 const MAX_PIN_FAILURES = 5;
@@ -52,16 +53,23 @@ export function verifyToken(token) {
   if (!h || !b || !s) return null;
   const expected = crypto.createHmac('sha256', config.jwtSecret).update(`${h}.${b}`).digest('base64url');
   if (!safeEqual(s, expected)) return null;
-  const payload = JSON.parse(Buffer.from(b, 'base64url').toString());
-  if (payload.exp < Date.now() / 1000) return null;
+  let payload;
+  try { payload = JSON.parse(Buffer.from(b, 'base64url').toString()); } catch { return null; }
+  if (!payload || typeof payload.sub !== 'string' || !(payload.exp >= Date.now() / 1000)) return null;
   return payload;
 }
 
 const issuedAt = (p) => Number(p.iat_ms ?? p.iat * 1000);
 
 /** Règles communes (inscription, changement dans les paramètres). */
+const COMMON_PASSWORDS = new Set(['password', 'password1', 'motdepasse', '12345678', '123456789', '1234567890', 'azertyuiop', 'azerty123', 'qwertyuiop', 'qwerty123', 'pay243pay243', 'iloveyou', 'kinshasa', '00000000', '11111111']);
 export function assertNewPassword(password) {
-  if (!password || String(password).length < 8) throw new HttpError(400, 'weak_password', 'Le mot de passe doit contenir au moins 8 caractères.');
+  const p = typeof password === 'string' ? password : '';
+  if (p.length < 8) throw new HttpError(400, 'weak_password', 'Le mot de passe doit contenir au moins 8 caractères.');
+  if (p.length > 128) throw new HttpError(400, 'weak_password', 'Le mot de passe ne peut pas dépasser 128 caractères.');
+  if (COMMON_PASSWORDS.has(p.toLowerCase()) || /^(.)\1+$/.test(p)) {
+    throw new HttpError(400, 'weak_password', 'Ce mot de passe est trop courant. Choisissez-en un plus difficile à deviner.');
+  }
 }
 export function assertNewPin(pin) {
   if (!/^\d{4,6}$/.test(String(pin || ''))) throw new HttpError(400, 'invalid_pin', 'Le PIN de transaction doit comporter 4 à 6 chiffres.');

@@ -40,6 +40,9 @@ export function createApp() {
     res.json({ status: 'ok', mode: config.mode, ledger: await auditLedger() });
   });
 
+  // Réponses de l'API (jetons, données personnelles, soldes) : jamais conservées par un cache ou un proxy.
+  app.use(['/v1', '/sandbox', '/webhooks'], (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
   app.use('/v1', authRouter, settingsRouter, walletRouter, kycRouter, backofficeRouter, adminRouter, reconRouter, merchantAdminRouter, merchantApiRouter, checkoutRouter);
   app.use(callbackRouter, sandboxRouter);
 

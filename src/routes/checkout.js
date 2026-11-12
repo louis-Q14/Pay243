@@ -8,6 +8,7 @@ import { cardProcessor } from '../providers/cards/index.js';
 import { getProvider } from '../providers/mobileMoney/index.js';
 import { handleProviderResult, refreshPending } from '../services/mobileMoney.js';
 import { getPayment, payWithCard, payWithMobileMoney, payWithWallet, publicCheckoutView } from '../services/payments.js';
+import { can, requireStaff } from '../staff.js';
 import { HttpError, safeEqual } from '../util.js';
 
 // =====================================================================
@@ -58,11 +59,29 @@ checkoutRouter.post('/checkout/:id/pay', rateLimit({ name: 'checkout_pay', max: 
 export const callbackRouter = Router();
 
 callbackRouter.post('/webhooks/mobile-money/:operator', async (req, res) => {
-  if (!safeEqual(req.query.token || '', config.callbackSecret)) throw new HttpError(401, 'invalid_callback_token', 'Jeton de callback invalide.');
+  const token = req.get('X-Callback-Token') || req.query.token || '';
+  if (!safeEqual(token, config.callbackSecret)) throw new HttpError(401, 'invalid_callback_token', 'Jeton de callback invalide.');
   const provider = getProvider(req.params.operator);
   const results = provider.parseCallback(req.body, req.query) || [];
-  for (const r of results) await handleProviderResult(r);
-  res.json({ received: true, processed: results.length });
+  let processed = 0;
+  for (const r of results) {
+    let result = r;
+    // Un callback annonçant un succès crédite de l'argent : on ne le croit pas sur parole. Le statut est
+    // confirmé auprès de l'opérateur ; sans confirmation, l'opération reste en attente et le contrôle
+    // périodique (puis le rapprochement) tranchera.
+    if (r.status === 'succeeded' && provider.checkStatus) {
+      const txn = r.txnId
+        ? await q.get('SELECT * FROM transactions WHERE id=?', r.txnId)
+        : await q.get('SELECT * FROM transactions WHERE provider_ref=?', r.providerRef);
+      if (!txn || txn.status !== 'pending' || txn.operator !== req.params.operator) continue;
+      const confirmed = await provider.checkStatus(txn).catch(() => null);
+      if (!confirmed) continue;
+      result = { ...r, txnId: txn.id, ...confirmed };
+    }
+    await handleProviderResult(result);
+    processed += 1;
+  }
+  res.json({ received: true, processed });
 });
 
 // =====================================================================
@@ -80,8 +99,8 @@ sandboxRouter.post('/sandbox/cards/tokenize', publicCors, (req, res) => {
   res.json({ token: cardProcessor().tokenize(req.body || {}) });
 });
 
-/** Permet de tester les plafonds de niveaux KYC supérieurs. */
-sandboxRouter.post('/sandbox/users/:phone/kyc', async (req, res) => {
+/** Permet de tester les plafonds de niveaux KYC supérieurs. Réservé à l'équipe : cet outil active un compte. */
+sandboxRouter.post('/sandbox/users/:phone/kyc', requireStaff, can('users.kyc_override'), async (req, res) => {
   const level = Number(req.body?.level);
   if (![1, 2, 3].includes(level)) throw new HttpError(400, 'invalid_level', 'level doit valoir 1, 2 ou 3.');
   const r = await q.run('UPDATE users SET kyc_level=?, activated_at = CASE WHEN ? >= 2 THEN COALESCE(activated_at, ?) ELSE activated_at END WHERE phone=?', level, level, new Date().toISOString(), `+243${String(req.params.phone).replace(/\D/g, '').slice(-9)}`);
