@@ -20,6 +20,61 @@
   .steps3 li.now { background: #eef4ff; color: var(--ink); font-weight: 600; }
   .steps3 li b { display: block; color: var(--ink); margin-top: 4px; }
   @media (max-width: 560px) { .steps3 { grid-template-columns: 1fr; } }
+
+  /* ---------- Écran de connexion ---------- */
+  body:has(#auth:not(.hidden)) { background: radial-gradient(120% 90% at 50% 0%, #3a3a3d 0%, #1c1c1e 55%, #111 100%); min-height: 100vh; }
+  body:has(#auth:not(.hidden)) header.top { display: none; }
+  #auth.login-stage { max-width: none; margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; box-sizing: border-box; }
+  .login-shell { width: min(1180px, 100%); min-height: min(720px, calc(100vh - 64px)); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    background: #000; border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); box-sizing: border-box; }
+  .login-art { position: relative; overflow: hidden; border-radius: 30px; background: #0b0716; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; }
+  .login-art::before { content: ""; position: absolute; inset: -30%; z-index: -2;
+    background:
+      radial-gradient(40% 30% at 22% 28%, rgba(255,120,60,.55), transparent 70%),
+      radial-gradient(45% 35% at 30% 62%, rgba(30,110,140,.55), transparent 70%),
+      radial-gradient(35% 30% at 70% 80%, rgba(120,40,160,.55), transparent 70%),
+      radial-gradient(60% 50% at 80% 20%, rgba(60,40,140,.6), transparent 70%),
+      linear-gradient(160deg, #1a1030, #0a0614 60%, #150a1c);
+    filter: blur(28px) saturate(1.2); animation: drift 22s ease-in-out infinite alternate; }
+  .login-art::after { content: ""; position: absolute; inset: -20%; z-index: -1; mix-blend-mode: screen; opacity: .9;
+    background:
+      linear-gradient(118deg, transparent 47%, rgba(255,255,255,.0) 48%, rgba(120,170,255,.55) 49.2%, rgba(255,120,220,.55) 50.4%, rgba(255,190,90,.6) 51.4%, transparent 53%),
+      linear-gradient(122deg, transparent 52%, rgba(90,120,255,.35) 53.5%, rgba(200,90,255,.3) 55%, transparent 57.5%),
+      linear-gradient(114deg, transparent 43%, rgba(255,255,255,.18) 44%, transparent 45.5%);
+    filter: blur(3px); transform: translate(18%, -6%) rotate(-4deg); animation: sheen 16s ease-in-out infinite alternate; }
+  @keyframes drift { to { transform: translate(4%, -3%) rotate(6deg) scale(1.05); } }
+  @keyframes sheen { to { transform: translate(14%, -2%) rotate(-1deg); } }
+  @media (prefers-reduced-motion: reduce) { .login-art::before, .login-art::after { animation: none; } }
+  .login-mark { width: 64px; height: 64px; border-radius: 50%; background: #000; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+  .login-mark img { width: 30px; height: 30px; border-radius: 4px; }
+  .login-art h1 { color: #fff; font-weight: 300; font-size: clamp(32px, 4.2vw, 58px); line-height: 1.12; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+  .login-art h1 b { font-weight: 800; }
+  .login-panel { display: grid; place-items: center; padding: 40px 28px; color: #f2f2f2; }
+  .login-panel .card { background: transparent; border: 0; padding: 0; margin: 0; width: min(420px, 100%); }
+  .login-panel h2 { color: #fff; text-align: center; font-size: 40px; font-weight: 600; margin: 0 0 10px; letter-spacing: -.01em; }
+  .login-panel .sub { text-align: center; color: #cfcfcf; margin: 0 0 36px; font-size: 16px; letter-spacing: .01em; }
+  .login-panel label { color: #fff; font-size: 15px; font-weight: 700; margin: 22px 0 10px; }
+  .login-panel input { background: #1d1d1f; border: 1px solid #1d1d1f; color: #fff; border-radius: 10px; padding: 16px 18px; font-size: 16px; }
+  .login-panel input::placeholder { color: #8a8a8f; }
+  .login-panel input:focus { outline: 2px solid rgba(253,184,19,.45); border-color: #fdb813; }
+  .login-panel button.full { margin-top: 30px; background: #fdb813; color: #000; font-weight: 800; font-size: 17px; padding: 17px; border-radius: 10px; }
+  .login-panel button.link { color: #fdb813; font-weight: 700; }
+  .login-panel .alt { text-align: center; color: #e6e6e6; margin: 26px 0 0; }
+  .login-panel .alt a { color: #fdb813; font-weight: 800; text-decoration: none; }
+  .login-panel .alt a:hover { text-decoration: underline; }
+  .login-panel .row-forgot { text-align: right; margin: 10px 0 0; }
+  .login-panel .row-forgot button { padding: 0; font-size: 14px; font-weight: 600; }
+  .login-panel .notice { background: #2a2410; border-color: #5a4a12; color: #f3e3b0; }
+  .login-panel .muted { color: #bdbdbd; }
+  @media (max-width: 860px) {
+    .login-shell { grid-template-columns: 1fr; border-radius: 28px; min-height: 0; }
+    .login-art { min-height: 200px; border-radius: 20px; padding: 26px; }
+    .login-art h1 { font-size: 30px; }
+    .login-mark { width: 52px; height: 52px; }
+    .login-panel { padding: 30px 14px 34px; }
+    .login-panel h2 { font-size: 32px; }
+    .login-panel .sub { margin-bottom: 20px; }
+  }
 </style>
 </head>
 <body>
@@ -29,21 +84,28 @@
 </header>
 
 <!-- ======================= Connexion / Inscription ======================= -->
-<main id="auth" class="center">
-  <div class="card">
-    <h2 style="margin:0 0 4px;font-size:22px">Connexion</h2>
-    <p class="muted" style="margin:0 0 8px">Pas encore de compte ? <a href="/signup">Créer un compte</a></p>
+<main id="auth" class="login-stage">
+ <div class="login-shell">
+  <aside class="login-art" aria-hidden="true">
+    <a href="/" class="login-mark" tabindex="-1"><img src="/favicon.png" alt=""></a>
+    <h1>Payez, encaissez,<br>envoyez. <b>Simplement.</b></h1>
+  </aside>
+  <div class="login-panel">
+  <div class="card" id="login-card">
+    <h2>Connexion</h2>
+    <p class="sub">Saisissez vos identifiants pour accéder à votre compte</p>
     <form id="f-login">
-      <label>Adresse email ou numéro de téléphone</label><input name="identifier" placeholder="vous@exemple.com" required autocomplete="username">
-      <label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password">
+      <label>Email ou téléphone</label><input name="identifier" placeholder="vous@exemple.com" required autocomplete="username">
+      <label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
+      <p class="row-forgot"><button class="link" id="forgot-open" type="button">Mot de passe oublié ?</button></p>
       <div id="login-otp" class="hidden"><label id="login-otp-label">Code de vérification (nouvel appareil)</label><input name="otp_code" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code"></div>
       <button class="full">Se connecter</button>
     </form>
-    <p style="text-align:center;margin:12px 0 0"><button class="link" id="forgot-open" type="button">Mot de passe oublié ?</button></p>
+    <p class="alt">Pas encore membre ? <a href="/signup">Créer un compte</a></p>
   </div>
   <div class="card hidden" id="forgot">
-    <h2 style="margin:0 0 4px;font-size:22px">Mot de passe oublié</h2>
-    <p class="muted" id="forgot-sub" style="margin:0 0 8px">Saisissez l'adresse email de votre compte : nous vous enverrons un code pour choisir un nouveau mot de passe.</p>
+    <h2>Mot de passe oublié</h2>
+    <p class="sub" id="forgot-sub">Saisissez l'adresse email de votre compte : nous vous enverrons un code pour choisir un nouveau mot de passe.</p>
     <form id="f-forgot">
       <label>Adresse email</label><input name="email" type="email" required autocomplete="username" placeholder="vous@exemple.com">
       <button class="full">Recevoir un code</button>
@@ -55,8 +117,10 @@
       <label>Confirmez le mot de passe</label><input name="confirm" type="password" minlength="8" required autocomplete="new-password">
       <button class="full">Changer mon mot de passe</button>
     </form>
-    <p style="text-align:center;margin:12px 0 0"><button class="link" id="forgot-close" type="button">← Retour à la connexion</button></p>
+    <p class="alt"><button class="link" id="forgot-close" type="button">← Retour à la connexion</button></p>
   </div>
+  </div>
+ </div>
 </main>
 
 <!-- ======================= Application ======================= -->
@@ -213,7 +277,7 @@ $('#f-login').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
 }); };
 // ---------------- Mot de passe oublié ----------------
 let resetEmail = null;
-const showForgot = (on) => { $('#forgot').classList.toggle('hidden', !on); $('#auth > .card:first-child').classList.toggle('hidden', on); };
+const showForgot = (on) => { $('#forgot').classList.toggle('hidden', !on); $('#login-card').classList.toggle('hidden', on); };
 $('#forgot-open').onclick = () => { showForgot(true); const id = $('#f-login').identifier.value; if (id.includes('@')) $('#f-forgot').email.value = id; $('#f-forgot').email.focus(); };
 $('#forgot-close').onclick = () => { showForgot(false); $('#f-forgot').classList.remove('hidden'); $('#f-reset').classList.add('hidden'); };
 $('#f-forgot').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
