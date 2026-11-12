@@ -410,6 +410,10 @@ async function openUser(id) {
         <dt>Inscrit le</dt><dd>${dt(u.created_at)}</dd>
         <dt>Appareils · cartes</dt><dd>${d.devices} appareil(s) de confiance · ${d.cards} carte(s)</dd>
         ${d.merchant ? `<dt>Espace marchand</dt><dd>${esc(d.merchant.name)} <span class="mono muted">${esc(d.merchant.id)}</span> ${d.merchant.suspended_at ? '<span class="pill err">suspendu</span>' : ''}</dd>` : ''}
+        ${d.merchant?.business ? (() => { const b = d.merchant.business; return `<dt>RCCM</dt><dd class="mono">${esc(b.rccm || '—')}</dd>
+          <dt>Adresse entreprise</dt><dd>${esc([b.address, b.city, b.country].filter(Boolean).join(', ') || '—')}</dd>
+          <dt>Contact entreprise</dt><dd>${esc(b.phone || '—')}${b.email ? ' · ' + esc(b.email) : ''}${b.fax ? ' · fax ' + esc(b.fax) : ''}</dd>
+          ${b.website ? `<dt>Site web</dt><dd><a href="${esc(b.website)}" target="_blank" rel="noopener noreferrer">${esc(b.website)}</a></dd>` : ''}`; })() : (d.merchant ? '<dt>Infos entreprise</dt><dd class="muted">non renseignées</dd>' : '')}
         ${d.addresses[0] ? `<dt>Adresse</dt><dd>${esc(d.addresses[0].line1)}, ${esc(d.addresses[0].city)} (${esc(d.addresses[0].country)})</dd>` : ''}
       </dl>
       ${acts.length ? `<div class="actions" style="margin-top:16px">${acts.join('')}</div>` : ''}

@@ -381,4 +381,20 @@ UPDATE users SET activated_at = created_at WHERE kyc_level >= 2;
 CREATE INDEX idx_users_not_activated ON users (created_at) WHERE activated_at IS NULL;
 `,
   },
+  {
+    version: 6,
+    name: "informations de l'entreprise (RCCM, adresse, contact, site web)",
+    sql: `
+ALTER TABLE merchants ADD COLUMN rccm TEXT;
+ALTER TABLE merchants ADD COLUMN address_line TEXT;
+ALTER TABLE merchants ADD COLUMN city TEXT;
+ALTER TABLE merchants ADD COLUMN country TEXT;
+ALTER TABLE merchants ADD COLUMN contact_phone TEXT;
+ALTER TABLE merchants ADD COLUMN contact_email TEXT;
+ALTER TABLE merchants ADD COLUMN fax TEXT;
+ALTER TABLE merchants ADD COLUMN website TEXT;
+-- Un numéro RCCM ne peut être rattaché qu'à un seul espace marchand.
+CREATE UNIQUE INDEX idx_merchants_rccm ON merchants (rccm) WHERE rccm IS NOT NULL;
+`,
+  },
 ];

@@ -10,7 +10,7 @@ import { assertPublicUrl } from '../netguard.js';
 import { refreshPending, startPayout } from '../services/mobileMoney.js';
 import { cancelPayment, createPayment, getPayment, refundPayment, serializePayment } from '../services/payments.js';
 import { listEvents } from '../services/webhooks.js';
-import { createMerchantAccount, issueKey } from '../services/merchants.js';
+import { businessProfileOf, createMerchantAccount, issueKey } from '../services/merchants.js';
 import { HttpError, assertAmount, assertCurrency, now, percentFee } from '../util.js';
 
 // =====================================================================
@@ -48,6 +48,7 @@ async function serializeMerchant(m, { withSecret = false } = {}) {
     id: m.id,
     object: 'merchant',
     name: m.name,
+    business: businessProfileOf(m),
     webhook_url: m.webhook_url,
     ...(withSecret ? { webhook_secret: m.webhook_secret } : {}),
     balances,

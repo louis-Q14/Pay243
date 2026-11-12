@@ -50,7 +50,11 @@ const emailOf = (name) => `${name.toLowerCase().normalize('NFD').replace(/[^a-z]
 
 /** Inscription en deux étapes : code envoyé par email (exposé en sandbox) puis création du compte. */
 /** Par défaut, le compte est considéré comme validé par l'équipe (activate: false pour tester un compte non activé). */
+let rccmSeq = 0;
+const businessOf = (name) => ({ rccm: `CD/KNG/RCCM/24-B-${String(++rccmSeq).padStart(5, '0')}`, address: '12, avenue du Commerce, Gombe', city: 'Kinshasa', phone: '0812345678', email: `contact${rccmSeq}@${String(name || 'entreprise').toLowerCase().replace(/[^a-z]/g, '')}.cd` });
+
 async function register({ activate = true, ...body }) {
+  if (body.account_type === 'business' && body.business === undefined) body.business = businessOf(body.business_name);
   const email = body.email || emailOf(body.full_name);
   const otp = await api('POST', '/v1/auth/otp', { body: { email, purpose: 'register' } });
   assert.equal(otp.status, 201, JSON.stringify(otp.body));
@@ -118,6 +122,29 @@ test('type de compte obligatoire, email valide exigé', async () => {
   assert.equal((await api('POST', '/v1/auth/otp', { body: { email: 'pas-un-email' } })).body.error.code, 'invalid_email');
   const biz = await api('POST', '/v1/auth/register', { body: { ...base1, account_type: 'business' } });
   assert.equal(biz.body.error.code, 'invalid_business_name');
+});
+
+test('compte entreprise : RCCM, adresse et contact obligatoires, site web facultatif', async () => {
+  const base = { account_type: 'business', business_name: 'Kin Bureautique', full_name: 'Aline Ngalula', password: 'motdepasse8', pin: '6402' };
+  const without = await register({ ...base, email: 'sans.rccm@kinbureau.cd', business: { ...businessOf('x'), rccm: '' } });
+  assert.equal(without.body.error.code, 'invalid_rccm');
+  const noPhone = await register({ ...base, email: 'sans.tel@kinbureau.cd', business: { ...businessOf('x'), phone: 'abc' } });
+  assert.equal(noPhone.body.error.code, 'invalid_business_phone');
+  const badSite = await register({ ...base, email: 'site@kinbureau.cd', business: { ...businessOf('x'), website: 'pas un site' } });
+  assert.equal(badSite.body.error.code, 'invalid_website');
+
+  const profile = { ...businessOf('kinbureau'), rccm: 'cd/kng/rccm/23-b-07777', fax: '+243 81 000 0000', website: 'kinbureau.cd' };
+  const ok = await register({ ...base, email: 'aline@kinbureau.cd', business: profile });
+  assert.equal(ok.status, 201, JSON.stringify(ok.body));
+  const m = await api('GET', '/v1/merchants/me', { token: ok.body.token });
+  assert.equal(m.body.business.rccm, 'CD/KNG/RCCM/23-B-07777');
+  assert.equal(m.body.business.city, 'Kinshasa');
+  assert.equal(m.body.business.fax, '+243 81 000 0000');
+  assert.equal(m.body.business.website, 'https://kinbureau.cd/');
+
+  const dup = await register({ ...base, email: 'autre@kinbureau.cd', business: { ...businessOf('y'), rccm: 'CD/KNG/RCCM/23-B-07777' } });
+  assert.equal(dup.status, 409);
+  assert.equal(dup.body.error.code, 'rccm_taken');
 });
 
 test('compte entreprise : espace marchand et clé API créés à l\'inscription', async () => {

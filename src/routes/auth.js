@@ -6,7 +6,7 @@ import { getWallet } from '../ledger.js';
 import { describeLimits } from '../limits.js';
 import { rateLimit } from '../middleware.js';
 import { isTrustedDevice, issueOtp, normalizeDeviceId, trustDevice, verifyOtp } from '../otp.js';
-import { createMerchantAccount } from '../services/merchants.js';
+import { createMerchantAccount, parseBusinessProfile, rccmTaken } from '../services/merchants.js';
 import { appUrl, notificationPrefs, notifyUser } from '../services/notify.js';
 import { HttpError, detectOperator, isEmail, newId, normalizeEmail, normalizePhone, now } from '../util.js';
 
@@ -77,6 +77,8 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
   if (account_type === 'business' && (!business_name || String(business_name).trim().length < 2)) {
     throw new HttpError(400, 'invalid_business_name', "Nom de l'entreprise requis.");
   }
+  const profile = account_type === 'business' ? parseBusinessProfile(req.body.business) : null;
+  if (profile && await q.get('SELECT id FROM merchants WHERE rccm=?', profile.rccm)) throw rccmTaken();
   assertNewPassword(password);
   assertNewPin(pin);
   if (await q.get('SELECT id FROM users WHERE email=?', e)) throw emailTaken();
@@ -94,10 +96,13 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
       await getWallet('user', id, 'CDF');
       await getWallet('user', id, 'USD');
       await trustDevice(id, deviceHash, device_label);
-      return account_type === 'business' ? createMerchantAccount(id, business_name) : null;
+      return account_type === 'business' ? createMerchantAccount(id, business_name, null, profile) : null;
     });
   } catch (err) {
-    if (isUniqueViolation(err)) throw /phone/.test(`${err.constraint || ''} ${err.detail || ''}`) ? phoneTaken() : emailTaken();
+    if (isUniqueViolation(err)) {
+      const where = `${err.constraint || ''} ${err.detail || ''}`;
+      throw /rccm/.test(where) ? rccmTaken() : /phone/.test(where) ? phoneTaken() : emailTaken();
+    }
     throw err;
   }
   const user = await q.get('SELECT * FROM users WHERE id=?', id);

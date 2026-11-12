@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { businessProfileOf } from '../services/merchants.js';
 import { assertNewPassword, hashSecret, verifySecret } from '../auth.js';
 import { config } from '../config.js';
 import { q, tx } from '../db.js';
@@ -128,7 +129,8 @@ const findUser = async (id) => {
 backofficeRouter.get('/admin/users/:id', can('users.view'), async (req, res) => {
   const u = await findUser(req.params.id);
   const wallets = await q.all("SELECT id, currency, balance FROM wallets WHERE owner_type='user' AND owner_id=? ORDER BY currency", u.id);
-  const merchant = await q.get('SELECT id, name, created_at, suspended_at FROM merchants WHERE owner_user_id=?', u.id);
+  const merchantRow = await q.get('SELECT * FROM merchants WHERE owner_user_id=?', u.id);
+  const merchant = merchantRow ? { id: merchantRow.id, name: merchantRow.name, created_at: merchantRow.created_at, suspended_at: merchantRow.suspended_at, business: businessProfileOf(merchantRow) } : null;
   // Les ventes sont créditées sur le solde marchand : il fait partie de l'argent du titulaire.
   const merchantWallets = merchant ? await q.all("SELECT id, currency, balance FROM wallets WHERE owner_type='merchant' AND owner_id=? ORDER BY currency", merchant.id) : [];
   const ids = [...wallets, ...merchantWallets].map((w) => w.id);

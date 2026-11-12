@@ -104,7 +104,7 @@
   .topbar a { color: var(--y); font-weight: 800; text-decoration: none; }
   .topbar a:hover { text-decoration: underline; }
   .back-home { color: var(--txt-2) !important; font-weight: 600 !important; }
-  .progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
+  .progress { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
   .progress li { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .progress li::before { content: ""; display: block; height: 4px; border-radius: 99px; margin-bottom: 9px;
     background: linear-gradient(90deg, var(--y) var(--p, 0%), var(--line) var(--p, 0%)); transition: --p .5s; }
@@ -173,6 +173,7 @@
   .hint-mail { font-size: 14px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: -8px 0 18px; }
   .alt { text-align: center; margin-top: 20px; font-size: 15px; color: var(--txt-2); }
   .alt a { color: var(--y); font-weight: 800; text-decoration: none; }
+  .group { margin: 8px 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--y); }
   .divider { height: 1px; background: var(--line); margin: 6px 0 22px; }
   .perks { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 0; padding: 0; list-style: none; }
   .perks li { font-size: 13px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; }
@@ -217,6 +218,10 @@
     .note.n1 { display: none; }
     .tagline { font-size: 21px; }
     .row2 { gap: 10px; }
+    #f-biz .row2 { grid-template-columns: 1fr; gap: 0; }
+    .art.biz .bars { display: none; }
+    .pcard .amt { white-space: nowrap; }
+    .pcard small { white-space: nowrap; }
     .choice p, .choice ul { margin-left: 0; }
     .progress { margin-bottom: 18px; }
   }
@@ -300,6 +305,29 @@
       </form>
     </section>
 
+    <!-- Étape entreprise (comptes entreprise uniquement) -->
+    <section data-step="biz">
+      <p class="lead">Informations légales et contact de votre entreprise.</p>
+      <div class="err" id="errb" role="alert"></div>
+      <form id="f-biz" novalidate>
+        <div class="field"><label for="business_name">Raison sociale</label><input id="business_name" name="name" autocomplete="organization" required placeholder="Ex : Boutique Kin Mode SARL"></div>
+        <div class="field"><label for="rccm">Numéro RCCM</label><input id="rccm" name="rccm" required autocapitalize="characters" spellcheck="false" placeholder="CD/KNG/RCCM/24-B-01234"></div>
+        <div class="field"><label for="b-address">Adresse</label><input id="b-address" name="address" autocomplete="street-address" required placeholder="N°, avenue, quartier, commune"></div>
+        <div class="field"><label for="b-city">Ville</label><input id="b-city" name="city" autocomplete="address-level2" required placeholder="Kinshasa"></div>
+        <p class="group">Contact</p>
+        <div class="row2">
+          <div class="field"><label for="b-phone">Téléphone</label><input id="b-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0812345678"></div>
+          <div class="field"><label for="b-email">Email</label><input id="b-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="contact@entreprise.cd"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="b-fax">Fax <small>(facultatif)</small></label><input id="b-fax" name="fax" type="tel" inputmode="tel"></div>
+          <div class="field"><label for="b-web">Site web <small>(facultatif)</small></label><input id="b-web" name="website" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="www.entreprise.cd"></div>
+        </div>
+        <button class="btn full">Continuer <span class="arr">→</span></button>
+      </form>
+      <p class="alt"><button type="button" class="resend" data-back="1">← Retour</button></p>
+    </section>
+
     <!-- Étape 2 : adresse email -->
     <section data-step="2">
       <p class="lead">Nous y envoyons un code de vérification.</p>
@@ -308,7 +336,7 @@
         <div class="field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="vous@exemple.com"></div>
         <button class="btn full">Continuer <span class="arr">→</span></button>
       </form>
-      <p class="alt"><button type="button" class="resend" data-back="1">← Retour</button></p>
+      <p class="alt"><button type="button" class="resend" data-back="before-email">← Retour</button></p>
     </section>
 
     <!-- Étape 3 : vérification + informations -->
@@ -325,7 +353,6 @@
           <div class="hint"><button type="button" class="resend" id="resend" disabled>Renvoyer le code</button> <span id="resend-timer"></span></div>
         </div>
         <div class="divider"></div>
-        <div class="field" data-biz hidden><label for="business_name">Nom de l'entreprise</label><input id="business_name" name="business_name" autocomplete="organization" placeholder="Ex : Boutique Kin Mode"></div>
         <div class="field"><label for="full_name" id="name-label">Nom complet</label><input id="full_name" name="full_name" autocomplete="name" required placeholder="Ex : Grace Mbuyi"></div>
         <div class="field"><label for="phone">Mobile Money <small>(facultatif)</small></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678"></div>
         <div class="field"><label for="password">Mot de passe</label>
@@ -353,7 +380,7 @@ try {
 } catch {}
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
-const state = { type: new URLSearchParams(location.search).get('type') === 'business' ? 'business' : 'personal', email: '' };
+const state = { type: new URLSearchParams(location.search).get('type') === 'business' ? 'business' : 'personal', email: '', business: null };
 const DEVICE_ID = (() => {
   try { let d = localStorage.getItem('pay243_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('pay243_device', d); } return d; }
   catch { return null; }
@@ -483,26 +510,53 @@ const HEADLINES = {
   personal: 'Créez votre compte personnel.',
   business: 'Créez votre compte entreprise.',
 };
-const STEP_TITLES = { 2: 'Votre email', 3: 'Sécurisez votre compte' };
+const STEP_TITLES = { biz: 'Votre entreprise', 2: 'Votre email', 3: 'Sécurisez votre compte' };
+const STEP_LABELS = { 1: 'Compte', biz: 'Entreprise', 2: 'Email', 3: 'Sécurité' };
+const stepOrder = () => (state.type === 'business' ? ['1', 'biz', '2', '3'] : ['1', '2', '3']);
+function renderProgress(step) {
+  const order = stepOrder(); const at = order.indexOf(String(step));
+  $('#progress').innerHTML = order.map((s, i) => `<li class="${i < at ? 'done' : i === at ? 'now' : ''}">${STEP_LABELS[s]}</li>`).join('');
+}
 function go(step) {
   $$('[data-step]').forEach((s) => s.classList.toggle('on', s.dataset.step === String(step)));
   $('#headline').textContent = step === 1 ? HEADLINES[1] : STEP_TITLES[step] || HEADLINES[state.type];
-  $$('#progress li').forEach((li, i) => { li.classList.toggle('done', i + 1 < step); li.classList.toggle('now', i + 1 === step); });
+  renderProgress(step);
   window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
-  const focus = { 2: '#email', 3: '#otp' }[step];
+  const focus = { biz: '#business_name', 2: '#email', 3: '#otp' }[step];
   if (focus) setTimeout(() => $(focus).focus({ preventScroll: true }), 60);
 }
-$$('[data-back]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.back))));
+$$('[data-back]').forEach((b) => b.addEventListener('click', () => {
+  const v = b.dataset.back;
+  go(v === 'before-email' ? (state.type === 'business' ? 'biz' : 1) : Number(v));
+}));
 
 // Étape 1
 $(`input[name=account_type][value=${state.type}]`).checked = true;
-$$('input[name=account_type]').forEach((r) => r.addEventListener('change', () => { state.type = r.value; renderScene(state.type); }));
+$$('input[name=account_type]').forEach((r) => r.addEventListener('change', () => { state.type = r.value; renderScene(state.type); renderProgress(1); }));
+renderProgress(1);
 $('#f-type').addEventListener('submit', (e) => {
   e.preventDefault();
   state.type = new FormData(e.target).get('account_type');
   const biz = state.type === 'business';
-  $$('[data-biz]').forEach((el) => { el.hidden = !biz; el.querySelector('input').required = biz; });
   $('#name-label').textContent = biz ? 'Votre nom (responsable)' : 'Nom complet';
+  go(biz ? 'biz' : 2);
+});
+
+// Étape entreprise
+$('#f-biz').addEventListener('submit', (e) => {
+  e.preventDefault(); showErr('#errb');
+  const d = Object.fromEntries([...new FormData(e.target)].map(([k, v]) => [k, String(v).trim()]));
+  const phoneRe = /^\+?[0-9][0-9 ().-]{6,22}$/;
+  if (d.name.length < 2) return showErr('#errb', "Indiquez la raison sociale de l'entreprise.");
+  if (!/^[A-Za-z0-9][A-Za-z0-9 /.-]{4,59}$/.test(d.rccm) || !/\d/.test(d.rccm)) return showErr('#errb', 'Numéro RCCM invalide (ex : CD/KNG/RCCM/24-B-01234).');
+  if (d.address.length < 5) return showErr('#errb', "Indiquez l'adresse de l'entreprise.");
+  if (d.city.length < 2) return showErr('#errb', 'Indiquez la ville.');
+  if (!phoneRe.test(d.phone)) return showErr('#errb', "Numéro de téléphone de l'entreprise invalide.");
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(d.email)) return showErr('#errb', "Adresse email de l'entreprise invalide.");
+  if (d.fax && !phoneRe.test(d.fax)) return showErr('#errb', 'Numéro de fax invalide.');
+  if (d.website && !/^(https?:\/\/)?[^\s/]+\.[^\s]{2,}$/i.test(d.website)) return showErr('#errb', 'Adresse du site web invalide.');
+  state.business = { name: d.name, rccm: d.rccm.toUpperCase(), address: d.address, city: d.city, country: 'CD', phone: d.phone, email: d.email, fax: d.fax || null, website: d.website || null };
+  if (!$('#email').value) $('#email').value = d.email; // proposé comme email de connexion, modifiable
   go(2);
 });
 
@@ -559,7 +613,7 @@ $('#f-account').addEventListener('submit', (e) => {
   e.preventDefault(); showErr('#err3');
   const d = Object.fromEntries(new FormData(e.target));
   if (!/^\d{6}$/.test(d.otp_code)) return showErr('#err3', 'Saisissez le code à 6 chiffres reçu par email.');
-  if (state.type === 'business' && (d.business_name || '').trim().length < 2) return showErr('#err3', "Indiquez le nom de votre entreprise.");
+  if (state.type === 'business' && !state.business) return go('biz');
   if ((d.full_name || '').trim().length < 3) return showErr('#err3', 'Indiquez votre nom complet.');
   if ((d.password || '').length < 8) return showErr('#err3', 'Le mot de passe doit contenir au moins 8 caractères.');
   if (!/^\d{4,6}$/.test(d.pin)) return showErr('#err3', 'Le PIN doit comporter 4 à 6 chiffres.');
@@ -567,7 +621,10 @@ $('#f-account').addEventListener('submit', (e) => {
   if (!$('#consent').checked) return showErr('#err3', "Acceptez les conditions d'utilisation pour continuer.");
   const body = { account_type: state.type, email: state.email, otp_code: d.otp_code, full_name: d.full_name, password: d.password, pin: d.pin };
   if (d.phone) body.phone = d.phone;
-  if (state.type === 'business') body.business_name = d.business_name;
+  if (state.type === 'business') {
+    const { name, ...business } = state.business;
+    Object.assign(body, { business_name: name, business });
+  }
   if (DEVICE_ID) Object.assign(body, { device_id: DEVICE_ID, device_label: navigator.userAgent.slice(0, 120) });
   busy(e.submitter, 'Création du compte…', async () => {
     try {
@@ -580,6 +637,7 @@ $('#f-account').addEventListener('submit', (e) => {
     } catch (x) {
       showErr('#err3', x.message);
       if (['email_taken'].includes(x.code)) go(2);
+      if (x.code === 'rccm_taken' || /^invalid_(rccm|business_|website)/.test(x.code || '')) { go('biz'); showErr('#errb', x.message); }
     }
   });
 });
