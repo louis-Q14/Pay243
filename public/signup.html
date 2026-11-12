@@ -16,15 +16,15 @@
     --text: "Segoe UI Variable Text", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; color: var(--txt); font: 16px/1.55 var(--text); -webkit-font-smoothing: antialiased;
+  body { margin: 0; min-height: 100vh; display: grid; align-content: center; color: var(--txt); font: 16px/1.55 var(--text); -webkit-font-smoothing: antialiased;
     background: radial-gradient(120% 80% at 50% 0%, #3a3a3d 0%, #1c1c1e 50%, #111 100%) fixed; }
   a { color: inherit; }
 
-  .shell { width: min(1280px, calc(100% - 40px)); margin: 24px auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; align-items: start;
+  .shell { width: min(1280px, calc(100% - 40px)); margin: 24px auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; align-items: stretch;
     background: var(--panel); border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); }
 
   /* ================= Panneau visuel ================= */
-  .art { position: sticky; top: 34px; height: calc(100vh - 68px); min-height: 640px; max-height: 860px; border-radius: 30px; overflow: hidden; isolation: isolate;
+  .art { position: relative; min-height: min(820px, calc(100vh - 68px)); border-radius: 30px; overflow: hidden; isolation: isolate;
     display: flex; flex-direction: column; justify-content: space-between; padding: 36px 40px 40px; background: #0b0716; perspective: 1200px; }
   .art::before { content: ""; position: absolute; inset: -30%; z-index: -2;
     background:
@@ -99,7 +99,7 @@
   .caption { margin: 14px 0 0; color: var(--txt-2); font-size: 15px; max-width: 46ch; min-height: 3.1em; transition: opacity .3s; }
 
   /* ================= Panneau formulaire ================= */
-  .form-side { padding: 30px 46px 40px; min-height: calc(100vh - 68px); display: flex; flex-direction: column; }
+  .form-side { padding: 30px 46px 34px; display: flex; flex-direction: column; }
   .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 34px; font-size: 14px; color: var(--txt-2); }
   .topbar a { color: var(--y); font-weight: 800; text-decoration: none; }
   .topbar a:hover { text-decoration: underline; }
@@ -177,7 +177,7 @@
   .perks { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 0; padding: 0; list-style: none; }
   .perks li { font-size: 13px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; }
   .perks li b { color: #fff; }
-  .legal { margin-top: auto; padding-top: 30px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .legal { margin-top: auto; padding-top: 26px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
 
   @media (prefers-reduced-motion: reduce) {
     .art::before, .art::after, .orbit, .orbit span b, .pill i { animation: none !important; }
