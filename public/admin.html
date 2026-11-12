@@ -127,6 +127,27 @@
   .bubble.user { align-self: flex-start; background: var(--soft); }
   .bubble.support { align-self: flex-end; background: #e7efff; }
   .bubble.note { align-self: flex-end; background: #fff6cc; border: 1px dashed #e0c25a; }
+  /* Pièces jointes du support */
+  .sa-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+  .sa-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px dashed #b9c6da; border-radius: 99px; font-size: 13px; font-weight: 600; color: #0057d9; cursor: pointer; background: #fff; margin: 0; }
+  .sa-btn svg { width: 15px; height: 15px; }
+  .sa-list { display: contents; }
+  .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 10px; border-radius: 99px; background: #eef3fb; font-size: 12px; color: #0b1424; }
+  .sa-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+  .sa-chip.busy { opacity: .6; } .sa-chip.busy::after { content: "envoi…"; font-size: 11px; color: #5d6879; margin-right: 4px; }
+  .sa-chip button { all: unset; cursor: pointer; padding: 0 6px; font-size: 16px; line-height: 1; color: #5d6879; }
+  .sa-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; white-space: normal; }
+  .sa-files img { width: 128px; height: 96px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: rgba(0,0,0,.08); }
+  .sa-doc { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 8px; background: #fff; color: #0b1424 !important; font-size: 12px; text-decoration: none; border: 1px solid rgba(0,0,0,.08); max-width: 220px; }
+  .sa-doc b { font-size: 10px; padding: 2px 5px; border-radius: 4px; background: #ce1021; color: #fff; }
+  .sa-doc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sa-zoom { position: fixed; inset: 0; z-index: 90; background: rgba(11,20,36,.85); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+  .sa-zoom[hidden] { display: none; }
+  .sa-zoom img { max-width: 94vw; max-height: 82vh; border-radius: 8px; }
+  .sa-zoom a { margin-top: 10px; color: #fff; font-size: 14px; font-weight: 600; }
+  .sa-zoom div { display: grid; justify-items: center; }
+  @media (max-width: 560px) { .sa-files img { width: 104px; height: 78px; } }
+  .bubble.support .sa-doc, .bubble.note .sa-doc { background: #fff; }
   .bubble.system { align-self: center; background: none; color: var(--muted); font-size: 12px; text-align: center; }
   .lk-btn { border: 0; background: none; color: var(--blue); font-weight: 700; cursor: pointer; padding: 0 0 0 6px; font-size: 13px; }
   #zoom { cursor: zoom-out; } #zoom img { max-width: 96vw; max-height: 92vh; }
@@ -371,6 +392,57 @@ async function loadSupList() {
       <div class="muted">${esc(t.user.full_name || '')} · ${esc(t.category_label)} · ${dt(t.last_message_at)}${t.assigned ? ' · ' + esc(t.assigned.name || '') : ''}</div></div>${tpill(t.status)}</li>`).join('')}</ul>` : '<p class="muted">Aucune demande.</p>';
   $$('[data-tid]').forEach((li) => li.onclick = () => { SUP_COUNT = -1; openSupTicket(li.dataset.tid).catch((x) => toast(x.message, true)); });
 }
+// ---- Pièces jointes (photo ou PDF, 5 Mo max., 3 par message) ----
+const SUP_ATT = []; const SUP_URLS = new Map();
+const fsize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' ko');
+function supFileUrl(p) {
+  if (!SUP_URLS.has(p)) {
+    SUP_URLS.set(p, fetch('/v1/admin' + p, { headers: { Authorization: 'Bearer ' + TOKEN } })
+      .then((r) => { if (!r.ok) throw new Error('Fichier indisponible.'); return r.blob(); })
+      .then((b) => URL.createObjectURL(b))
+      .catch((e) => { SUP_URLS.delete(p); throw e; }));
+  }
+  return SUP_URLS.get(p);
+}
+const supFiles = (tid, m) => (m.attachments?.length ? `<div class="sa-files">${m.attachments.map((a) => {
+  const p = `/support/tickets/${encodeURIComponent(tid)}/files/${encodeURIComponent(a.id)}`;
+  return a.mime.startsWith('image/') ? `<img data-src="${esc(p)}" data-name="${esc(a.name)}" alt="${esc(a.name)}">`
+    : `<a href="#" class="sa-doc" data-src="${esc(p)}" data-name="${esc(a.name)}"><b>PDF</b><span>${esc(a.name)}</span> ${fsize(a.size)}</a>`;
+}).join('')}</div>` : '');
+function hydrateSupFiles(box) {
+  box.querySelectorAll('img[data-src]').forEach((img) => {
+    supFileUrl(img.dataset.src).then((u) => { img.onload = () => { box.scrollTop = box.scrollHeight; }; img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
+    img.onclick = () => { if (img.src) { $('#zoom').innerHTML = `<img src="${img.src}" alt="">`; $('#zoom').hidden = false; } };
+  });
+  box.querySelectorAll('a.sa-doc').forEach((a) => a.onclick = (e) => {
+    e.preventDefault();
+    supFileUrl(a.dataset.src).then((u) => { const l = document.createElement('a'); l.href = u; l.download = a.dataset.name; document.body.appendChild(l); l.click(); l.remove(); }).catch((x) => toast(x.message, true));
+  });
+}
+function bindSupAttach(form) {
+  const input = form.querySelector('input[type=file]'); const list = form.querySelector('.sa-list');
+  const render = () => {
+    list.innerHTML = SUP_ATT.map((it, i) => `<span class="sa-chip ${it.id ? '' : 'busy'}"><span title="${esc(it.name)}">${esc(it.name)}</span><button type="button" data-i="${i}" aria-label="Retirer">×</button></span>`).join('');
+    list.querySelectorAll('[data-i]').forEach((b) => b.onclick = () => { SUP_ATT.splice(+b.dataset.i, 1); render(); });
+  };
+  render();
+  input.onchange = async () => {
+    const files = [...input.files]; input.value = '';
+    for (const f of files) {
+      if (SUP_ATT.length >= 3) { toast('3 pièces jointes maximum par message.', true); break; }
+      if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(f.type)) { toast(`${f.name} : photo (JPEG, PNG, WebP) ou PDF uniquement.`, true); continue; }
+      if (f.size > 5 * 1024 * 1024) { toast(`${f.name} : 5 Mo maximum.`, true); continue; }
+      const it = { name: f.name }; SUP_ATT.push(it); render();
+      try {
+        const r = await fetch('/v1/admin/support/files', { method: 'POST', headers: { 'Content-Type': f.type, Authorization: 'Bearer ' + TOKEN, 'X-File-Name': encodeURIComponent(f.name) }, body: f });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error?.message || 'Envoi du fichier impossible.');
+        it.id = j.id; it.name = j.name;
+      } catch (e) { const i = SUP_ATT.indexOf(it); if (i >= 0) SUP_ATT.splice(i, 1); toast(e.message, true); }
+      if (document.body.contains(list)) render(); else { const l2 = $('#f-sup-reply'); if (l2) bindSupAttach(l2); }
+    }
+  };
+}
 async function refreshSupport() { await loadSupList(); if (SUP_CURRENT) await openSupTicket(SUP_CURRENT, true); }
 async function openSupTicket(id, silent = false) {
   const reply = can('support.reply');
@@ -379,6 +451,7 @@ async function openSupTicket(id, silent = false) {
   // Rafraîchissement automatique : le brouillon en cours de saisie est conservé.
   const keep = silent && SUP_CURRENT === id;
   const draft = keep ? $('#sup-body')?.value || '' : ''; const wasInternal = keep && $('#sup-internal')?.checked;
+  if (!keep) SUP_ATT.length = 0; // les pièces jointes en attente suivent le brouillon
   SUP_CURRENT = id; SUP_COUNT = d.messages.length;
   $$('[data-tid]').forEach((li) => li.classList.toggle('sel', li.dataset.tid === id));
   const t = d.ticket; const u = t.user;
@@ -395,12 +468,13 @@ async function openSupTicket(id, silent = false) {
   </div>
   <div class="card"><div class="thread" id="sup-thread">${d.messages.map((m) => (m.author === 'system'
     ? `<div class="bubble system">${esc(m.body)} · ${dt(m.created_at)}</div>`
-    : `<div class="bubble ${m.author === 'user' ? 'user' : m.internal ? 'note' : 'support'}"><small>${m.internal ? 'Note interne · ' : ''}${esc(m.author_name || (m.author === 'user' ? 'Client' : 'Support'))} · ${dt(m.created_at)}</small>${esc(m.body)}</div>`)).join('')}</div>
-    ${reply ? `<form id="f-sup-reply" style="margin-top:14px"><textarea id="sup-body" maxlength="4000" required placeholder="Votre réponse au client…"></textarea>
+    : `<div class="bubble ${m.author === 'user' ? 'user' : m.internal ? 'note' : 'support'}"><small>${m.internal ? 'Note interne · ' : ''}${esc(m.author_name || (m.author === 'user' ? 'Client' : 'Support'))} · ${dt(m.created_at)}</small>${esc(m.body)}${supFiles(id, m)}</div>`)).join('')}</div>
+    ${reply ? `<form id="f-sup-reply" style="margin-top:14px"><textarea id="sup-body" maxlength="4000" placeholder="Votre réponse au client…"></textarea>
+      <div class="sa-row"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
       <div class="actions" style="margin-top:10px;align-items:center;justify-content:space-between"><label class="switch" style="margin:0"><input type="checkbox" id="sup-internal"> Note interne (invisible pour le client)</label><button class="btn">Envoyer</button></div>
       <p class="muted" style="font-size:12px;margin:8px 0 0">Ne demandez jamais au client son mot de passe, son PIN ni un code de vérification.</p></form>`
     : '<p class="muted" style="margin-top:12px">Lecture seule : votre rôle ne permet pas de répondre.</p>'}</div>`;
-  const th = $('#sup-thread'); th.scrollTop = th.scrollHeight;
+  const th = $('#sup-thread'); th.scrollTop = th.scrollHeight; hydrateSupFiles(th);
   $('#sup-user')?.addEventListener('click', () => {
     USER_FILTER = { q: u.id, status: '', kyc: '', type: '', activation: '' };
     go('users').then(() => openUser(u.id)).catch(() => {});
@@ -410,10 +484,15 @@ async function openSupTicket(id, silent = false) {
   body.value = draft; internal.checked = !!wasInternal;
   const hint = () => { body.placeholder = internal.checked ? 'Note visible uniquement par l’équipe…' : 'Votre réponse au client…'; };
   internal.onchange = hint; hint();
+  bindSupAttach($('#f-sup-reply'));
   const reload = async () => { SUP_COUNT = -1; await openSupTicket(id); await loadSupList(); };
   $('#f-sup-reply').onsubmit = (e) => { e.preventDefault(); run(e.submitter, async () => {
     const note = internal.checked;
-    await api('POST', `/support/tickets/${encodeURIComponent(id)}/messages`, { body: body.value, internal: note });
+    if (SUP_ATT.some((x) => !x.id)) throw new Error('Patientez : envoi du fichier en cours.');
+    const attachments = SUP_ATT.filter((x) => x.id).map((x) => x.id);
+    if (!body.value.trim() && !attachments.length) throw new Error('Écrivez un message ou joignez un fichier.');
+    await api('POST', `/support/tickets/${encodeURIComponent(id)}/messages`, { body: body.value, internal: note, attachments });
+    SUP_ATT.length = 0;
     await reload(); toast(note ? 'Note interne ajoutée.' : 'Réponse envoyée au client.');
   }); };
   $$('[data-tact]').forEach((b) => b.onclick = () => run(b, async () => {

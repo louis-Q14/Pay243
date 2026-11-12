@@ -435,4 +435,25 @@ CREATE TABLE support_messages (
 CREATE INDEX idx_support_messages_ticket ON support_messages (ticket_id, created_at);
 `,
   },
+  {
+    version: 8,
+    name: 'support : pièces jointes chiffrées',
+    sql: `
+CREATE TABLE support_files (
+  id TEXT PRIMARY KEY,
+  owner_type TEXT NOT NULL CHECK (owner_type IN ('user','staff')),
+  owner_id TEXT NOT NULL,
+  ticket_id TEXT REFERENCES support_tickets(id) ON DELETE CASCADE, -- renseignés à l'envoi du message
+  message_id TEXT REFERENCES support_messages(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  storage_key TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_support_files_ticket ON support_files (ticket_id);
+CREATE INDEX idx_support_files_owner ON support_files (owner_type, owner_id, created_at);
+`,
+  },
 ];

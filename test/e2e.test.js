@@ -530,6 +530,68 @@ test('support : demande, réponse du conseiller, note interne invisible, droits'
   assert.ok([409, 429].includes(codes[5]));
 });
 
+test('support : pièces jointes chiffrées (photo, PDF), notes internes et droits', async () => {
+  const u = await register({ email: 'pj.support@test.cd', full_name: 'Pièce Jointe', password: 'motdepasse5', pin: '6402' });
+  const tok = u.body.token;
+  const other = await register({ email: 'pj.curieux@test.cd', full_name: 'Autre Curieux', password: 'motdepasse5', pin: '6402' });
+  const upload = async (token, buf, type, name, path = '/v1/support/files') => {
+    const r = await fetch(base + path, { method: 'POST', headers: { 'Content-Type': type, Authorization: `Bearer ${token}`, 'X-File-Name': encodeURIComponent(name) }, body: buf });
+    return { status: r.status, body: await r.json() };
+  };
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(2000, 7)]);
+  const pdf = Buffer.from('%PDF-1.4\n% reçu de paiement\n%%EOF\n');
+
+  // Le type réel est vérifié ; le nom est nettoyé et l'extension imposée.
+  assert.equal((await upload(tok, Buffer.from('<script>alert(1)</script>'), 'image/png', 'x.png')).status, 415);
+  const img = await upload(tok, png, 'image/png', '../../capture écran.exe');
+  assert.equal(img.status, 201);
+  assert.equal(img.body.name, 'capture écran.png');
+  const doc = await upload(tok, pdf, 'application/pdf', 'reçu.pdf');
+  assert.equal(doc.body.mime, 'application/pdf');
+  // Chiffré au repos.
+  const row = await q.get('SELECT storage_key FROM support_files WHERE id=?', img.body.id);
+  const onDisk = fs.readFileSync(pathMod.join(process.env.KYC_STORAGE_DIR, 'support', `${row.storage_key}.enc`));
+  assert.ok(!onDisk.includes(png.subarray(0, 8)));
+
+  // Le fichier d'un autre utilisateur ne peut pas être joint.
+  const stolen = await api('POST', '/v1/support/tickets', { token: other.body.token, body: { subject: 'Vol', message: 'test', attachments: [img.body.id] } });
+  assert.equal(stolen.status, 400);
+  const created = await api('POST', '/v1/support/tickets', { token: tok, body: { subject: 'Recharge', message: 'Voici la capture et le reçu.', attachments: [img.body.id, doc.body.id] } });
+  assert.equal(created.status, 201);
+  const t = created.body.ticket;
+  assert.deepEqual(created.body.messages[0].attachments.map((a) => a.name), ['capture écran.png', 'reçu.pdf']);
+  // Un fichier déjà envoyé ne peut pas être réutilisé ; 3 pièces max.
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'encore', attachments: [img.body.id] } })).status, 400);
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { attachments: ['a', 'b', 'c', 'd'] } })).status, 400);
+
+  // Téléchargement : image affichée, PDF téléchargé, page isolée.
+  const f1 = await fetch(`${base}/v1/support/tickets/${t.id}/files/${img.body.id}`, { headers: { Authorization: `Bearer ${tok}` } });
+  assert.equal(f1.status, 200);
+  assert.equal(f1.headers.get('content-type'), 'image/png');
+  assert.match(f1.headers.get('content-security-policy'), /sandbox/);
+  assert.ok(Buffer.from(await f1.arrayBuffer()).equals(png));
+  const f2 = await fetch(`${base}/v1/support/tickets/${t.id}/files/${doc.body.id}`, { headers: { Authorization: `Bearer ${tok}` } });
+  assert.match(f2.headers.get('content-disposition'), /^attachment;/);
+  assert.equal((await fetch(`${base}/v1/support/tickets/${t.id}/files/${img.body.id}`, { headers: { Authorization: `Bearer ${other.body.token}` } })).status, 404);
+
+  // L'équipe lit les fichiers, joint un document à une note interne (invisible du client) puis à une réponse sans texte.
+  const sa = bo(ADMIN_KEY);
+  assert.equal((await fetch(`${base}/v1/admin/support/tickets/${t.id}/files/${doc.body.id}`, { headers: { Authorization: `Bearer ${ADMIN_KEY}` } })).status, 200);
+  const note = await upload(ADMIN_KEY, pdf, 'application/pdf', 'releve-operateur.pdf', '/v1/admin/support/files');
+  assert.equal(note.status, 201);
+  assert.equal((await sa('POST', `/support/tickets/${t.id}/messages`, { body: 'Relevé opérateur', internal: true, attachments: [note.body.id] })).status, 201);
+  const ans = await upload(ADMIN_KEY, png, 'image/png', 'procedure.png', '/v1/admin/support/files');
+  assert.equal((await sa('POST', `/support/tickets/${t.id}/messages`, { attachments: [ans.body.id] })).status, 201);
+  const seen = await api('GET', `/v1/support/tickets/${t.id}`, { token: tok });
+  const files = seen.body.messages.flatMap((m) => m.attachments.map((a) => a.id));
+  assert.ok(files.includes(ans.body.id));
+  assert.ok(!files.includes(note.body.id));
+  assert.equal((await fetch(`${base}/v1/support/tickets/${t.id}/files/${note.body.id}`, { headers: { Authorization: `Bearer ${tok}` } })).status, 404);
+  assert.equal((await fetch(`${base}/v1/support/tickets/${t.id}/files/${ans.body.id}`, { headers: { Authorization: `Bearer ${tok}` } })).status, 200);
+  // Sans pièce jointe, le texte reste obligatoire.
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: '  ' } })).status, 400);
+});
+
 test('retrait Mobile Money échoué -> fonds et frais restitués', async () => {
   const before = (await api('GET', '/v1/wallets', { token: state.bob })).body.data.find((x) => x.currency === 'USD').balance;
   const w = await api('POST', '/v1/withdrawals', { token: state.bob, body: { amount: 1000, currency: 'USD', pin: '9137', phone: '0990000000' } });

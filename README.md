@@ -269,6 +269,8 @@ Côté équipe, la section **Support** du back-office présente la file des dema
 
 Garde-fous : 5 demandes ouvertes maximum par utilisateur, 5 nouvelles demandes par heure, 20 messages par minute, messages de 4 000 caractères au plus. L'utilisateur ne voit que le prénom du conseiller.
 
+**Pièces jointes.** Chaque message peut porter jusqu'à 3 fichiers : photo (JPEG, PNG, WebP) ou PDF, 5 Mo maximum chacun. Les photos lourdes prises au téléphone sont réduites dans le navigateur avant l'envoi. L'envoi se fait en deux temps : `POST /v1/support/files` (corps brut, nom du fichier dans `X-File-Name`) renvoie un identifiant, puis le message est envoyé avec `attachments: [id…]`. L'équipe utilise `POST /v1/admin/support/files`. Le type est contrôlé sur le contenu réel, pas sur l'extension. Les fichiers sont chiffrés au repos comme les pièces d'identité (AES-256-GCM, sous-dossier `support` de `KYC_STORAGE_DIR`). Ils sont servis sans cache, dans une page isolée (`sandbox`) : les images s'affichent, les PDF se téléchargent. Un utilisateur ne peut lire que les fichiers de ses propres demandes, et jamais ceux joints à une note interne. Chaque compte peut envoyer 30 fichiers par jour au plus.
+
 ## Emails (Resend)
 
 Tous les emails partent par le fournisseur choisi dans `EMAIL_DRIVER` : codes de vérification (inscription, nouvel appareil, changement d'email, mot de passe oublié), bienvenue, alertes de sécurité, argent reçu et décisions KYC. Chaque email a une version HTML aux couleurs de Pay243 et une version texte.

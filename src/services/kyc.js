@@ -13,22 +13,23 @@ import { HttpError, newId, now } from '../util.js';
 // =====================================================================
 const key = () => Buffer.from(config.kycReview.encryptionKey, 'hex');
 
-function filePath(storageKey) {
+// `dir` : dossier de stockage (par défaut celui des pièces d'identité ; le support utilise un sous-dossier).
+function filePath(storageKey, dir) {
   if (!/^[A-Za-z0-9_-]+$/.test(storageKey)) throw new Error('storage_key invalide');
-  return path.join(config.kycReview.storageDir, `${storageKey}.enc`);
+  return path.join(dir, `${storageKey}.enc`);
 }
 
-function writeEncrypted(storageKey, buf, aad) {
+export function writeEncrypted(storageKey, buf, aad, dir = config.kycReview.storageDir) {
   const iv = crypto.randomBytes(12);
   const c = crypto.createCipheriv('aes-256-gcm', key(), iv);
   c.setAAD(Buffer.from(aad));
   const enc = Buffer.concat([c.update(buf), c.final()]);
-  fs.mkdirSync(config.kycReview.storageDir, { recursive: true });
-  fs.writeFileSync(filePath(storageKey), Buffer.concat([iv, c.getAuthTag(), enc]), { mode: 0o600 });
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath(storageKey, dir), Buffer.concat([iv, c.getAuthTag(), enc]), { mode: 0o600 });
 }
 
-function readDecrypted(storageKey, aad) {
-  const raw = fs.readFileSync(filePath(storageKey));
+export function readDecrypted(storageKey, aad, dir = config.kycReview.storageDir) {
+  const raw = fs.readFileSync(filePath(storageKey, dir));
   const d = crypto.createDecipheriv('aes-256-gcm', key(), raw.subarray(0, 12));
   d.setAAD(Buffer.from(aad));
   d.setAuthTag(raw.subarray(12, 28));

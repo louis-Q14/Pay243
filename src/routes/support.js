@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { requireUser } from '../auth.js';
 import { rateLimit } from '../middleware.js';
 import {
-  CATEGORIES, assignTicket, createTicket, getTicket, getUserTicket, listTickets, listUserTickets, setTicketStatus,
-  staffReply, supportSummary, userClose, userReply, userUnread,
+  CATEGORIES, FILE_TYPES, MAX_FILE_BYTES, assignTicket, createTicket, getTicket, getUserTicket, listTickets, listUserTickets,
+  readTicketFile, setTicketStatus, staffOwner, staffReply, supportSummary, uploadSupportFile, userClose, userReply, userUnread,
 } from '../services/support.js';
 import { can, requireStaff } from '../staff.js';
 import { logAction } from './admin.js';
@@ -17,6 +17,21 @@ supportRouter.use('/support', requireUser);
 const byUser = (req) => req.user.id;
 const newTicketLimiter = rateLimit({ name: 'support_ticket', windowMs: 3600_000, max: 5, keyOf: byUser, message: 'Trop de nouvelles demandes. Réessayez dans une heure ou écrivez dans une demande existante.' });
 const messageLimiter = rateLimit({ name: 'support_message', max: 20, keyOf: byUser, message: 'Trop de messages en peu de temps. Patientez une minute.' });
+
+const uploadLimiter = rateLimit({ name: 'support_upload', max: 20, keyOf: byUser, message: 'Trop de fichiers en peu de temps. Patientez une minute.' });
+const rawFile = express.raw({ type: FILE_TYPES, limit: MAX_FILE_BYTES });
+
+/** Envoi d'une pièce jointe déchiffrée : image affichée, PDF téléchargé ; rien n'est exécutable dans la page. */
+function sendFile(res, f) {
+  const ascii = f.name.replace(/[^\x20-\x7E]|["\\]/g, '_');
+  res.set({
+    'Content-Type': f.mime,
+    'Cache-Control': 'private, no-store',
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+    'Content-Disposition': `${f.mime.startsWith('image/') ? 'inline' : 'attachment'}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(f.name)}`,
+  });
+  res.send(f.data);
+}
 
 const categories = () => Object.entries(CATEGORIES).map(([id, label]) => ({ id, label }));
 
@@ -32,6 +47,13 @@ supportRouter.post('/support/tickets', newTicketLimiter, async (req, res) => res
 supportRouter.get('/support/tickets/:id', async (req, res) => res.json(await getUserTicket(req.user, req.params.id)));
 
 supportRouter.post('/support/tickets/:id/messages', messageLimiter, async (req, res) => res.status(201).json(await userReply(req.user, req.params.id, req.body || {})));
+
+/** Pièce jointe : corps brut (Content-Type image/jpeg, image/png, image/webp ou application/pdf), nom dans X-File-Name. */
+supportRouter.post('/support/files', uploadLimiter, rawFile, async (req, res) => {
+  res.status(201).json(await uploadSupportFile({ type: 'user', id: req.user.id }, req.body, req.get('X-File-Name')));
+});
+
+supportRouter.get('/support/tickets/:id/files/:fid', async (req, res) => sendFile(res, await readTicketFile(req.params.id, req.params.fid, { userId: req.user.id })));
 
 supportRouter.post('/support/tickets/:id/close', async (req, res) => res.json(await userClose(req.user, req.params.id)));
 
@@ -60,6 +82,14 @@ supportAdminRouter.post('/admin/support/tickets/:id/messages', can('support.repl
   const r = await staffReply(req.admin, req.params.id, req.body || {});
   await logAction(req, req.body?.internal === true ? 'support.note' : 'support.reply', req.params.id, { number: r.ticket.number });
   res.status(201).json(r);
+});
+
+supportAdminRouter.post('/admin/support/files', can('support.reply'), rawFile, async (req, res) => {
+  res.status(201).json(await uploadSupportFile(staffOwner(req.admin), req.body, req.get('X-File-Name')));
+});
+
+supportAdminRouter.get('/admin/support/tickets/:id/files/:fid', can('support.view'), async (req, res) => {
+  sendFile(res, await readTicketFile(req.params.id, req.params.fid));
 });
 
 supportAdminRouter.post('/admin/support/tickets/:id/assign', can('support.reply'), async (req, res) => {
