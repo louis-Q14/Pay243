@@ -7,124 +7,268 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="description" content="Ouvrez gratuitement votre compte Pay243, particulier ou entreprise, avec votre adresse email.">
-<meta name="theme-color" content="#0a2a66">
-<link rel="stylesheet" href="/assets/landing.css">
+<meta name="theme-color" content="#111111">
 <style>
-  .nav .nav-cta { display: flex !important; }
-  .nav .nav-cta .btn-light { display: inline-flex !important; }
-  .signup-bg { background: var(--soft); padding: 72px 0 96px; min-height: calc(100vh - 72px); }
-  .signup-head { text-align: center; margin-bottom: 36px; }
-  .signup-head .kicker { font-weight: 700; font-size: 16px; margin: 0 0 14px; }
-  .signup-head h1 { font: 800 clamp(34px, 4.4vw, 54px)/1.04 var(--display); letter-spacing: -.04em; margin: 0 auto; max-width: 22ch; text-wrap: balance; }
-  .panel { background: #fff; border-radius: 22px; box-shadow: 0 1px 2px rgba(11, 20, 36, .04), 0 20px 60px rgba(11, 20, 36, .06); max-width: 860px; margin: 0 auto; padding: 36px; }
-  .panel.narrow { max-width: 520px; }
-  .steps { display: flex; justify-content: center; gap: 8px; margin: 0 0 28px; list-style: none; padding: 0; }
-  .steps li { width: 34px; height: 5px; border-radius: 99px; background: var(--line); }
-  .steps li.on { background: var(--ink); }
+  :root {
+    --y: #fdb813; --y-soft: rgba(253, 184, 19, .14); --bg: #111; --panel: #000; --tile: #141416; --tile-2: #1d1d1f; --line: #2a2a2e;
+    --txt: #f2f2f2; --txt-2: #c9c9cd; --muted: #8d8d93; --ok: #2fd27a; --err: #ff6b6b;
+    --display: "Segoe UI Variable Display", "SF Pro Display", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --text: "Segoe UI Variable Text", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; color: var(--txt); font: 16px/1.55 var(--text); -webkit-font-smoothing: antialiased;
+    background: radial-gradient(120% 80% at 50% 0%, #3a3a3d 0%, #1c1c1e 50%, #111 100%) fixed; }
+  a { color: inherit; }
 
-  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .choice { position: relative; display: block; border: 2px solid var(--line); border-radius: 18px; padding: 28px 26px; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; }
-  .choice:hover { border-color: #c9d3e3; }
+  .shell { width: min(1280px, calc(100% - 40px)); margin: 24px auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; align-items: start;
+    background: var(--panel); border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); }
+
+  /* ================= Panneau visuel ================= */
+  .art { position: sticky; top: 34px; height: calc(100vh - 68px); min-height: 640px; max-height: 860px; border-radius: 30px; overflow: hidden; isolation: isolate;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 36px 40px 40px; background: #0b0716; perspective: 1200px; }
+  .art::before { content: ""; position: absolute; inset: -30%; z-index: -2;
+    background:
+      radial-gradient(40% 30% at 22% 28%, rgba(255,120,60,.55), transparent 70%),
+      radial-gradient(45% 35% at 30% 62%, rgba(30,110,140,.55), transparent 70%),
+      radial-gradient(35% 30% at 70% 80%, rgba(120,40,160,.55), transparent 70%),
+      radial-gradient(60% 50% at 80% 20%, rgba(60,40,140,.6), transparent 70%),
+      linear-gradient(160deg, #1a1030, #0a0614 60%, #150a1c);
+    filter: blur(28px) saturate(1.2); animation: drift 22s ease-in-out infinite alternate; }
+  .art::after { content: ""; position: absolute; inset: -20%; z-index: -1; mix-blend-mode: screen; opacity: .85;
+    background:
+      linear-gradient(118deg, transparent 47%, rgba(120,170,255,.5) 49.2%, rgba(255,120,220,.5) 50.4%, rgba(255,190,90,.55) 51.4%, transparent 53%),
+      linear-gradient(122deg, transparent 52%, rgba(90,120,255,.3) 53.5%, rgba(200,90,255,.28) 55%, transparent 57.5%);
+    filter: blur(3px); transform: translate(18%, -6%) rotate(-4deg); animation: sheen 16s ease-in-out infinite alternate; }
+  .art.biz::before { filter: blur(28px) saturate(1.2) hue-rotate(-28deg); }
+  @keyframes drift { to { transform: translate(4%, -3%) rotate(6deg) scale(1.05); } }
+  @keyframes sheen { to { transform: translate(12%, -2%) rotate(-1deg); } }
+
+  .art-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .mark { width: 60px; height: 60px; border-radius: 50%; background: #000; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.4); flex: none; }
+  .mark img { width: 28px; height: 28px; border-radius: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(10px); font-size: 13px; font-weight: 600; color: #fff; }
+  .pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(47,210,122,.6); animation: ping 1.8s infinite; }
+  @keyframes ping { 70% { box-shadow: 0 0 0 9px rgba(47,210,122,0); } 100% { box-shadow: 0 0 0 0 rgba(47,210,122,0); } }
+
+  /* Scène interactive : carte + orbite + notifications */
+  .stage { position: relative; flex: 1; display: grid; place-items: center; transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .25s ease-out; }
+  .orbit { position: absolute; width: min(430px, 84%); aspect-ratio: 1; border-radius: 50%; border: 1px dashed rgba(255,255,255,.14); animation: spin 38s linear infinite; }
+  .orbit span { position: absolute; left: 50%; top: 50%; margin: -17px 0 0 -54px; width: 108px; height: 34px; display: grid; place-items: center;
+    transform: rotate(var(--a)) translateY(calc(min(215px, 42vw) * -1)) rotate(calc(var(--a) * -1)); }
+  .orbit span b { animation: spin 38s linear infinite reverse; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; height: 34px; white-space: nowrap;
+    border-radius: 999px; font: 800 12px/1 var(--display); letter-spacing: .01em; color: #fff; background: rgba(15,15,20,.72); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(8px); }
+  .orbit span b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .pcard { position: relative; width: min(340px, 78%); aspect-ratio: 1.586; border-radius: 22px; padding: 22px 24px; color: #fff; transform: translateZ(60px);
+    background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.06)); border: 1px solid rgba(255,255,255,.25);
+    backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 30px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.35);
+    display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+  .pcard::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(260px circle at var(--mx, 30%) var(--my, 20%), rgba(255,255,255,.28), transparent 60%); }
+  .pcard .row { display: flex; justify-content: space-between; align-items: center; }
+  .pcard .brand { font: 800 18px/1 var(--display); letter-spacing: -.02em; }
+  .pcard .brand em { font-style: normal; color: var(--y); }
+  .pcard .kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+  .pcard small { display: block; font-size: 12px; opacity: .75; }
+  .pcard .amt { font: 800 clamp(24px, 2.6vw, 32px)/1.1 var(--display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .pcard .name { font: 600 14px/1.2 var(--text); letter-spacing: .04em; text-transform: uppercase; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .2s; }
+  .pcard .chipm { width: 38px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #f6d27a, #b98a22); box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+  .bars { display: none; align-items: flex-end; gap: 5px; height: 34px; }
+  .bars i { width: 9px; border-radius: 3px 3px 0 0; background: linear-gradient(var(--y), rgba(253,184,19,.35)); height: 0; transition: height .9s cubic-bezier(.2,.8,.2,1); }
+  .art.biz .bars { display: flex; }
+
+  .feed { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+  .note { position: absolute; display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 12px; border-radius: 16px; max-width: 290px;
+    background: rgba(12,12,16,.72); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(14px); box-shadow: 0 18px 40px rgba(0,0,0,.4);
+    opacity: 0; transform: translateY(14px) translateZ(70px) scale(.96); transition: opacity .5s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
+  .note.on { opacity: 1; transform: translateY(0) translateZ(70px) scale(1); }
+  .note .ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; flex: none; color: #000; background: var(--c, var(--y)); }
+  .note b { display: block; font: 700 14px/1.25 var(--display); color: #fff; }
+  .note span { font-size: 12.5px; color: var(--txt-2); }
+  .note.n0 { top: 10%; left: 0; } .note.n1 { bottom: 20%; right: 0; } .note.n2 { bottom: 7%; left: 2%; }
+
+  .tagline { color: #fff; font-weight: 300; font-size: clamp(30px, 3.6vw, 50px); line-height: 1.1; letter-spacing: -.015em; margin: 0; }
+  .tagline b { font-weight: 800; }
+  .rot { display: inline-grid; vertical-align: bottom; overflow: hidden; height: 1.12em; }
+  .rot b { grid-area: 1 / 1; color: var(--y); transform: translateY(105%); opacity: 0; transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .4s; }
+  .rot b.on { transform: none; opacity: 1; }
+  .rot b.out { transform: translateY(-105%); opacity: 0; }
+  .caption { margin: 14px 0 0; color: var(--txt-2); font-size: 15px; max-width: 46ch; min-height: 3.1em; transition: opacity .3s; }
+
+  /* ================= Panneau formulaire ================= */
+  .form-side { padding: 30px 46px 40px; min-height: calc(100vh - 68px); display: flex; flex-direction: column; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 34px; font-size: 14px; color: var(--txt-2); }
+  .topbar a { color: var(--y); font-weight: 800; text-decoration: none; }
+  .topbar a:hover { text-decoration: underline; }
+  .back-home { color: var(--txt-2) !important; font-weight: 600 !important; }
+  .progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 30px; padding: 0; list-style: none; }
+  .progress li { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .progress li::before { content: ""; display: block; height: 4px; border-radius: 99px; margin-bottom: 9px;
+    background: linear-gradient(90deg, var(--y) var(--p, 0%), var(--line) var(--p, 0%)); transition: --p .5s; }
+  .progress li.done { color: var(--txt-2); } .progress li.done::before { --p: 100%; }
+  .progress li.now { color: #fff; } .progress li.now::before { --p: 100%; background: linear-gradient(90deg, var(--y), #ffd666); box-shadow: 0 0 14px rgba(253,184,19,.5); }
+
+  .kicker { color: var(--y); font-weight: 800; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 10px; }
+  h1#headline { font: 700 clamp(30px, 3vw, 42px)/1.08 var(--display); letter-spacing: -.025em; margin: 0 0 10px; color: #fff; text-wrap: balance; }
+  .lead { color: var(--txt-2); margin: 0 0 28px; }
+  [data-step] { display: none; }
+  [data-step].on { display: block; animation: rise .45s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  .choices { display: grid; gap: 14px; }
+  .choice { position: relative; display: block; background: var(--tile); border: 1.5px solid var(--line); border-radius: 18px; padding: 20px 22px; cursor: pointer;
+    transition: border-color .2s, background .2s, transform .2s, box-shadow .2s; }
+  .choice:hover { border-color: #3d3d42; transform: translateY(-2px); }
   .choice input { position: absolute; opacity: 0; pointer-events: none; }
-  .choice:has(input:checked) { border-color: var(--ink); background: #fafbfd; box-shadow: 0 10px 30px rgba(11, 20, 36, .07); }
-  .choice:has(input:focus-visible) { outline: 3px solid rgba(0, 87, 217, .35); outline-offset: 3px; }
-  .choice .top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-  .radio { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #b8c1d1; flex: none; display: grid; place-items: center; transition: border-color .15s; }
-  .choice:has(input:checked) .radio { border-color: var(--blue); }
-  .choice:has(input:checked) .radio::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
-  .choice h2 { font: 800 28px/1.1 var(--display); letter-spacing: -.03em; margin: 0; }
-  .choice .ico { margin-left: auto; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: #e9f0ff; color: var(--blue); }
-  .choice.biz .ico { background: #fff6cc; color: #8a6d00; }
-  .choice p { color: var(--ink-2); margin: 0 0 14px; }
-  .choice ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-  .choice li { display: flex; gap: 10px; font-size: 15px; color: var(--ink-2); }
-  .choice li::before { content: ""; flex: none; width: 20px; height: 20px; border-radius: 50%; margin-top: 1px; background: #e9f0ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230057d9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 12px no-repeat; }
-  .actions { display: flex; justify-content: center; margin-top: 30px; }
+  .choice:has(input:checked) { border-color: var(--y); background: linear-gradient(180deg, rgba(253,184,19,.07), var(--tile)); box-shadow: 0 14px 34px rgba(0,0,0,.35); }
+  .choice:has(input:focus-visible) { outline: 3px solid rgba(253,184,19,.45); outline-offset: 3px; }
+  .choice .top { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .radio { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #55555c; flex: none; display: grid; place-items: center; transition: border-color .2s; }
+  .choice:has(input:checked) .radio { border-color: var(--y); }
+  .choice:has(input:checked) .radio::after { content: ""; width: 11px; height: 11px; border-radius: 50%; background: var(--y); animation: pop .25s ease; }
+  @keyframes pop { from { transform: scale(0); } }
+  .choice h2 { font: 700 22px/1.1 var(--display); letter-spacing: -.02em; margin: 0; color: #fff; }
+  .choice .ico { margin-left: auto; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--tile-2); color: var(--txt-2); transition: background .2s, color .2s; }
+  .choice:has(input:checked) .ico { background: var(--y); color: #000; }
+  .choice p { color: var(--txt-2); margin: 0 0 0 38px; font-size: 15px; }
+  .choice ul { list-style: none; padding: 0; margin: 0 0 0 38px; display: grid; gap: 8px; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .4s ease, opacity .3s, margin .3s; }
+  .choice:has(input:checked) ul { max-height: 220px; opacity: 1; margin-top: 14px; }
+  .choice li { display: flex; gap: 10px; font-size: 14.5px; color: var(--txt-2); }
+  .choice li::before { content: "✓"; flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 900; color: #000; background: var(--y); margin-top: 1px; }
 
-  .field { margin-bottom: 16px; }
-  .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--ink-2); }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #fff; }
   .field label small { font-weight: 500; color: var(--muted); }
-  .field input { width: 100%; font: 16px var(--text); padding: 15px 16px; border-radius: 12px; border: 1.5px solid #d6dce6; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
-  .field input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0, 87, 217, .12); }
-  .field .hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .field input { width: 100%; font: 16px var(--text); padding: 15px 17px; border-radius: 11px; border: 1.5px solid var(--tile-2); background: var(--tile-2); color: #fff; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .field input::placeholder { color: #707077; }
+  .field input:focus { outline: none; border-color: var(--y); box-shadow: 0 0 0 4px var(--y-soft); background: #232326; }
+  .field .hint { font-size: 13px; color: var(--muted); margin-top: 7px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .pw { position: relative; }
-  .pw button { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--blue); font: 600 14px var(--text); cursor: pointer; padding: 8px; }
-  .meter { height: 5px; border-radius: 99px; background: var(--line); margin-top: 8px; overflow: hidden; }
-  .meter i { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .2s, background .2s; }
-  .code-input { letter-spacing: 12px; text-align: center; font: 800 28px var(--display) !important; padding: 14px !important; }
-  .panel h2.step-title { font: 800 30px/1.1 var(--display); letter-spacing: -.03em; margin: 0 0 8px; }
-  .panel .step-sub { color: var(--ink-2); margin: 0 0 24px; }
-  .who { display: inline-flex; align-items: center; gap: 8px; background: var(--soft); border-radius: 999px; padding: 6px 6px 6px 14px; font-weight: 600; font-size: 14px; margin-bottom: 22px; }
-  .who button { border: 0; background: #fff; border-radius: 999px; padding: 6px 12px; font: 600 13px var(--text); cursor: pointer; color: var(--blue); }
+  .pw button { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--y); font: 700 14px var(--text); cursor: pointer; padding: 8px; }
+  .meter { height: 5px; border-radius: 99px; background: var(--line); margin-top: 9px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .25s, background .25s; }
+  .code-input { letter-spacing: 14px; text-align: center; font: 800 30px var(--display) !important; padding: 14px !important; }
+  .who { display: inline-flex; align-items: center; gap: 8px; background: var(--tile-2); border-radius: 999px; padding: 6px 6px 6px 16px; font-weight: 600; font-size: 14px; margin-bottom: 22px; max-width: 100%; }
+  .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who button { border: 0; background: #000; border-radius: 999px; padding: 6px 12px; font: 700 13px var(--text); cursor: pointer; color: var(--y); flex: none; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 11px; padding: 17px 26px; font: 800 17px/1 var(--text);
+    cursor: pointer; background: var(--y); color: #000; transition: transform .15s, box-shadow .2s, filter .15s; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(253,184,19,.28); }
+  .btn:disabled { opacity: .6; cursor: wait; transform: none; box-shadow: none; }
+  .btn .arr { transition: transform .2s; } .btn:hover .arr { transform: translateX(4px); }
   .full { width: 100%; }
-  .err { display: none; background: #fdecee; color: #a3121f; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
-  .err.on { display: block; }
-  .note { background: #fff6cc; color: #5c4a00; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
-  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--ink-2); margin: 6px 0 18px; }
-  .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue); }
-  .resend { background: none; border: 0; color: var(--blue); font: 600 14px var(--text); cursor: pointer; padding: 0; }
+  .actions { margin-top: 24px; }
+  .err { display: none; background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.35); color: #ffb3b3; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
+  .err.on { display: block; animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .sandbox { background: #2a2410; border: 1px solid #5a4a12; color: #f3e3b0; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--txt-2); margin: 6px 0 20px; cursor: pointer; }
+  .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--y); flex: none; }
+  .resend { background: none; border: 0; color: var(--y); font: 700 14px var(--text); cursor: pointer; padding: 0; }
   .resend:disabled { color: var(--muted); cursor: default; }
-  .hint-mail { font-size: 14px; color: var(--muted); background: var(--soft); border-radius: 12px; padding: 10px 14px; margin: -8px 0 18px; }
-  .alt { text-align: center; margin-top: 20px; font-size: 15px; color: var(--muted); }
-  .alt a { color: var(--blue); font-weight: 600; text-decoration: none; }
-  .divider { height: 1px; background: var(--line); margin: 8px 0 22px; }
-  [data-step] { display: none; }
-  [data-step].on { display: block; animation: fade .35s ease; }
-  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .hint-mail { font-size: 14px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: -8px 0 18px; }
+  .alt { text-align: center; margin-top: 20px; font-size: 15px; color: var(--txt-2); }
+  .alt a { color: var(--y); font-weight: 800; text-decoration: none; }
+  .divider { height: 1px; background: var(--line); margin: 6px 0 22px; }
+  .perks { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 0; padding: 0; list-style: none; }
+  .perks li { font-size: 13px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; }
+  .perks li b { color: #fff; }
+  .legal { margin-top: auto; padding-top: 30px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
 
-  .site-footer { background: #000; color: #fff; padding: 64px 0 48px; }
-  .site-footer .logo { color: #fff; font-size: 26px; }
-  .site-footer .logo b { color: #7fb0ff; }
-  .site-footer nav { display: flex; flex-wrap: wrap; gap: 10px 26px; margin: 28px 0 20px; padding-bottom: 20px; border-bottom: 1px solid #2a2a2a; }
-  .site-footer nav a { color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; }
-  .site-footer nav a:hover { text-decoration: underline; }
-  .site-footer p { color: #b9b9b9; font-size: 13px; line-height: 1.6; margin: 0; max-width: 90ch; }
-
-  @media (max-width: 760px) {
-    .signup-bg { padding: 40px 0 64px; }
-    .panel { padding: 24px 18px; border-radius: 18px; }
-    .choices, .row2 { grid-template-columns: 1fr; }
-    .choice { padding: 22px 20px; }
-    .actions .btn { width: 100%; }
+  @media (prefers-reduced-motion: reduce) {
+    .art::before, .art::after, .orbit, .orbit span b, .pill i { animation: none !important; }
+    .stage { transform: none !important; }
+    *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: 1fr; width: min(640px, calc(100% - 24px)); margin: 12px auto; border-radius: 28px; }
+    .art { position: relative; top: 0; height: auto; min-height: 0; max-height: none; padding: 22px; border-radius: 20px; }
+    .stage { min-height: 330px; margin: 4px 0 10px; }
+    .orbit { width: 270px; }
+    .orbit span { transform: rotate(var(--a)) translateY(-135px) rotate(calc(var(--a) * -1)); }
+    .orbit span b { height: 26px; padding: 0 9px; font-size: 10.5px; }
+    .pcard { width: min(250px, 74%); padding: 14px 16px; border-radius: 16px; transform: translateY(-14px); }
+    .pcard .amt { font-size: 22px; }
+    .note.n0, .note.n2 { display: none; }
+    .note { max-width: 250px; padding: 9px 12px 9px 9px; } .note .ic { width: 30px; height: 30px; }
+    .note.n1 { bottom: 14px; right: 0; }
+    .tagline { font-size: 26px; }
+    .caption { display: none; }
+    .progress li { font-size: 10.5px; letter-spacing: .04em; }
+    .form-side { padding: 26px 16px 30px; min-height: 0; }
+    .topbar { margin-bottom: 24px; }
+  }
+  @media (max-width: 520px) {
+    .row2 { grid-template-columns: 1fr; }
+    .art-top .pill { display: none; }
+    .choice p, .choice ul { margin-left: 0; }
   }
 </style>
 </head>
 <body>
-<div class="page">
-<header class="nav">
-  <div class="wrap">
-    <a class="logo" href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
-    <nav aria-label="Navigation principale">
-      <ul class="menu">
-        <li><a href="/#particuliers">Particuliers</a></li>
-        <li><a href="/#entreprises">Entreprises</a></li>
-        <li><a href="/docs">Développeurs</a></li>
-      </ul>
-    </nav>
-    <div class="nav-cta">
-      <a class="link-help" href="/#aide">Aide</a>
-      <a class="btn btn-light" href="/app">Se connecter</a>
-    </div>
-  </div>
-</header>
+<div class="shell">
 
-<main class="signup-bg">
-  <div class="wrap">
-    <div class="signup-head">
-      <p class="kicker">Ouvrir un compte Pay243</p>
-      <h1 id="headline">Payez, envoyez et encaissez en toute confiance.</h1>
+  <!-- ================= Visuel vivant ================= -->
+  <aside class="art" id="art" aria-hidden="true">
+    <div class="art-top">
+      <a class="mark" href="/" tabindex="-1"><img src="/favicon.png" alt=""></a>
+      <span class="pill"><i></i> Ouverture gratuite · environ 3 minutes</span>
     </div>
+
+    <div class="stage" id="stage">
+      <div class="orbit">
+        <span style="--a:0deg;--c:#e60000"><b>M-Pesa</b></span>
+        <span style="--a:72deg;--c:#ff3b3b"><b>Airtel Money</b></span>
+        <span style="--a:144deg;--c:#ff7900"><b>Orange Money</b></span>
+        <span style="--a:216deg;--c:#4f7cff"><b>Visa</b></span>
+        <span style="--a:288deg;--c:#ffb000"><b>Mastercard</b></span>
+      </div>
+
+      <div class="pcard" id="pcard">
+        <div class="row"><span class="brand">Pay<em>243</em></span><span class="kind" id="card-kind">Compte personnel</span></div>
+        <div class="row" style="align-items:flex-end">
+          <div><small id="card-label">Solde disponible</small><div class="amt" id="card-amt">0 FC</div></div>
+          <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="row"><span class="name" id="card-name">Votre nom</span><span class="chipm"></span></div>
+      </div>
+
+      <div class="feed" id="feed"></div>
+    </div>
+
+    <div>
+      <h2 class="tagline">Un seul compte pour<br><span class="rot" id="rot"></span></h2>
+      <p class="caption" id="caption"></p>
+    </div>
+  </aside>
+
+  <!-- ================= Formulaire ================= -->
+  <main class="form-side">
+    <div class="topbar">
+      <a href="/" class="back-home">← Accueil</a>
+      <span>Déjà membre ? <a href="/app">Se connecter</a></span>
+    </div>
+
+    <ol class="progress" id="progress" aria-label="Progression">
+      <li class="now">Type de compte</li><li>Email</li><li>Sécurité</li>
+    </ol>
+
+    <p class="kicker">Ouvrir un compte Pay243</p>
+    <h1 id="headline">Payez, envoyez et encaissez en toute confiance.</h1>
 
     <!-- Étape 1 : type de compte -->
-    <section class="panel on" data-step="1" aria-labelledby="headline">
-      <ol class="steps" aria-label="Étape 1 sur 3"><li class="on"></li><li></li><li></li></ol>
+    <section class="on" data-step="1" aria-labelledby="headline">
+      <p class="lead">Choisissez le compte qui vous ressemble. Vous pourrez passer en compte entreprise plus tard.</p>
       <form id="f-type">
         <div class="choices" role="radiogroup" aria-label="Type de compte">
           <label class="choice">
             <input type="radio" name="account_type" value="personal" checked>
             <div class="top"><span class="radio"></span><h2>Particulier</h2>
-              <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span></div>
+              <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span></div>
             <p>Envoyez, payez et gérez votre argent depuis une seule app sécurisée.</p>
             <ul>
               <li>Rechargez avec M-Pesa, Airtel Money, Orange Money ou votre carte</li>
@@ -132,10 +276,10 @@
               <li>Payez en ligne sans communiquer vos coordonnées</li>
             </ul>
           </label>
-          <label class="choice biz">
+          <label class="choice">
             <input type="radio" name="account_type" value="business">
             <div class="top"><span class="radio"></span><h2>Entreprise</h2>
-              <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M10 20v-6h4v6"/></svg></span></div>
+              <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M10 20v-6h4v6"/></svg></span></div>
             <p>Vendez en ligne, en boutique ou sur WhatsApp, et développez votre activité.</p>
             <ul>
               <li>Acceptez le wallet Pay243, le Mobile Money des trois opérateurs et les cartes</li>
@@ -144,31 +288,29 @@
             </ul>
           </label>
         </div>
-        <div class="actions"><button class="btn btn-dark btn-lg" style="min-width:220px">Commencer</button></div>
+        <div class="actions"><button class="btn full">Commencer <span class="arr">→</span></button></div>
       </form>
+      <ul class="perks">
+        <li><b>0 FC</b> pour ouvrir</li><li><b>CDF</b> et <b>USD</b></li><li>3 opérateurs Mobile Money</li><li>Visa · Mastercard</li>
+      </ul>
     </section>
 
     <!-- Étape 2 : adresse email -->
-    <section class="panel narrow" data-step="2">
-      <ol class="steps" aria-label="Étape 2 sur 3"><li class="on"></li><li class="on"></li><li></li></ol>
-      <h2 class="step-title">Quelle est votre adresse email ?</h2>
-      <p class="step-sub">Elle vous servira à vous connecter. Nous vous envoyons un code pour la vérifier.</p>
+    <section data-step="2">
+      <p class="lead">Elle vous servira à vous connecter. Nous vous envoyons un code pour la vérifier.</p>
       <div class="err" id="err2" role="alert"></div>
       <form id="f-email" novalidate>
         <div class="field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="vous@exemple.com"></div>
-        <button class="btn btn-dark btn-lg full">Continuer</button>
+        <button class="btn full">Continuer <span class="arr">→</span></button>
       </form>
       <p class="alt"><button type="button" class="resend" data-back="1">← Changer de type de compte</button></p>
-      <p class="alt">Vous avez déjà un compte ? <a href="/app">Se connecter</a></p>
     </section>
 
     <!-- Étape 3 : vérification + informations -->
-    <section class="panel narrow" data-step="3">
-      <ol class="steps" aria-label="Étape 3 sur 3"><li class="on"></li><li class="on"></li><li class="on"></li></ol>
-      <h2 class="step-title">Vérifiez votre email</h2>
-      <p class="step-sub">Saisissez le code à 6 chiffres envoyé à :</p>
+    <section data-step="3">
+      <p class="lead" style="margin-bottom:12px">Saisissez le code à 6 chiffres envoyé à :</p>
       <div class="who"><span id="who-email"></span><button type="button" data-back="2">Modifier</button></div>
-      <div class="note" id="sandbox-note" hidden></div>
+      <div class="sandbox" id="sandbox-note" hidden></div>
       <p class="hint-mail" id="mail-hint" hidden>Rien reçu après une minute ? Regardez dans vos <b>courriers indésirables</b> ou <b>Promotions</b>, et vérifiez l'adresse ci-dessus. L'expéditeur est <b>no-reply@pay243.com</b>.</p>
       <div class="err" id="err3" role="alert"></div>
       <form id="f-account" novalidate>
@@ -191,21 +333,12 @@
         </div>
         <label class="consent"><input type="checkbox" id="consent" required>
           <span>J'accepte les conditions d'utilisation et la politique de confidentialité de Pay243, et je confirme avoir au moins 18 ans.</span></label>
-        <button class="btn btn-dark btn-lg full" id="create">Créer mon compte</button>
+        <button class="btn full" id="create">Créer mon compte</button>
       </form>
     </section>
-  </div>
-</main>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <a class="logo on-dark" href="/"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
-    <nav aria-label="Liens utiles">
-      <a href="/#aide">Aide</a><a href="/#particuliers">Particuliers</a><a href="/#entreprises">Entreprises</a><a href="/#securite">Sécurité</a><a href="/docs">Développeurs</a><a href="/app">Se connecter</a>
-    </nav>
-    <p>© <span id="year"></span> Pay243 — Kinshasa, République démocratique du Congo. Version de démonstration : aucune transaction réelle n'est effectuée. Les services de monnaie électronique seront proposés dans le cadre réglementaire de la Banque Centrale du Congo.</p>
-  </div>
-</footer>
+    <p class="legal">© <span id="year"></span> Pay243 — Kinshasa, République démocratique du Congo. Les services de monnaie électronique seront proposés dans le cadre réglementaire de la Banque Centrale du Congo.</p>
+  </main>
 </div>
 
 <script>
@@ -221,6 +354,7 @@ const DEVICE_ID = (() => {
   try { let d = localStorage.getItem('pay243_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('pay243_device', d); } return d; }
   catch { return null; }
 })();
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 async function api(path, body) {
   const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -228,28 +362,144 @@ async function api(path, body) {
   if (!r.ok) throw Object.assign(new Error(j.error?.message || 'Erreur réseau. Réessayez.'), { code: j.error?.code, details: j.error?.details });
   return j;
 }
-const showErr = (id, msg) => { const e = $(id); e.textContent = msg || ''; e.classList.toggle('on', !!msg); };
+const showErr = (id, msg) => { const e = $(id); e.classList.remove('on'); void e.offsetWidth; e.textContent = msg || ''; e.classList.toggle('on', !!msg); };
 async function busy(btn, label, fn) {
-  const old = btn.textContent; btn.disabled = true; btn.textContent = label;
-  try { await fn(); } finally { btn.disabled = false; btn.textContent = old; }
+  const old = btn.innerHTML; btn.disabled = true; btn.textContent = label;
+  try { await fn(); } finally { btn.disabled = false; btn.innerHTML = old; }
 }
 
+// =====================================================================
+//  Scène vivante (panneau de gauche) — purement décorative
+// =====================================================================
+const SCENES = {
+  personal: {
+    kind: 'Compte personnel', label: 'Solde disponible', amount: 250000, currency: 'CDF',
+    words: ['payer en ligne', 'envoyer à vos proches', 'recharger en Mobile Money', 'gérer CDF et dollars'],
+    notes: [
+      { ic: '↘', c: '#2fd27a', t: '+25 000 FC reçus', s: 'De Grace · à l’instant' },
+      { ic: 'M', c: '#ff4d4d', t: 'Recharge M-Pesa confirmée', s: '+50 000 FC · il y a 2 min' },
+      { ic: '↗', c: '#fdb813', t: 'Envoyé à Papa · 40 $', s: 'Gratuit et instantané' },
+      { ic: '✓', c: '#7aa7ff', t: 'Paiement en ligne réussi', s: 'Sans partager votre carte' },
+      { ic: 'O', c: '#ff8a1f', t: 'Retrait Orange Money', s: '20 000 FC · en cours' },
+    ],
+  },
+  business: {
+    kind: 'Compte entreprise', label: 'Ventes du jour', amount: 124580, currency: 'USD',
+    words: ['encaisser partout', 'vendre sur WhatsApp', 'accepter Mobile Money', 'intégrer notre API'],
+    notes: [
+      { ic: '$', c: '#2fd27a', t: 'Nouvelle vente · 45,00 $', s: 'Wallet Pay243 · à l’instant' },
+      { ic: '🔗', c: '#fdb813', t: 'Lien de paiement payé', s: 'Commande n°1024 · Airtel Money' },
+      { ic: 'M', c: '#ff4d4d', t: 'Paiement M-Pesa reçu', s: '+85 000 FC · il y a 1 min' },
+      { ic: '↘', c: '#7aa7ff', t: 'Ventes versées sur le wallet', s: '312,40 $ · instantané' },
+      { ic: '★', c: '#ff8a1f', t: 'Nouveau client fidèle', s: '3ᵉ achat ce mois-ci' },
+    ],
+  },
+};
+const CAPTIONS = {
+  1: 'Particulier ou entreprise : un compte gratuit, en francs congolais et en dollars, relié aux trois opérateurs Mobile Money.',
+  2: 'Votre email sert à vous connecter et à recevoir les confirmations de vos opérations.',
+  3: 'Mot de passe pour vous connecter, PIN pour valider chaque paiement : votre argent reste protégé.',
+};
+const fmtMoney = (minor, cur) => cur === 'USD'
+  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  : Math.round(minor).toLocaleString('fr-FR') + ' FC';
+
+let countRaf;
+function countTo(target, cur) {
+  cancelAnimationFrame(countRaf);
+  const el = $('#card-amt'); const value = cur === 'USD' ? target : target;
+  if (REDUCED) { el.textContent = fmtMoney(value, cur); return; }
+  const t0 = performance.now(); const dur = 1400;
+  const step = (t) => { const k = Math.min(1, (t - t0) / dur); const e = 1 - Math.pow(1 - k, 3); el.textContent = fmtMoney(value * e, cur); if (k < 1) countRaf = requestAnimationFrame(step); };
+  countRaf = requestAnimationFrame(step);
+}
+
+// Mots qui défilent dans l'accroche
+let wordTimer; let wordIdx = 0;
+function setWords(words) {
+  const rot = $('#rot'); rot.innerHTML = words.map((w) => `<b>${w}</b>`).join('');
+  const items = [...rot.children]; wordIdx = 0; items[0].classList.add('on');
+  clearInterval(wordTimer);
+  if (REDUCED) return;
+  wordTimer = setInterval(() => {
+    const cur = items[wordIdx]; cur.classList.remove('on'); cur.classList.add('out');
+    setTimeout(() => cur.classList.remove('out'), 600);
+    wordIdx = (wordIdx + 1) % items.length; items[wordIdx].classList.add('on');
+  }, 2600);
+}
+
+// Notifications qui apparaissent tour à tour
+let feedTimer; let feedIdx = 0;
+function setFeed(notes) {
+  const feed = $('#feed');
+  feed.innerHTML = [0, 1, 2].map((i) => `<div class="note n${i}"></div>`).join('');
+  const slots = [...feed.children]; feedIdx = 0;
+  const fill = (slot, n) => { slot.style.setProperty('--c', n.c); slot.innerHTML = `<span class="ic">${n.ic}</span><div><b>${n.t}</b><span>${n.s}</span></div>`; };
+  slots.forEach((s, i) => { fill(s, notes[i % notes.length]); setTimeout(() => s.classList.add('on'), 300 + i * 450); });
+  feedIdx = slots.length;
+  clearInterval(feedTimer);
+  if (REDUCED) return;
+  let slotIdx = 0;
+  feedTimer = setInterval(() => {
+    const s = slots[slotIdx]; s.classList.remove('on');
+    setTimeout(() => { fill(s, notes[feedIdx++ % notes.length]); s.classList.add('on'); }, 450);
+    slotIdx = (slotIdx + 1) % slots.length;
+  }, 2300);
+}
+
+function renderScene(type) {
+  const sc = SCENES[type];
+  $('#art').classList.toggle('biz', type === 'business');
+  $('#card-kind').textContent = sc.kind; $('#card-label').textContent = sc.label;
+  countTo(sc.amount, sc.currency);
+  setWords(sc.words); setFeed(sc.notes);
+  $$('#bars i').forEach((b, i) => { b.style.height = '0'; setTimeout(() => { b.style.height = `${[38, 55, 46, 70, 62, 84, 100][i]}%`; }, 120 + i * 70); });
+  updateCardName();
+}
+function updateCardName() {
+  const biz = state.type === 'business' && $('#business_name').value.trim();
+  const n = biz || $('#full_name').value.trim() || (state.email ? state.email.split('@')[0] : '') || 'Votre nom';
+  $('#card-name').textContent = n;
+}
+['#full_name', '#business_name'].forEach((s) => $(s).addEventListener('input', updateCardName));
+
+// Carte qui s'incline sous la souris
+if (!REDUCED) {
+  const art = $('#art'); const stage = $('#stage'); const card = $('#pcard');
+  art.addEventListener('pointermove', (e) => {
+    const r = art.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5; const y = (e.clientY - r.top) / r.height - .5;
+    stage.style.setProperty('--ry', `${x * 16}deg`); stage.style.setProperty('--rx', `${-y * 12}deg`);
+    const c = card.getBoundingClientRect();
+    card.style.setProperty('--mx', `${e.clientX - c.left}px`); card.style.setProperty('--my', `${e.clientY - c.top}px`);
+  });
+  art.addEventListener('pointerleave', () => { stage.style.setProperty('--ry', '0deg'); stage.style.setProperty('--rx', '0deg'); });
+}
+
+// =====================================================================
+//  Parcours d'inscription
+// =====================================================================
 const HEADLINES = {
   1: 'Payez, envoyez et encaissez en toute confiance.',
   personal: 'Créez votre compte personnel.',
   business: 'Créez votre compte entreprise.',
 };
+const STEP_TITLES = { 2: 'Quelle est votre adresse email ?', 3: 'Vérifiez votre email et sécurisez votre compte.' };
 function go(step) {
   $$('[data-step]').forEach((s) => s.classList.toggle('on', s.dataset.step === String(step)));
-  $('#headline').textContent = step === 1 ? HEADLINES[1] : HEADLINES[state.type];
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('#headline').textContent = step === 1 ? HEADLINES[1] : STEP_TITLES[step] || HEADLINES[state.type];
+  $('.kicker').textContent = step === 1 ? 'Ouvrir un compte Pay243' : HEADLINES[state.type].replace('.', '');
+  $$('#progress li').forEach((li, i) => { li.classList.toggle('done', i + 1 < step); li.classList.toggle('now', i + 1 === step); });
+  const cap = $('#caption'); cap.style.opacity = 0; setTimeout(() => { cap.textContent = CAPTIONS[step]; cap.style.opacity = 1; }, 200);
+  window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
   const focus = { 2: '#email', 3: '#otp' }[step];
-  if (focus) setTimeout(() => $(focus).focus(), 50);
+  if (focus) setTimeout(() => $(focus).focus({ preventScroll: true }), 60);
 }
 $$('[data-back]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.back))));
 
 // Étape 1
 $(`input[name=account_type][value=${state.type}]`).checked = true;
+$$('input[name=account_type]').forEach((r) => r.addEventListener('change', () => { state.type = r.value; renderScene(state.type); }));
 $('#f-type').addEventListener('submit', (e) => {
   e.preventDefault();
   state.type = new FormData(e.target).get('account_type');
@@ -280,10 +530,10 @@ $('#f-email').addEventListener('submit', (e) => {
   const email = $('#email').value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return showErr('#err2', 'Saisissez une adresse email valide, par exemple vous@exemple.com.');
   busy(e.submitter, 'Envoi du code…', async () => {
-    try { state.email = email; await sendCode(); go(3); }
+    try { state.email = email; updateCardName(); await sendCode(); go(3); }
     catch (x) {
       if (x.code === 'otp_too_soon' && $('#who-email').textContent === email.toLowerCase()) return go(3);
-      showErr('#err2', x.code === 'email_taken' ? `${x.message}` : x.message);
+      showErr('#err2', x.message);
     }
   });
 });
@@ -303,7 +553,7 @@ $('#password').addEventListener('input', (e) => {
   const score = [v.length >= 8, v.length >= 12, /[a-z]/.test(v) && /[A-Z]/.test(v), /\d/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
   const m = $('#meter');
   m.style.width = `${(score / 5) * 100}%`;
-  m.style.background = score <= 2 ? '#ce1021' : score === 3 ? '#e0a100' : '#12a150';
+  m.style.background = score <= 2 ? '#ff6b6b' : score === 3 ? '#fdb813' : '#2fd27a';
   $('#pw-hint').textContent = !v ? '8 caractères minimum. Mélangez lettres, chiffres et symboles.' : score <= 2 ? 'Mot de passe faible.' : score === 3 ? 'Mot de passe correct.' : 'Mot de passe solide.';
 });
 $('#otp').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
@@ -338,6 +588,8 @@ $('#f-account').addEventListener('submit', (e) => {
 });
 
 document.getElementById('year').textContent = new Date().getFullYear();
+renderScene(state.type);
+$('#caption').textContent = CAPTIONS[1];
 </script>
 </body>
 </html>
