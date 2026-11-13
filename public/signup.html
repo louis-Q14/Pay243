@@ -44,8 +44,8 @@
   @keyframes sheen { to { transform: translate(12%, -2%) rotate(-1deg); } }
 
   .art-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .mark { width: 60px; height: 60px; border-radius: 50%; background: #000; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.4); flex: none; }
-  .mark img { width: 28px; height: 28px; border-radius: 4px; }
+  .mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.4); flex: none; }
+  .mark img { height: 32px; width: auto; display: block; }
   .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.12);
     backdrop-filter: blur(10px); font-size: 13px; font-weight: 600; color: #fff; }
   .pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(47,210,122,.6); animation: ping 1.8s infinite; }
@@ -208,7 +208,7 @@
   @media (max-width: 520px) {
     .shell { width: calc(100% - 16px); margin: 8px auto; padding: 6px; border-radius: 24px; gap: 6px; }
     .art { padding: 14px 16px 16px; border-radius: 18px; }
-    .mark { width: 42px; height: 42px; } .mark img { width: 20px; height: 20px; }
+    .mark { padding: 6px 9px; border-radius: 11px; } .mark img { height: 22px; }
     .stage { min-height: 200px; }
     .orbit { width: 190px; }
     .orbit span { transform: rotate(var(--a)) translateY(-95px) rotate(calc(var(--a) * -1)); }
@@ -233,7 +233,7 @@
   <!-- ================= Visuel vivant ================= -->
   <aside class="art" id="art" aria-hidden="true">
     <div class="art-top">
-      <a class="mark" href="/" tabindex="-1"><img src="/favicon.png" alt=""></a>
+      <a class="mark" href="/" tabindex="-1"><img src="/assets/logo.png" alt="Pay243"></a>
       <span class="pill"><i></i> Gratuit · 3 min</span>
     </div>
 

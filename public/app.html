@@ -90,8 +90,8 @@
   @keyframes drift { to { transform: translate(4%, -3%) rotate(6deg) scale(1.05); } }
   @keyframes sheen { to { transform: translate(14%, -2%) rotate(-1deg); } }
   @media (prefers-reduced-motion: reduce) { .login-art::before, .login-art::after { animation: none; } }
-  .login-mark { width: 64px; height: 64px; border-radius: 50%; background: #000; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
-  .login-mark img { width: 30px; height: 30px; border-radius: 4px; }
+  .login-mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+  .login-mark img { height: 34px; width: auto; display: block; }
   .login-art h1 { color: #fff; font-weight: 300; font-size: clamp(32px, 4.2vw, 58px); line-height: 1.12; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
   .login-art h1 b { font-weight: 800; }
   .login-panel { display: grid; place-items: center; padding: 40px 28px; color: #f2f2f2; }
@@ -117,8 +117,8 @@
     .login-art { min-height: 0; border-radius: 20px; padding: 16px 18px; flex-direction: row; align-items: center; gap: 14px; justify-content: flex-start; }
     .login-art h1 { font-size: 21px; line-height: 1.15; }
     .login-art h1 br { display: none; }
-    .login-mark { width: 44px; height: 44px; flex: none; }
-    .login-mark img { width: 22px; height: 22px; }
+    .login-mark { flex: none; padding: 6px 9px; border-radius: 11px; }
+    .login-mark img { height: 24px; }
     .login-panel { padding: 22px 14px 24px; }
     .login-panel h2 { font-size: 26px; margin-bottom: 4px; }
     .login-panel .sub { font-size: 14px; margin-bottom: 14px; }
@@ -141,7 +141,7 @@
 <main id="auth" class="login-stage">
  <div class="login-shell">
   <aside class="login-art" aria-hidden="true">
-    <a href="/" class="login-mark" tabindex="-1"><img src="/favicon.png" alt=""></a>
+    <a href="/" class="login-mark" tabindex="-1"><img src="/assets/logo.png" alt="Pay243"></a>
     <h1>Payez, encaissez, <br>envoyez. <b>Simplement.</b></h1>
   </aside>
   <div class="login-panel">
