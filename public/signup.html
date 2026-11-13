@@ -44,8 +44,8 @@
   @keyframes sheen { to { transform: translate(12%, -2%) rotate(-1deg); } }
 
   .art-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.4); flex: none; }
-  .mark img { height: 32px; width: auto; display: block; }
+  .mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; flex: none; }
+  .mark img { height: 36px; width: auto; display: block; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .55)) drop-shadow(0 4px 14px rgba(0, 0, 0, .35)); }
   .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.12);
     backdrop-filter: blur(10px); font-size: 13px; font-weight: 600; color: #fff; }
   .pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(47,210,122,.6); animation: ping 1.8s infinite; }
@@ -208,7 +208,7 @@
   @media (max-width: 520px) {
     .shell { width: calc(100% - 16px); margin: 8px auto; padding: 6px; border-radius: 24px; gap: 6px; }
     .art { padding: 14px 16px 16px; border-radius: 18px; }
-    .mark { padding: 6px 9px; border-radius: 11px; } .mark img { height: 22px; }
+    .mark img { height: 26px; }
     .stage { min-height: 200px; }
     .orbit { width: 190px; }
     .orbit span { transform: rotate(var(--a)) translateY(-95px) rotate(calc(var(--a) * -1)); }

@@ -69,6 +69,12 @@
   /* ---------- Écran de connexion ---------- */
   body:has(#auth:not(.hidden)) { background: radial-gradient(120% 90% at 50% 0%, #3a3a3d 0%, #1c1c1e 55%, #111 100%); min-height: 100vh; }
   body:has(#auth:not(.hidden)) header.top { display: none; }
+  header.top { background: #0057d9; border-bottom: 0; box-shadow: 0 2px 10px rgba(0, 40, 110, .18); }
+  header.top #who, header.top #who a, header.top #who .me { color: #fff; }
+  header.top #who .sep { color: rgba(255, 255, 255, .55); }
+  header.top #who .who-set, header.top #who #logout { color: rgba(255, 255, 255, .88); }
+  header.top #who a:hover, header.top #who #logout:hover { color: #fff; text-decoration: underline; }
+  header.top #who .av { background-color: #0a2a66; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
   #auth.login-stage { max-width: none; margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; box-sizing: border-box; }
   .login-shell { width: min(1180px, 100%); min-height: min(720px, calc(100vh - 64px)); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
     background: #000; border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04); box-sizing: border-box; }
@@ -90,8 +96,8 @@
   @keyframes drift { to { transform: translate(4%, -3%) rotate(6deg) scale(1.05); } }
   @keyframes sheen { to { transform: translate(14%, -2%) rotate(-1deg); } }
   @media (prefers-reduced-motion: reduce) { .login-art::before, .login-art::after { animation: none; } }
-  .login-mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
-  .login-mark img { height: 34px; width: auto; display: block; }
+  .login-mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; }
+  .login-mark img { height: 38px; width: auto; display: block; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .55)) drop-shadow(0 4px 14px rgba(0, 0, 0, .35)); }
   .login-art h1 { color: #fff; font-weight: 300; font-size: clamp(32px, 4.2vw, 58px); line-height: 1.12; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
   .login-art h1 b { font-weight: 800; }
   .login-panel { display: grid; place-items: center; padding: 40px 28px; color: #f2f2f2; }
@@ -117,8 +123,8 @@
     .login-art { min-height: 0; border-radius: 20px; padding: 16px 18px; flex-direction: row; align-items: center; gap: 14px; justify-content: flex-start; }
     .login-art h1 { font-size: 21px; line-height: 1.15; }
     .login-art h1 br { display: none; }
-    .login-mark { flex: none; padding: 6px 9px; border-radius: 11px; }
-    .login-mark img { height: 24px; }
+    .login-mark { flex: none; }
+    .login-mark img { height: 28px; }
     .login-panel { padding: 22px 14px 24px; }
     .login-panel h2 { font-size: 26px; margin-bottom: 4px; }
     .login-panel .sub { font-size: 14px; margin-bottom: 14px; }
