@@ -134,6 +134,80 @@
     .login-panel button.full { margin-top: 18px; padding: 13px; font-size: 16px; }
     .login-panel .alt { margin-top: 16px; font-size: 14px; }
   }
+
+  /* ================= Mes cartes : style wallet ================= */
+  .cw { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 22px; align-items: start; }
+  .cw-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 12px; }
+  .cw-head h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+  .cw-head small { color: var(--muted); font-weight: 600; }
+  .cw-add { border: 0; border-radius: 999px; padding: 9px 16px; font: 700 14px/1 inherit; background: var(--ink); color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .cw-add:disabled { opacity: .45; cursor: default; }
+  .wallet { background: radial-gradient(120% 70% at 50% 0, #1d2433 0, #07090f 70%); border-radius: 28px; padding: 18px 16px 22px; box-shadow: 0 24px 60px rgba(7, 9, 15, .28); min-height: 300px; }
+  .wallet .hint { color: #8d97aa; font-size: 12.5px; text-align: center; margin: 14px 0 0; }
+  .stack { display: flex; flex-direction: column; }
+  /* une carte : format bancaire (85,6 × 54 mm) */
+  .wcard { --c1: #0a3cc2; --c2: #2f7bff; --ink2: #8fd3ff; position: relative; width: 100%; aspect-ratio: 1.586; border-radius: 18px; padding: 16px 18px; color: #fff; background: linear-gradient(140deg, var(--c1), var(--c2)); box-shadow: 0 -1px 0 rgba(255, 255, 255, .18) inset, 0 10px 26px rgba(0, 0, 0, .35); overflow: hidden; cursor: pointer; border: 0; text-align: left; font: inherit; display: block; transition: transform .25s ease, box-shadow .25s ease, filter .25s; isolation: isolate; }
+  .wcard::before { content: ""; position: absolute; inset: -40% -20% auto auto; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .22), transparent 65%); z-index: -1; }
+  .wcard::after { content: ""; position: absolute; inset: auto auto -55% -25%; width: 80%; aspect-ratio: 1; border-radius: 50%; border: 22px solid rgba(255, 255, 255, .07); z-index: -1; }
+  .wcard:hover { transform: translateY(-4px); }
+  .wcard:focus-visible { outline: 3px solid #f7d618; outline-offset: 3px; }
+  .wcard .big { position: absolute; top: 12px; left: 18px; right: 90px; font: 900 40px/1 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; letter-spacing: -.045em; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: clip; }
+  .wcard .tag { position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: rgba(255, 255, 255, .16); padding: 4px 9px; border-radius: 99px; }
+  .wcard .tag.exp { background: #ffd2d2; color: #9b1020; }
+  .wcard .chip { position: absolute; left: 18px; top: 47%; width: 40px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, #f8e29a, #c9a24a); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+  .wcard .chip::before { content: ""; position: absolute; inset: 9px 0; border-top: 1px solid rgba(0, 0, 0, .25); border-bottom: 1px solid rgba(0, 0, 0, .25); }
+  .wcard .num { position: absolute; left: 18px; bottom: 38px; font: 600 18px/1 ui-monospace, "Cascadia Mono", Menlo, monospace; letter-spacing: .08em; }
+  .wcard .who { position: absolute; left: 18px; bottom: 16px; right: 110px; display: flex; gap: 14px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .9; white-space: nowrap; overflow: hidden; }
+  .wcard .who span:first-child { overflow: hidden; text-overflow: ellipsis; }
+  .wcard .net { position: absolute; right: 18px; bottom: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .wcard .net small { font-size: 11px; font-weight: 700; opacity: .9; }
+  .mc { display: flex; } .mc i { width: 34px; height: 34px; border-radius: 50%; background: #eb001b; } .mc i + i { background: #f79e1b; margin-left: -13px; mix-blend-mode: normal; opacity: .95; }
+  .visa { font: italic 900 26px/1 Arial, sans-serif; letter-spacing: -.02em; }
+  .amex { font: 900 15px/1 Arial, sans-serif; letter-spacing: .04em; border: 2px solid #fff; padding: 4px 6px; border-radius: 4px; }
+  /* thèmes vifs */
+  .wcard.t0 { --c1: #0a3cc2; --c2: #2f7bff; --ink2: #8fd3ff; }
+  .wcard.t1 { --c1: #ff4b2b; --c2: #e0162b; --ink2: #fff; }
+  .wcard.t2 { --c1: #ff8a00; --c2: #ff5e3a; --ink2: #fff3c4; }
+  .wcard.t3 { --c1: #0b8f63; --c2: #1fc287; --ink2: #c9ffe7; }
+  .wcard.t4 { --c1: #5b21d6; --c2: #a347ff; --ink2: #f3d9ff; }
+  .wcard.t5 { --c1: #111827; --c2: #2b3445; --ink2: #f7d618; }
+  /* pile : chaque carte ne laisse voir que son bandeau supérieur, la dernière est entière */
+  .stack .wcard + .wcard { margin-top: calc(-63.05% + 62px); }
+  .stack.focus .wcard.sel { margin-bottom: 18px; transform: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, .5), 0 18px 40px rgba(0, 0, 0, .5); }
+  .stack.focus .wcard.sel + .wcard { margin-top: 0; }
+  .stack.focus .wcard:not(.sel) { filter: brightness(.82); }
+  .stack.focus .wcard:not(.sel) + .wcard:not(.sel) { margin-top: calc(-63.05% + 52px); }
+  .wcard.ghost { cursor: default; background: transparent; border: 2px dashed #3a4357; box-shadow: none; display: grid; place-items: center; text-align: center; color: #aab4c8; padding: 24px; }
+  .wcard.ghost::before, .wcard.ghost::after { display: none; }
+  .wcard.ghost:hover { transform: none; }
+  .wcard.ghost b { display: block; color: #fff; font-size: 17px; margin-bottom: 4px; }
+  /* panneau de droite */
+  .cw-panel { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 22px; }
+  .cw-panel h3 { margin: 0 0 4px; font-size: 19px; letter-spacing: -.02em; }
+  .cw-panel .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .cw-panel .preview { max-width: 340px; margin: 4px 0 16px; pointer-events: none; }
+  .cw-panel dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0 0 18px; font-size: 14.5px; }
+  .cw-panel dt { color: var(--muted); } .cw-panel dd { margin: 0; font-weight: 700; }
+  .cw-panel .acts { display: grid; gap: 10px; }
+  .cw-panel .acts button { margin: 0; }
+  .btn-del { background: #fff0f0 !important; color: #b3121f !important; }
+  .btn-del.armed { background: #b3121f !important; color: #fff !important; }
+  .test-note { font-size: 12.5px; color: var(--muted); background: var(--bg); border-radius: 12px; padding: 10px 12px; margin: 14px 0 0; }
+  .test-note code { font-size: 12px; }
+  @media (max-width: 860px) { .cw { grid-template-columns: minmax(0, 1fr); } .wallet { max-width: 460px; width: 100%; margin: 0 auto; } }
+  @media (max-width: 560px) {
+    .wallet { border-radius: 22px; padding: 14px 12px 18px; }
+    .wcard { border-radius: 14px; padding: 13px 14px; }
+    .wcard .big { top: 10px; left: 14px; font-size: 30px; } .wcard .tag { top: 12px; right: 14px; }
+    .wcard .num { font-size: 15px; bottom: 32px; left: 14px; } .wcard .chip { left: 14px; width: 34px; height: 26px; }
+    .wcard .who { left: 14px; bottom: 13px; font-size: 10px; } .wcard .net { right: 14px; bottom: 11px; }
+    .mc i { width: 28px; height: 28px; } .mc i + i { margin-left: -11px; } .visa { font-size: 22px; }
+    .stack .wcard + .wcard { margin-top: calc(-63.05% + 50px); }
+    .stack.focus .wcard:not(.sel) + .wcard:not(.sel) { margin-top: calc(-63.05% + 44px); }
+    .cw-panel { padding: 18px 16px; border-radius: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
+  ::view-transition-group(*) { animation-duration: .35s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
 </style>
 </head>
 <body>
@@ -212,22 +286,12 @@
   </section>
 
   <section id="tab-cards" class="hidden">
-    <div class="card">
-      <h2>Cartes enregistrées</h2>
-      <ul class="list" id="cards"></ul>
-    </div>
-    <div class="card">
-      <h2>Ajouter une carte Visa / Mastercard</h2>
-      <p class="notice">En production, ces champs sont fournis par le processeur de cartes (champs hébergés PCI DSS) : le numéro ne passe jamais par les serveurs Pay243. Cartes de test : <code>4242 4242 4242 4242</code> (acceptée), <code>4000 0000 0000 0002</code> (refusée).</p>
-      <form id="f-card">
-        <label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number" required>
-        <div class="row">
-          <div><label>Mois</label><input name="exp_month" placeholder="12" required></div>
-          <div><label>Année</label><input name="exp_year" placeholder="2030" required></div>
-          <div><label>CVC</label><input name="cvc" placeholder="123" required></div>
-        </div>
-        <button class="full">Enregistrer la carte</button>
-      </form>
+    <div class="cw">
+      <div>
+        <div class="cw-head"><h2>Mes cartes <small id="cw-count"></small></h2><button class="cw-add" type="button" id="cw-add">＋ Ajouter</button></div>
+        <div class="wallet"><div class="stack" id="stack"></div><p class="hint" id="cw-hint"></p></div>
+      </div>
+      <div class="cw-panel" id="cw-panel"></div>
     </div>
   </section>
 
@@ -630,17 +694,109 @@ function startSupportPolling() {
 }
 
 // ---------------- Cartes ----------------
+// ---------------- Mes cartes (style wallet) ----------------
+const CW = { sel: null, adding: false };
+const NET_LABEL = { visa: 'Visa', mastercard: 'Mastercard', amex: 'American Express', unknown: 'Carte' };
+const brandOfNumber = (n) => (/^4/.test(n) ? 'visa' : /^(5[1-5]|2[2-7])/.test(n) ? 'mastercard' : /^3[47]/.test(n) ? 'amex' : 'unknown');
+/** Thème stable pour chaque carte (même couleur à chaque visite). */
+const themeOf = (id) => { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return 't' + (h % 6); };
+const netMark = (b) => (b === 'mastercard' ? '<span class="mc" aria-hidden="true"><i></i><i></i></span>' : b === 'visa' ? '<span class="visa">VISA</span>' : b === 'amex' ? '<span class="amex">AMEX</span>' : '');
+const expired = (c) => { const d = new Date(); return +c.exp_year < d.getFullYear() || (+c.exp_year === d.getFullYear() && +c.exp_month < d.getMonth() + 1); };
+const exp2 = (c) => `${String(c.exp_month || '••').padStart(2, '0')}/${String(c.exp_year || '••').slice(-2)}`;
+function cardFace(c, { theme, tag = 'button' } = {}) {
+  theme = theme || CW.themes?.[c.id];
+  const b = c.brand || 'unknown';
+  const label = b === 'mastercard' ? 'Mastercard' : b === 'amex' ? 'Amex' : b === 'visa' ? 'Visa' : 'Ma carte';
+  return `<${tag} class="wcard ${theme || themeOf(c.id)}" ${c.id ? `style="view-transition-name:vt-${esc(String(c.id).replace(/[^\w-]/g, ''))}" data-cid="${esc(c.id)}" aria-label="${esc(NET_LABEL[b] || 'Carte')} se terminant par ${esc(c.last4 || '')}"` : ''} ${tag === 'button' ? 'type="button"' : ''}>
+    <span class="big">${esc(label)}</span>${c.id && expired(c) ? '<span class="tag exp">Expirée</span>' : ''}
+    <span class="chip" aria-hidden="true"></span>
+    <span class="num">•••• ${esc(c.last4 || '••••')}</span>
+    <span class="who"><span>${esc((ME?.full_name || '').toUpperCase())}</span><span>${esc(exp2(c))}</span></span>
+    <span class="net">${netMark(b)}</span>
+  </${tag}>`;
+}
+function renderWallet() {
+  const n = CARDS.length;
+  CW.themes = {}; const used = new Set();
+  [...CARDS].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).forEach((c) => {
+    let t = +themeOf(c.id).slice(1);
+    for (let i = 0; i < 6 && used.has(t); i++) t = (t + 1) % 6;
+    used.add(t); CW.themes[c.id] = 't' + t;
+  });
+  $('#cw-count').textContent = n ? `· ${n}/5` : '';
+  $('#cw-add').disabled = n >= 5;
+  if (CW.sel && !CARDS.some((c) => c.id === CW.sel)) CW.sel = null;
+  // la carte choisie passe devant, les autres restent empilées dessous
+  const order = CW.sel ? [CARDS.find((c) => c.id === CW.sel), ...CARDS.filter((c) => c.id !== CW.sel)] : CARDS;
+  const st = $('#stack');
+  st.classList.toggle('focus', !!CW.sel);
+  st.innerHTML = n ? order.map((c) => cardFace(c).replace('class="wcard ', `class="wcard ${c.id === CW.sel ? 'sel ' : ''}`)).join('')
+    : `<div class="wcard ghost"><div><b>Aucune carte pour l'instant</b>Ajoutez une carte Visa ou Mastercard pour recharger votre wallet en un instant.</div></div>`;
+  $('#cw-hint').textContent = !n ? '' : CW.sel ? 'Touchez la carte pour la ranger dans la pile.' : 'Touchez une carte pour l\'afficher.';
+  $$('[data-cid]', st).forEach((el) => el.onclick = () => selectCard(el.dataset.cid === CW.sel ? null : el.dataset.cid));
+  renderPanel();
+}
+function selectCard(id) {
+  CW.sel = id; CW.adding = false;
+  const go = () => renderWallet();
+  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
+  if (id && matchMedia('(max-width: 860px)').matches) setTimeout(() => $('#cw-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+}
+function renderPanel() {
+  const panel = $('#cw-panel');
+  const c = CARDS.find((x) => x.id === CW.sel);
+  if (c && !CW.adding) {
+    panel.innerHTML = `<h3>${esc(NET_LABEL[c.brand] || 'Carte')} •••• ${esc(c.last4)}</h3><p class="sub">${expired(c) ? 'Cette carte a expiré : supprimez-la et ajoutez la nouvelle.' : 'Prête à recharger votre wallet, instantanément.'}</p>
+      <dl><dt>Réseau</dt><dd>${esc(NET_LABEL[c.brand] || 'Carte')}</dd><dt>Numéro</dt><dd>•••• •••• •••• ${esc(c.last4)}</dd><dt>Expiration</dt><dd>${esc(String(c.exp_month).padStart(2, '0'))}/${esc(c.exp_year)}${expired(c) ? ' · <span style="color:#b3121f">expirée</span>' : ''}</dd><dt>Ajoutée le</dt><dd>${esc(new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}</dd></dl>
+      <div class="acts">${expired(c) ? '' : '<button class="full" id="cw-topup">Recharger avec cette carte</button>'}<button class="full btn-del" id="cw-del">Supprimer la carte</button><button class="link full" id="cw-close">Ranger la carte</button></div>`;
+    $('#cw-topup')?.addEventListener('click', () => {
+      if (!ME.activated) return toast('Activez d\'abord votre compte en vérifiant votre identité.', true);
+      ACTIONS.topup(); $('#tm').value = 'card'; $('#tm').onchange({ target: $('#tm') }); $('#modal-body [name=card_id]').value = c.id;
+    });
+    const del = $('#cw-del');
+    del.onclick = () => {
+      if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Confirmer la suppression'; setTimeout(() => { if (document.body.contains(del)) { del.classList.remove('armed'); del.textContent = 'Supprimer la carte'; } }, 4000); return; }
+      busy(del, async () => { await api('DELETE', '/v1/cards/' + c.id); CW.sel = null; toast('Carte supprimée'); await loadCards(); });
+    };
+    $('#cw-close').onclick = () => selectCard(null);
+    return;
+  }
+  const full = CARDS.length >= 5;
+  panel.innerHTML = `<h3>Ajouter une carte</h3><p class="sub">Visa ou Mastercard. Elle apparaît aussitôt dans votre wallet.</p>
+    <div class="preview" id="cw-preview">${cardFace({ brand: 'unknown' }, { theme: 't0', tag: 'div' })}</div>
+    ${full ? '<p class="notice">Vous avez atteint 5 cartes : supprimez-en une pour en ajouter une autre.</p>' : `<form id="f-card">
+      <label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="23" required>
+      <div class="row">
+        <div><label>Mois</label><input name="exp_month" inputmode="numeric" autocomplete="cc-exp-month" placeholder="MM" maxlength="2" required></div>
+        <div><label>Année</label><input name="exp_year" inputmode="numeric" autocomplete="cc-exp-year" placeholder="AAAA" maxlength="4" required></div>
+        <div><label>CVC</label><input name="cvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" required></div>
+      </div>
+      <button class="full">Ajouter à mon wallet</button>
+    </form>`}
+    <p class="test-note">🔒 En production, ces champs sont fournis par le processeur de cartes (champs hébergés PCI DSS) : le numéro ne passe jamais par les serveurs Pay243. Cartes de test : <code>4242 4242 4242 4242</code> (acceptée), <code>4000 0000 0000 0002</code> (refusée).</p>`;
+  const f = $('#f-card'); if (!f) return;
+  const free = [0, 1, 2, 3, 4, 5].find((i) => !Object.values(CW.themes || {}).includes('t' + i));
+  const theme = 't' + (free ?? 0);
+  const preview = () => {
+    const digits = f.number.value.replace(/\D/g, '');
+    const c = { brand: brandOfNumber(digits), last4: digits.length >= 4 ? digits.slice(-4) : '', exp_month: f.exp_month.value, exp_year: f.exp_year.value };
+    $('#cw-preview').innerHTML = cardFace(c, { theme, tag: 'div' });
+  };
+  f.number.oninput = () => { const d = f.number.value.replace(/\D/g, '').slice(0, 19); f.number.value = d.replace(/(.{4})/g, '$1 ').trim(); preview(); };
+  f.exp_month.oninput = f.exp_year.oninput = preview; preview();
+  f.onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const d = formData(f); d.number = d.number.replace(/\s/g, '');
+    // 1) tokenisation côté « processeur » (sandbox) — 2) enregistrement du jeton uniquement
+    const { token } = await api('POST', '/sandbox/cards/tokenize', d);
+    const card = await api('POST', '/v1/cards', { token });
+    toast('Carte ajoutée à votre wallet'); await loadCards(); selectCard(card.id);
+  }); };
+}
+$('#cw-add').onclick = () => { CW.sel = null; CW.adding = true; renderWallet(); $('#f-card')?.number.focus(); if (matchMedia('(max-width: 860px)').matches) $('#cw-panel').scrollIntoView({ behavior: 'smooth' }); };
 async function loadCards() {
   const c = await api('GET', '/v1/cards'); CARDS = c.data;
-  $('#cards').innerHTML = CARDS.length ? CARDS.map((x) => `<li><div><b>${esc(String(x.brand).toUpperCase())}</b> •••• ${esc(x.last4)}<div class="muted">Expire ${esc(String(x.exp_month).padStart(2, '0'))}/${esc(x.exp_year)}</div></div><button class="link" data-del="${esc(x.id)}">Supprimer</button></li>`).join('') : '<li class="muted">Aucune carte enregistrée.</li>';
-  $$('[data-del]').forEach((b) => b.onclick = () => busy(b, async () => { await api('DELETE', '/v1/cards/' + b.dataset.del); loadCards(); }));
+  renderWallet();
 }
-$('#f-card').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
-  // 1) tokenisation côté "processeur" (sandbox) — 2) enregistrement du jeton uniquement
-  const { token } = await api('POST', '/sandbox/cards/tokenize', formData(e.target));
-  await api('POST', '/v1/cards', { token });
-  e.target.reset(); toast('Carte enregistrée'); loadCards();
-}); };
 
 // ---------------- Marchand ----------------
 async function loadMerchant() {
