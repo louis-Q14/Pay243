@@ -38,7 +38,15 @@ img, svg { display: block; }
 .ribbon button { background: none; border: 0; color: #fff; font-size: 20px; line-height: 1; cursor: pointer; opacity: .8; }
 
 /* ---------- Navigation ---------- */
-.nav { position: sticky; top: 0; z-index: 30; background: rgba(255, 255, 255, .92); backdrop-filter: saturate(1.6) blur(14px); border-bottom: 1px solid var(--line); }
+.nav { position: sticky; top: 0; z-index: 30; background: radial-gradient(circle 60px at calc(100% - 30px) 30px, rgba(247, 214, 24, .18) 98%, transparent 100%), linear-gradient(135deg, #10284f, #24599f); border-bottom: 0; box-shadow: 0 2px 12px rgba(16, 40, 79, .2); } /* même motif que la carte Dollar US */
+.nav .logo-img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .6)); }
+.nav .menu a, .nav .link-help { color: rgba(255, 255, 255, .88); }
+.nav .menu a:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.nav .link-help:hover { color: #fff; }
+.nav .btn-light { background: #fff; color: var(--ink); }
+.nav .btn-light:hover { background: #eef3fb; }
+.nav .btn-dark { background: var(--yellow); color: var(--ink); }
+.nav .btn-dark:hover { background: #ffe23d; box-shadow: 0 8px 24px rgba(0, 0, 0, .22); }
 .nav .wrap { display: flex; align-items: center; height: 72px; gap: 28px; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 800 21px/1 var(--display); letter-spacing: -.03em; }
 .logo-img { height: 34px; width: auto; display: block; }
@@ -60,8 +68,8 @@ img, svg { display: block; }
 .btn-white { background: #fff; color: var(--ink); }
 .btn-lg { padding: 16px 28px; font-size: 16px; }
 .link-help { font-weight: 600; font-size: 15px; text-decoration: none; padding: 8px 10px; color: var(--ink-2); }
-.burger { display: none; margin-left: auto; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
-.burger span, .burger span::before, .burger span::after { display: block; width: 18px; height: 2px; background: var(--ink); margin: 0 auto; position: relative; border-radius: 2px; content: ""; }
+.burger { display: none; margin-left: auto; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .28); background: rgba(255, 255, 255, .1); cursor: pointer; }
+.burger span, .burger span::before, .burger span::after { display: block; width: 18px; height: 2px; background: #fff; margin: 0 auto; position: relative; border-radius: 2px; content: ""; }
 .burger span::before { position: absolute; top: -6px; } .burger span::after { position: absolute; top: 6px; }
 .mobile-menu { display: none; }
 

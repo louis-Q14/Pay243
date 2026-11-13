@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/assets/landing.css">
 <style>
   body { background: #fff; }
-  .nav .link-help.on { color: var(--blue); }
+  .nav .link-help.on { color: var(--yellow); }
   .nav-badge, .card-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font: 800 11px/1 var(--text); margin-left: 4px; vertical-align: 2px; }
   .nav-badge[hidden], .card-badge[hidden] { display: none; }
 
@@ -289,7 +289,9 @@ const TYPE_LABEL = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiemen
 
 // Menu téléphone
 const burger = $('.burger'); const mobile = $('#mobile-menu');
-burger.onclick = () => { const open = mobile.classList.toggle('open'); burger.setAttribute('aria-expanded', String(open)); };
+burger.onclick = () => { const open = mobile.classList.toggle('open'); burger.setAttribute('aria-expanded', String(open));
+  if (open) mobile.style.top = Math.round(document.querySelector('.nav').getBoundingClientRect().bottom) + 'px'; // sous la barre, même avec le bandeau d'annonce
+};
 $$('a', mobile).forEach((a) => a.addEventListener('click', () => { mobile.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); }));
 
 // =====================================================================

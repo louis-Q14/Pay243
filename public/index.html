@@ -291,6 +291,7 @@ const mobile = document.getElementById('mobile-menu');
 burger.addEventListener('click', () => {
   const open = mobile.classList.toggle('open');
   burger.setAttribute('aria-expanded', String(open));
+  if (open) mobile.style.top = Math.round(document.querySelector('.nav').getBoundingClientRect().bottom) + 'px'; // sous la barre, même avec le bandeau d'annonce
 });
 mobile.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { mobile.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); }));
 

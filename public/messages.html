@@ -39,14 +39,14 @@
   .toast.bad { background: var(--err); }
 
   /* ---------- Barre du haut ---------- */
-  .top { background: var(--side); color: #c9d1de; }
+  .top { background: radial-gradient(circle 60px at calc(100% - 30px) 30px, rgba(247, 214, 24, .18) 98%, transparent 100%), linear-gradient(135deg, #10284f, #24599f); color: #dbe5f5; box-shadow: 0 2px 10px rgba(16, 40, 79, .18); } /* même motif que la carte Dollar US */
   .top .in { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 18px; }
   .top .brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; text-decoration: none; }
-  .top .brand img { height: 30px; background: #fff; padding: 3px 4px; border-radius: 6px; } /* pastille blanche : le bloc noir du logo reste visible sur fond sombre */
-  .top .brand span { padding-left: 12px; border-left: 1px solid var(--side-2); font-size: 14.5px; }
+  .top .brand img { height: 30px; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .6)); }
+  .top .brand span { padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, .25); font-size: 14.5px; }
   .top nav { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-  .top nav a { color: #c9d1de; text-decoration: none; font-weight: 600; font-size: 14px; padding: 7px 12px; border-radius: 10px; }
-  .top nav a:hover { background: var(--side-2); color: #fff; }
+  .top nav a { color: rgba(255, 255, 255, .88); text-decoration: none; font-weight: 600; font-size: 14px; padding: 7px 12px; border-radius: 10px; }
+  .top nav a:hover { background: rgba(255, 255, 255, .12); color: #fff; }
 
   /* ---------- Page ---------- */
   main { max-width: 1240px; margin: 0 auto; padding: 26px 24px 60px; }

@@ -11,7 +11,8 @@ a { color: var(--blue); }
 .brand span { color: var(--muted); font-weight: 600; font-size: 15px; }
 .brand .logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--blue) 0 60%, var(--yellow) 60% 70%, var(--red) 70% 78%, var(--blue) 78%); box-shadow: inset 0 0 0 2px rgba(255,255,255,.25); }
 .brand span b { color: var(--blue); }
-header.top { background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 5; }
+/* En-têtes : même motif que la carte Dollar US */
+header.top { background: radial-gradient(circle 60px at calc(100% - 30px) 30px, rgba(247, 214, 24, .18) 98%, transparent 100%), linear-gradient(135deg, #10284f, #24599f); color: #fff; border-bottom: 0; box-shadow: 0 2px 10px rgba(16, 40, 79, .18); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 5; }
 main { max-width: 980px; margin: 0 auto; padding: 20px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; margin-bottom: 16px; }
 .card h2 { margin: 0 0 12px; font-size: 17px; }
@@ -68,3 +69,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-
 #who .me { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
 .av { width: 30px; height: 30px; border-radius: 50%; background: var(--blue-d) center / cover; color: #fff; display: inline-grid; place-items: center; font-size: 12px; font-weight: 700; flex: none; }
 @media (max-width: 560px) { #who .me span:not(.av) { display: none; } }
+
+header.top .logo-img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .6)); } /* le bloc noir du logo se détache du bleu nuit */
+header.top > a, header.top .brand span { color: rgba(255, 255, 255, .88); }
+header.top > a:hover { color: #fff; }

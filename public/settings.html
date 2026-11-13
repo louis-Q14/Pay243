@@ -12,8 +12,9 @@
   body { background: #eef2f8; }
   .page { background: #eef2f8; box-shadow: none; min-height: 100vh; }
   .topline { height: 4px; background: var(--navy); }
-  .bar { background: #0057d9; box-shadow: 0 6px 18px rgba(11, 20, 36, .06); position: sticky; top: 0; z-index: 30; } /* en-tête bleu, comme l'app : le logo ressort */
-  .bar .mini-av { background-color: #0a2a66; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+  .bar { background: radial-gradient(circle 60px at calc(100% - 30px) 30px, rgba(247, 214, 24, .18) 98%, transparent 100%), linear-gradient(135deg, #10284f, #24599f); box-shadow: 0 6px 18px rgba(11, 20, 36, .06); position: sticky; top: 0; z-index: 30; } /* même motif que la carte Dollar US */
+  .bar .logo-img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .6)); }
+  .bar .mini-av { background-color: #10284f; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
   .bar #logout { color: #fff !important; }
   .bar .wrap { display: flex; align-items: center; gap: 18px; height: 64px; }
   .bar .logo-img { height: 30px; }
