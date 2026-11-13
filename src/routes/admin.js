@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { businessProfileOf } from '../services/merchants.js';
+import { ACCESS_LABELS, accessOf, businessProfileOf } from '../services/merchants.js';
 import { assertNewPassword, hashSecret, verifySecret } from '../auth.js';
 import { config } from '../config.js';
 import { q, tx } from '../db.js';
@@ -136,7 +136,7 @@ backofficeRouter.get('/admin/users/:id', can('users.view'), async (req, res) => 
   const u = await findUser(req.params.id);
   const wallets = await q.all("SELECT id, currency, balance FROM wallets WHERE owner_type='user' AND owner_id=? ORDER BY currency", u.id);
   const merchantRow = await q.get('SELECT * FROM merchants WHERE owner_user_id=?', u.id);
-  const merchant = merchantRow ? { id: merchantRow.id, name: merchantRow.name, created_at: merchantRow.created_at, suspended_at: merchantRow.suspended_at, business: businessProfileOf(merchantRow) } : null;
+  const merchant = merchantRow ? { id: merchantRow.id, name: merchantRow.name, created_at: merchantRow.created_at, suspended_at: merchantRow.suspended_at, access: { ...accessOf(merchantRow), request: merchantRow.access_request || null, note: merchantRow.access_note || null }, business: businessProfileOf(merchantRow) } : null;
   // Les ventes sont créditées sur le solde marchand : il fait partie de l'argent du titulaire.
   const merchantWallets = merchant ? await q.all("SELECT id, currency, balance FROM wallets WHERE owner_type='merchant' AND owner_id=? ORDER BY currency", merchant.id) : [];
   const ids = [...wallets, ...merchantWallets].map((w) => w.id);
@@ -240,14 +240,58 @@ backofficeRouter.get('/admin/transactions', can('transactions.view'), async (req
 backofficeRouter.get('/admin/merchants', can('merchants.view'), async (req, res) => {
   const term = String(req.query.q || '').trim();
   const like = `%${term}%`;
+  const access = ACCESS_LABELS[req.query.access] ? String(req.query.access) : null;
+  const where = []; const args = [];
+  if (term) { where.push('(m.id = ? OR m.name ILIKE ? OR u.email ILIKE ?)'); args.push(term, like, like); }
+  if (access) { where.push('m.access_status = ?'); args.push(access); }
   const rows = await q.all(`
-    SELECT m.id, m.name, m.webhook_url, m.created_at, m.suspended_at, u.id AS owner_id, u.full_name AS owner_name, u.email AS owner_email,
+    SELECT m.id, m.name, m.webhook_url, m.created_at, m.suspended_at, m.access_status, m.access_requested_at, m.access_request, m.access_decided_at, m.access_note,
+      u.id AS owner_id, u.full_name AS owner_name, u.email AS owner_email, u.account_type AS owner_account_type, u.activated_at AS owner_activated_at,
       (SELECT COUNT(*)::int FROM api_keys k WHERE k.merchant_id=m.id AND k.revoked_at IS NULL) AS active_keys,
       (SELECT COUNT(*)::int FROM payments p WHERE p.merchant_id=m.id AND p.status='succeeded') AS paid_payments
     FROM merchants m JOIN users u ON u.id = m.owner_user_id
-    ${term ? 'WHERE m.id = ? OR m.name ILIKE ? OR u.email ILIKE ?' : ''} ORDER BY m.created_at DESC LIMIT 200`, ...(term ? [term, like, like] : []));
+    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+    ORDER BY (m.access_status = 'requested') DESC, COALESCE(m.access_requested_at, m.created_at) DESC LIMIT 200`, ...args);
   const balances = await q.all("SELECT owner_id, currency, balance FROM wallets WHERE owner_type='merchant'");
-  res.json({ data: rows.map((m) => ({ ...m, balances: balances.filter((b) => b.owner_id === m.id).map((b) => ({ currency: b.currency, balance: Number(b.balance) })) })) });
+  const { n: requested } = await q.get("SELECT COUNT(*)::int AS n FROM merchants WHERE access_status='requested'");
+  res.json({
+    data: rows.map(({ owner_activated_at, ...m }) => ({ ...m, owner_activated: !!owner_activated_at, access_label: ACCESS_LABELS[m.access_status], balances: balances.filter((b) => b.owner_id === m.id).map((b) => ({ currency: b.currency, balance: Number(b.balance) })) })),
+    summary: { requested },
+  });
+});
+
+/**
+ * Accès à l'espace marchand : activer (comptes entreprise uniquement), refuser une demande, désactiver.
+ * Le titulaire est prévenu par email ; le motif d'un refus ou d'une désactivation lui est montré.
+ */
+backofficeRouter.post('/admin/merchants/:id/access', can('merchants.manage'), async (req, res) => {
+  const action = String(req.body?.action || '');
+  if (!['enable', 'reject', 'disable'].includes(action)) throw new HttpError(400, 'invalid_action', 'Action : "enable", "reject" ou "disable".');
+  const reason = reasonOf(req.body);
+  const m = await q.get('SELECT * FROM merchants WHERE id=?', req.params.id);
+  if (!m) throw new HttpError(404, 'merchant_not_found', 'Marchand introuvable.');
+  const owner = await q.get('SELECT * FROM users WHERE id=?', m.owner_user_id);
+  const from = { enable: ['none', 'requested', 'rejected', 'disabled'], reject: ['requested'], disable: ['enabled'] }[action];
+  if (!from.includes(m.access_status)) {
+    throw new HttpError(409, 'invalid_access_status', { enable: 'Cet espace marchand est déjà activé.', reject: "Aucune demande d'activation en attente.", disable: "Cet espace marchand n'est pas activé." }[action]);
+  }
+  if (action === 'enable' && owner?.account_type !== 'business') {
+    throw new HttpError(409, 'not_business', "L'espace marchand est réservé aux comptes entreprise : ce titulaire a un compte particulier.");
+  }
+  const status = { enable: 'enabled', reject: 'rejected', disable: 'disabled' }[action];
+  const r = await q.run('UPDATE merchants SET access_status=?, access_decided_at=?, access_note=? WHERE id=? AND access_status=?',
+    status, now(), action === 'enable' ? null : reason, m.id, m.access_status);
+  if (!r.changes) throw new HttpError(409, 'invalid_access_status', 'Le statut a changé entre-temps : rechargez la page.');
+  await logAction(req, `merchant.${action}`, m.id, { reason });
+  if (owner && owner.status !== 'closed') {
+    const mail = {
+      enable: [`Votre espace marchand ${m.name} est activé`, 'Votre espace marchand est activé', [`Bonne nouvelle : l'espace marchand « ${m.name} » est activé. Vous pouvez désormais créer des liens de paiement, générer vos clés API et recevoir des paiements.`], { label: "Ouvrir l'espace marchand", url: appUrl('/app#merchant') }],
+      reject: [`Demande d'activation de ${m.name} non retenue`, "Votre demande n'a pas été retenue", [`Votre demande d'activation de l'espace marchand « ${m.name} » n'a pas été retenue.`, `Motif : ${reason}`, 'Vous pouvez compléter votre dossier et refaire une demande depuis vos paramètres, ou écrire au support.'], { label: 'Voir mes paramètres', url: appUrl('/settings#vendeur') }],
+      disable: [`Espace marchand ${m.name} désactivé`, 'Votre espace marchand est désactivé', [`L'espace marchand « ${m.name} » a été désactivé par l'équipe Pay243 : les paiements, liens et clés API sont suspendus. Vos ventes déjà encaissées restent disponibles et peuvent être versées sur votre wallet.`, `Motif : ${reason}`], { label: 'Contacter le support', url: appUrl('/messages?new=1&cat=merchant') }],
+    }[action];
+    notifyUser(owner, 'account', mail[0], mail[2][0], { title: mail[1], paragraphs: mail[2], cta: mail[3] });
+  }
+  res.json({ id: m.id, access_status: status, access_label: ACCESS_LABELS[status] });
 });
 
 backofficeRouter.post('/admin/merchants/:id/suspend', can('merchants.manage'), async (req, res) => {

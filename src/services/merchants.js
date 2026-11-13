@@ -61,9 +61,37 @@ export function businessProfileOf(m) {
   };
 }
 
+// ---------------------------------------------------------------------
+//  Accès à l'espace marchand : réservé aux comptes entreprise, sur demande,
+//  activé par l'équipe depuis le back-office. Tant qu'il n'est pas activé :
+//  pas d'onglet dans l'app, pas de clé API, pas de lien de paiement, API refusée.
+// ---------------------------------------------------------------------
+export const ACCESS_LABELS = { none: 'Non demandé', requested: 'Demande en attente', enabled: 'Activé', rejected: 'Demande refusée', disabled: 'Désactivé' };
+
+/** État de l'accès tel qu'exposé au titulaire (le motif n'est montré que pour un refus ou une désactivation). */
+export function accessOf(m) {
+  const status = m?.access_status || 'none';
+  return {
+    status,
+    label: ACCESS_LABELS[status],
+    enabled: status === 'enabled',
+    requested_at: m?.access_requested_at || null,
+    decided_at: m?.access_decided_at || null,
+    note: ['rejected', 'disabled'].includes(status) ? m?.access_note || null : null,
+  };
+}
+
+export function assertMerchantEnabled(m) {
+  if (m?.access_status === 'enabled') return;
+  throw new HttpError(403, 'merchant_not_enabled', m?.access_status === 'requested'
+    ? "Votre demande d'activation de l'espace marchand est en cours d'examen : vous serez prévenu par email."
+    : "Votre espace marchand n'est pas activé. Demandez son activation depuis Paramètres › Outils vendeur.");
+}
+
 /**
- * Crée le compte marchand d'un utilisateur et sa première clé API. À appeler dans tx() :
+ * Crée le compte marchand (non activé) d'un utilisateur. À appeler dans tx() :
  * l'unicité (un marchand par utilisateur, un RCCM par marchand) est garantie par la base.
+ * Aucune clé API n'est émise : le titulaire en génère une une fois l'espace activé par l'équipe.
  */
 export async function createMerchantAccount(userId, name, webhookUrl = null, profile = null) {
   const id = newId('mch');
@@ -73,6 +101,5 @@ export async function createMerchantAccount(userId, name, webhookUrl = null, pro
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     id, userId, String(name).trim(), webhookUrl, `whsec_${crypto.randomBytes(24).toString('base64url')}`, now(),
     p.rccm || null, p.address || null, p.city || null, p.country || null, p.phone || null, p.email || null, p.fax || null, p.website || null);
-  const secretKey = await issueKey(id, config.mode === 'live' ? 'live' : 'test');
-  return { id, secretKey };
+  return { id };
 }

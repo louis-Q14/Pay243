@@ -10,7 +10,8 @@ import { assertPublicUrl } from '../netguard.js';
 import { refreshPending, startPayout } from '../services/mobileMoney.js';
 import { cancelPayment, createPayment, getPayment, refundPayment, serializePayment } from '../services/payments.js';
 import { listEvents } from '../services/webhooks.js';
-import { businessProfileOf, createMerchantAccount, issueKey } from '../services/merchants.js';
+import { accessOf, assertMerchantEnabled, businessProfileOf, createMerchantAccount, issueKey } from '../services/merchants.js';
+import { appUrl, notifyUser } from '../services/notify.js';
 import { HttpError, assertAmount, assertCurrency, now, percentFee } from '../util.js';
 
 // =====================================================================
@@ -40,6 +41,12 @@ async function merchantOfUser(user) {
   if (!m) throw new HttpError(404, 'merchant_not_found', "Vous n'avez pas encore de compte marchand.");
   return m;
 }
+/** Espace marchand activé par l'équipe : condition de toutes les actions d'encaissement. */
+async function enabledMerchantOf(user) {
+  const m = await merchantOfUser(user);
+  assertMerchantEnabled(m);
+  return m;
+}
 
 async function serializeMerchant(m, { withSecret = false } = {}) {
   const balances = [];
@@ -50,6 +57,7 @@ async function serializeMerchant(m, { withSecret = false } = {}) {
     object: 'merchant',
     name: m.name,
     business: businessProfileOf(m),
+    access: accessOf(m),
     webhook_url: m.webhook_url,
     ...(withSecret ? { webhook_secret: m.webhook_secret } : {}),
     balances,
@@ -60,21 +68,48 @@ async function serializeMerchant(m, { withSecret = false } = {}) {
 }
 
 const merchantExists = () => new HttpError(409, 'merchant_exists', 'Vous avez déjà un compte marchand.');
+const businessOnly = () => new HttpError(403, 'business_only', "L'espace marchand est réservé aux comptes entreprise : passez d'abord à un compte entreprise dans vos paramètres.");
+
+/** Demande d'activation de l'espace marchand (comptes entreprise), examinée par l'équipe. */
+async function requestAccess(m, user, note) {
+  const r = await q.run(`UPDATE merchants SET access_status='requested', access_requested_at=?, access_request=?, access_note=NULL
+                         WHERE id=? AND access_status IN ('none','rejected','disabled')`, now(), note, m.id);
+  if (!r.changes) {
+    throw m.access_status === 'enabled' ? new HttpError(409, 'merchant_already_enabled', 'Votre espace marchand est déjà activé.')
+      : new HttpError(409, 'access_already_requested', "Votre demande d'activation est déjà en cours d'examen.");
+  }
+  notifyUser(user, 'account', `Demande d'activation reçue — ${m.name}`, `Nous avons bien reçu votre demande d'activation de l'espace marchand ${m.name}.`, {
+    title: "Demande d'activation reçue",
+    paragraphs: [`Nous avons bien reçu votre demande d'activation de l'espace marchand « ${m.name} ». Notre équipe l'examine et vous prévient par email dès qu'elle est traitée.`,
+      "Une fois l'espace activé, vous pourrez créer des liens de paiement, générer vos clés API et recevoir des paiements."],
+    cta: { label: 'Suivre ma demande', url: appUrl('/settings#vendeur') },
+  });
+}
+
+merchantAdminRouter.post('/merchants/me/access-request', async (req, res) => {
+  if (req.user.account_type !== 'business') throw businessOnly();
+  const m = await merchantOfUser(req.user);
+  const note = String(req.body?.message ?? '').trim().replace(/\s+/g, ' ').slice(0, 600) || null;
+  await requestAccess(m, req.user, note);
+  res.json(await serializeMerchant(await q.get('SELECT * FROM merchants WHERE id=?', m.id)));
+});
 
 merchantAdminRouter.post('/merchants', requireActivated, async (req, res) => {
+  if (req.user.account_type !== 'business') throw businessOnly();
   const { name, webhook_url } = req.body || {};
   if (!name || String(name).trim().length < 2 || String(name).trim().length > 80) throw new HttpError(400, 'invalid_name', 'Nom commercial requis (2 à 80 caractères).');
   if (await q.get('SELECT id FROM merchants WHERE owner_user_id=?', req.user.id)) throw merchantExists();
   const hookUrl = await validWebhookUrl(webhook_url);
-  let id; let secretKey;
+  let id;
   try {
-    ({ id, secretKey } = await tx(() => createMerchantAccount(req.user.id, name, hookUrl)));
+    ({ id } = await tx(() => createMerchantAccount(req.user.id, name, hookUrl)));
   } catch (e) {
     if (isUniqueViolation(e)) throw merchantExists();
     throw e;
   }
-  const m = await q.get('SELECT * FROM merchants WHERE id=?', id);
-  res.status(201).json({ ...(await serializeMerchant(m, { withSecret: true })), secret_key: secretKey, notice: 'Conservez cette clé secrète : elle ne sera plus affichée.' });
+  // Créer l'espace vaut demande d'activation : l'équipe l'examine avant tout encaissement.
+  await requestAccess(await q.get('SELECT * FROM merchants WHERE id=?', id), req.user, null);
+  res.status(201).json(await serializeMerchant(await q.get('SELECT * FROM merchants WHERE id=?', id), { withSecret: true }));
 });
 
 merchantAdminRouter.get('/merchants/me', async (req, res) => {
@@ -82,7 +117,7 @@ merchantAdminRouter.get('/merchants/me', async (req, res) => {
 });
 
 merchantAdminRouter.patch('/merchants/me', async (req, res) => {
-  const m = await merchantOfUser(req.user);
+  const m = await enabledMerchantOf(req.user);
   const { name, webhook_url } = req.body || {};
   if (name != null && name !== '' && (String(name).trim().length < 2 || String(name).trim().length > 80)) throw new HttpError(400, 'invalid_name', 'Nom commercial : 2 à 80 caractères.');
   const hookUrl = webhook_url === undefined ? m.webhook_url : await validWebhookUrl(webhook_url);
@@ -92,7 +127,7 @@ merchantAdminRouter.patch('/merchants/me', async (req, res) => {
 });
 
 merchantAdminRouter.post('/merchants/me/keys', requireActivated, async (req, res) => {
-  const m = await merchantOfUser(req.user);
+  const m = await enabledMerchantOf(req.user);
   const mode = req.body?.mode === 'live' ? 'live' : 'test';
   const { n } = await q.get('SELECT COUNT(*)::int AS n FROM api_keys WHERE merchant_id=? AND revoked_at IS NULL', m.id);
   if (n >= 10) throw new HttpError(400, 'too_many_keys', '10 clés actives maximum : révoquez-en une avant d’en créer une nouvelle.');
@@ -107,7 +142,7 @@ merchantAdminRouter.delete('/merchants/me/keys/:id', async (req, res) => {
 });
 
 merchantAdminRouter.post('/merchants/me/webhook-secret', async (req, res) => {
-  const m = await merchantOfUser(req.user);
+  const m = await enabledMerchantOf(req.user);
   const secret = `whsec_${crypto.randomBytes(24).toString('base64url')}`;
   await q.run('UPDATE merchants SET webhook_secret=? WHERE id=?', secret, m.id);
   res.json({ webhook_secret: secret });
@@ -115,13 +150,13 @@ merchantAdminRouter.post('/merchants/me/webhook-secret', async (req, res) => {
 
 /** Lien de paiement sans code (à partager par WhatsApp, SMS...). */
 merchantAdminRouter.post('/merchants/me/payment-links', requireActivated, async (req, res) => {
-  const m = await merchantOfUser(req.user);
+  const m = await enabledMerchantOf(req.user);
   const p = await createPayment(m, config.mode === 'live', { ...req.body, expires_in_minutes: req.body?.expires_in_minutes || 7 * 24 * 60 });
   res.status(201).json(serializePayment(p));
 });
 
 merchantAdminRouter.get('/merchants/me/payments', async (req, res) => {
-  const m = await merchantOfUser(req.user);
+  const m = await enabledMerchantOf(req.user);
   res.json({ data: (await q.all('SELECT * FROM payments WHERE merchant_id=? ORDER BY created_at DESC LIMIT 50', m.id)).map(serializePayment) });
 });
 

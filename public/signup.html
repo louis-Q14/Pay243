@@ -631,9 +631,8 @@ $('#f-account').addEventListener('submit', (e) => {
       const r = await api('/v1/auth/register', body);
       try {
         sessionStorage.setItem('pay243_token', r.token);
-        if (r.merchant?.secret_key) sessionStorage.setItem('pay243_new_key', r.merchant.secret_key);
       } catch {}
-      location.href = r.merchant ? '/app#merchant' : '/app';
+      location.href = '/app'; // l'espace marchand s'active ensuite sur demande (Paramètres › Outils vendeur)
     } catch (x) {
       showErr('#err3', x.message);
       if (['email_taken'].includes(x.code)) go(2);

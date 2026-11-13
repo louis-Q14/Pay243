@@ -182,7 +182,7 @@
   <div class="tabs">
     <button class="on" data-tab="home">Wallet</button>
     <button data-tab="cards">Mes cartes</button>
-    <button data-tab="merchant">Espace marchand</button>
+    <button data-tab="merchant" class="hidden">Espace marchand</button>
     <a class="tab-link" href="/aide" title="Centre d'aide et messages du support">Aide <span class="badge" id="sup-badge" hidden></span></a>
   </div>
 
@@ -227,16 +227,7 @@
   </section>
 
   <section id="tab-merchant" class="hidden">
-    <div id="m-none" class="card">
-      <h2>Accepter des paiements en ligne</h2>
-      <p class="muted">Créez votre compte marchand pour encaisser via wallet Pay243, M-Pesa, Airtel Money, Orange Money et cartes, depuis votre site, votre application ou un simple lien WhatsApp.</p>
-      <form id="f-merchant">
-        <label>Nom commercial</label><input name="name" placeholder="Ex : Boutique Kin Mode" required>
-        <label>URL de webhook (facultatif)</label><input name="webhook_url" placeholder="https://monsite.cd/webhooks/pay243">
-        <button class="full">Créer mon compte marchand</button>
-      </form>
-    </div>
-    <div id="m-yes" class="hidden">
+    <div id="m-yes">
       <div class="grid" id="m-bal"></div>
       <p class="muted" id="m-bal-hint" style="margin:10px 0 0">Vos ventes arrivent ici, commission déduite. Versez-les sur votre wallet pour les retirer, les envoyer ou payer.</p>
       <div class="card" style="margin-top:16px">
@@ -384,12 +375,12 @@ async function boot() {
       : 'Compte non activé : vérification d\'identité requise avant toute opération.';
     await Promise.all([loadWallets(), loadHistory(), loadCards(), loadKyc().catch(() => {})]);
     refreshSupportBadge(); startSupportPolling();
-    let newKey = null;
-    try { newKey = sessionStorage.getItem('pay243_new_key'); sessionStorage.removeItem('pay243_new_key'); } catch {}
-    if (location.hash === '#merchant' || newKey) {
-      $('[data-tab="merchant"]').click();
-      if (newKey) { showKey(newKey); toast('Bienvenue ! Votre compte entreprise est prêt.'); }
-      history.replaceState(null, '', '/app');
+    try { sessionStorage.removeItem('pay243_new_key'); } catch {}
+    if (location.hash === '#merchant') {
+      // Espace marchand activé par l'équipe : l'onglet ; sinon, la demande d'activation (paramètres)
+      if (MERCHANT?.access?.enabled) { $('[data-tab="merchant"]').click(); history.replaceState(null, '', '/app'); }
+      else if (ME.account_type === 'business') { location.replace('/settings#vendeur'); return; }
+      else history.replaceState(null, '', '/app');
     } else if (location.hash === '#support') {
       location.replace('/messages'); return; // le support a sa page : le centre de messages
     } else if (location.hash === '#cards') {
@@ -408,18 +399,25 @@ async function loadWallets() {
   const w = await api('GET', '/v1/wallets');
   w.data.forEach((x) => $('#bal-' + x.currency).textContent = fmt(x.balance, x.currency));
   window.FX = w.fx;
-  loadSales();
+  await loadSales().catch(() => {});
 }
 
 // ---------------- Ventes du compte marchand ----------------
-let MERCHANT = null;
+let MERCHANT; // undefined : pas encore chargé · null : pas d'espace marchand
 const salesButtons = (m) => m.balances.filter((b) => b.balance > 0)
   .map((b) => `<button class="full" data-sweep="${b.currency}" style="margin-top:8px">Verser ${fmt(b.balance, b.currency)} sur mon wallet</button>`).join('');
 async function loadSales() {
   const box = $('#sales-box');
-  if (ME?.account_type !== 'business') return box.classList.add('hidden');
-  try { MERCHANT = await api('GET', '/v1/merchants/me'); } catch { MERCHANT = null; return box.classList.add('hidden'); }
-  const total = MERCHANT.balances.some((b) => b.balance > 0);
+  if (MERCHANT !== null || ME?.account_type === 'business') {
+    try { MERCHANT = await api('GET', '/v1/merchants/me'); } catch { MERCHANT = null; }
+  }
+  // L'onglet « Espace marchand » n'existe que si l'équipe a activé l'espace (comptes entreprise, sur demande).
+  const enabled = !!MERCHANT?.access?.enabled;
+  $('[data-tab="merchant"]').classList.toggle('hidden', !enabled);
+  if (!enabled && !$('#tab-merchant').classList.contains('hidden')) $('[data-tab="home"]').click();
+  const total = !!MERCHANT?.balances.some((b) => b.balance > 0);
+  // Ventes déjà encaissées : toujours versables sur le wallet, même si l'espace a été désactivé.
+  if (!MERCHANT || (!enabled && !total)) return box.classList.add('hidden');
   box.classList.remove('hidden');
   box.innerHTML = `<h2>Ventes ${esc(MERCHANT.name)}</h2>
     <p class="muted">${MERCHANT.balances.map((b) => `<b>${fmt(b.balance, b.currency)}</b>`).join(' · ')} disponibles${total ? '' : '. Vos prochaines ventes apparaîtront ici'}.</p>${salesButtons(MERCHANT)}`;
@@ -642,9 +640,9 @@ $('#f-card').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () 
 // ---------------- Marchand ----------------
 async function loadMerchant() {
   let m;
-  try { m = await api('GET', '/v1/merchants/me'); } catch { $('#m-none').classList.remove('hidden'); $('#m-yes').classList.add('hidden'); return; }
-  $('#m-none').classList.add('hidden'); $('#m-yes').classList.remove('hidden');
+  try { m = await api('GET', '/v1/merchants/me'); } catch { m = null; }
   MERCHANT = m;
+  if (!m?.access?.enabled) { $('[data-tab="merchant"]').classList.add('hidden'); $('[data-tab="home"]').click(); return; }
   $('#m-bal').innerHTML = m.balances.map((b) => `<div class="balance ${b.currency === 'USD' ? 'usd' : ''}"><small>Ventes ${esc(m.name)} · ${b.currency}</small><div class="amt">${fmt(b.balance, b.currency)}</div>${b.balance > 0 ? `<button class="ghost" data-sweep="${b.currency}" style="margin-top:10px">Verser sur mon wallet</button>` : ''}</div>`).join('');
   bindSweep($('#m-bal'));
   $('#m-keys').innerHTML = m.api_keys.map((k) => `<li><span class="mono">${k.preview}</span><span class="pill">${k.mode}</span></li>`).join('');
@@ -653,11 +651,6 @@ async function loadMerchant() {
   const p = await api('GET', '/v1/merchants/me/payments');
   $('#m-payments').innerHTML = p.data.length ? p.data.map((x) => `<li><div><b>${esc(x.description || x.id)}</b> <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span><div class="muted">${x.method ? (x.method === 'mobile_money' ? OPS[x.payer?.operator] : x.method === 'card' ? 'Carte' : 'Wallet Pay243') + ' · ' : ''}${when(x.created_at)}</div></div><div><b>${fmt(x.amount, x.currency)}</b>${x.net != null ? `<div class="muted">net ${fmt(x.net, x.currency)}</div>` : ''}</div></li>`).join('') : '<li class="muted">Aucun paiement.</li>';
 }
-$('#f-merchant').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
-  const d = formData(e.target); if (!d.webhook_url) delete d.webhook_url;
-  const m = await api('POST', '/v1/merchants', d);
-  await loadMerchant(); showKey(m.secret_key);
-}); };
 function showKey(k) { $('#m-key').textContent = k; $('#m-key-new').classList.remove('hidden'); }
 $('#m-newkey').onclick = (e) => busy(e.target, async () => { const r = await api('POST', '/v1/merchants/me/keys', { mode: 'test' }); showKey(r.secret_key); loadMerchant(); });
 $('#f-webhook').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => { await api('PATCH', '/v1/merchants/me', { webhook_url: e.target.webhook_url.value || null }); toast('Webhook enregistré'); }); };

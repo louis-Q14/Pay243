@@ -4,7 +4,7 @@ import { isUniqueViolation, q, tx } from '../db.js';
 import { serializeTxn } from '../ledger.js';
 import { rateLimit } from '../middleware.js';
 import { issueOtp, normalizeDeviceId, verifyOtp } from '../otp.js';
-import { createMerchantAccount } from '../services/merchants.js';
+import { accessOf, createMerchantAccount } from '../services/merchants.js';
 import { mergePrefs, notifyUser } from '../services/notify.js';
 import { HttpError, newId, normalizeEmail, normalizePhone, now } from '../util.js';
 import { serializeUser } from './auth.js';
@@ -52,7 +52,8 @@ async function listDevices(userId, currentDeviceId) {
 // ---------- Vue d'ensemble (une seule requête pour la page /settings) ----------
 settingsRouter.get('/me/settings', async (req, res) => {
   const u = req.user;
-  const merchant = await q.get('SELECT id, name, created_at FROM merchants WHERE owner_user_id=?', u.id);
+  const mrow = await q.get('SELECT id, name, created_at, access_status, access_requested_at, access_decided_at, access_note FROM merchants WHERE owner_user_id=?', u.id);
+  const merchant = mrow ? { id: mrow.id, name: mrow.name, created_at: mrow.created_at, access: accessOf(mrow) } : null;
   const kyc = await q.get('SELECT status, document_type, created_at, review_note FROM kyc_submissions WHERE user_id=? ORDER BY created_at DESC LIMIT 1', u.id);
   res.json({
     user: serializeUser(u),
@@ -300,12 +301,14 @@ settingsRouter.post('/me/business', sensitive, async (req, res) => {
   const merchant = await tx(async () => {
     const existing = await q.get('SELECT id, name FROM merchants WHERE owner_user_id=?', u.id);
     await q.run("UPDATE users SET account_type='business' WHERE id=?", u.id);
-    if (existing) return { id: existing.id, name: existing.name, secretKey: null };
+    if (existing) return { id: existing.id, name: existing.name };
     return { ...(await createMerchantAccount(u.id, name)), name };
   });
+  const row = await q.get('SELECT * FROM merchants WHERE id=?', merchant.id);
   res.json({
     user: serializeUser(await reload(u.id)),
-    merchant: { id: merchant.id, name: merchant.name, ...(merchant.secretKey ? { secret_key: merchant.secretKey, notice: 'Conservez cette clé secrète : elle ne sera plus affichée.' } : {}) },
+    // L'espace marchand n'est pas encore activé : le titulaire en demande l'activation (Outils vendeur).
+    merchant: { id: merchant.id, name: merchant.name, access: accessOf(row) },
   });
 });
 

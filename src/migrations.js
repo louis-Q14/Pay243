@@ -464,4 +464,21 @@ UPDATE support_messages SET body = 'Demande close par le support Pay243. Pour un
  WHERE author_type = 'system' AND body = 'Demande close par le support Pay243. Un nouveau message de votre part la rouvre.';
 `,
   },
+  {
+    version: 10,
+    name: "espace marchand : activé par l'équipe, sur demande",
+    // none : jamais demandé · requested : demande en attente · enabled : activé par l'équipe
+    // rejected : demande refusée · disabled : désactivé par l'équipe. Seul « enabled » permet d'encaisser.
+    // Les marchands qui ont déjà encaissé gardent leur accès (intégrations en production).
+    sql: `
+ALTER TABLE merchants ADD COLUMN access_status TEXT NOT NULL DEFAULT 'none' CHECK (access_status IN ('none','requested','enabled','rejected','disabled'));
+ALTER TABLE merchants ADD COLUMN access_requested_at TEXT;
+ALTER TABLE merchants ADD COLUMN access_request TEXT;
+ALTER TABLE merchants ADD COLUMN access_decided_at TEXT;
+ALTER TABLE merchants ADD COLUMN access_note TEXT;
+UPDATE merchants SET access_status = 'enabled', access_decided_at = created_at
+ WHERE EXISTS (SELECT 1 FROM payments p WHERE p.merchant_id = merchants.id);
+CREATE INDEX idx_merchants_access ON merchants (access_status);
+`,
+  },
 ];

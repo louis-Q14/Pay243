@@ -122,7 +122,7 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
   res.status(201).json({
     token: signToken({ sub: id }),
     user: serializeUser(user),
-    ...(merchant ? { merchant: { id: merchant.id, name: String(business_name).trim(), secret_key: merchant.secretKey, notice: 'Conservez cette clé secrète : elle ne sera plus affichée.' } } : {}),
+    ...(merchant ? { merchant: { id: merchant.id, name: String(business_name).trim(), access: { status: 'none', enabled: false } } } : {}),
   });
 });
 
@@ -218,11 +218,10 @@ function sendWelcome(user, businessName) {
     notifyUser(user, 'account', `Bienvenue sur Pay243, ${businessName}`, `Votre compte entreprise ${businessName} est prêt.`, {
       title: `Bienvenue, ${first} !`,
       paragraphs: [
-        `Votre compte entreprise « ${businessName} » est ouvert. Vous pouvez dès maintenant créer des liens de paiement et les partager sur WhatsApp, ou intégrer l’API à votre site.`,
-        'Dernière étape avant d’encaisser : vérifiez votre identité. Notre équipe valide votre pièce, puis active votre compte et votre clé API.',
+        `Votre compte entreprise « ${businessName} » est ouvert. Commencez par vérifier votre identité : notre équipe valide votre pièce, puis active votre compte.`,
+        'Pour encaisser (liens de paiement WhatsApp, API pour votre site), demandez ensuite l’activation de votre espace marchand depuis Paramètres › Outils vendeur. Notre équipe l’examine et vous prévient par email.',
       ],
       cta: { label: 'Vérifier mon identité', url: appUrl('/app#kyc') },
-      footer: 'Votre clé API secrète vous a été affichée une seule fois à l’inscription. Si vous ne l’avez pas notée, générez-en une nouvelle dans votre espace marchand.',
     });
   } else {
     notifyUser(user, 'account', 'Bienvenue sur Pay243', 'Votre compte Pay243 est prêt.', {

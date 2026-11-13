@@ -145,6 +145,7 @@ export async function requireMerchantKey(req, _res, next) {
   if (!row || !safeEqual(row.key_hash, sha256(key))) throw new HttpError(401, 'invalid_api_key', 'Clé API invalide ou révoquée.');
   req.merchant = await q.get('SELECT * FROM merchants WHERE id=?', row.merchant_id);
   if (req.merchant.suspended_at) throw new HttpError(403, 'merchant_suspended', 'Compte marchand suspendu. Contactez le support Pay243.');
+  if (req.merchant.access_status !== 'enabled') throw new HttpError(403, 'merchant_not_enabled', "L'espace marchand de ce compte n'est pas activé par Pay243.");
   const owner = await q.get('SELECT status, activated_at FROM users WHERE id=?', req.merchant.owner_user_id);
   if (owner?.status !== 'active') throw new HttpError(403, 'merchant_suspended', 'Compte marchand inactif. Contactez le support Pay243.');
   if (!owner.activated_at) throw new HttpError(403, 'account_not_verified', "Le compte de ce marchand n'est pas encore activé : son identité doit d'abord être vérifiée par Pay243.");

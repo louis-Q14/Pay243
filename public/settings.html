@@ -710,16 +710,12 @@ $('#all-addresses').onclick = () => {
 
 // ---------- Compte entreprise ----------
 function becomeBusiness() {
-  modal(`<h3>Passer à un compte entreprise</h3><p class="sub">Gardez votre wallet et votre historique, et ajoutez un espace marchand : liens de paiement, API, webhooks, versements Mobile Money.</p>
+  modal(`<h3>Passer à un compte entreprise</h3><p class="sub">Gardez votre wallet et votre historique. Vous pourrez ensuite demander l'activation d'un espace marchand : liens de paiement, API, webhooks.</p>
     <div class="f"><label>Nom de l'entreprise</label><input name="business_name" required maxlength="80" placeholder="Ex : Boutique Kin Mode" autocomplete="organization"></div>`, async (d) => {
     const r = await api('POST', '/v1/me/business', { business_name: d.business_name });
-    S.merchant = { id: r.merchant.id, name: r.merchant.name }; syncUser(r.user);
-    if (r.merchant.secret_key) {
-      modal(`<h3>Votre compte entreprise est prêt</h3><p class="sub">Voici votre clé API de test. Copiez-la maintenant : elle ne sera plus affichée.</p><div class="secret" id="newkey">${esc(r.merchant.secret_key)}</div>`, async () => { location.href = '/app#merchant'; }, { submitLabel: 'Ouvrir l\'espace marchand' });
-      const cp = document.createElement('button'); cp.type = 'button'; cp.className = 'btn btn-light'; cp.textContent = 'Copier la clé';
-      cp.onclick = () => { navigator.clipboard?.writeText(r.merchant.secret_key); toast('Clé copiée'); };
-      $('#modal .actions').prepend(cp);
-    } else { closeModal(); toast('Compte entreprise activé'); }
+    S.merchant = { id: r.merchant.id, name: r.merchant.name, access: r.merchant.access }; syncUser(r.user);
+    closeModal(); toast('Compte entreprise prêt : demandez maintenant l\'activation de l\'espace marchand');
+    showTab('vendeur');
   }, { submitLabel: 'Activer' });
 }
 $('#tile-business').onclick = becomeBusiness;
@@ -793,10 +789,34 @@ async function loadSeller() {
     $('#seller-go').onclick = becomeBusiness; return;
   }
   const m = await api('GET', '/v1/merchants/me');
-  box.innerHTML = `<div class="row-set"><div><h3>${esc(m.name)}</h3><p>Identifiant marchand <span class="mono">${esc(m.id)}</span></p></div><a class="btn btn-dark btn-sm" href="/app#merchant">Ouvrir l'espace marchand</a></div>
+  const a = m.access || { status: 'none' };
+  if (!a.enabled) return sellerRequest(box, m, a);
+  box.innerHTML = `<div class="row-set"><div><span class="tag ok">Activé</span><h3>${esc(m.name)}</h3><p>Identifiant marchand <span class="mono">${esc(m.id)}</span></p></div><a class="btn btn-dark btn-sm" href="/app#merchant">Ouvrir l'espace marchand</a></div>
     <div class="limits">${m.balances.map((b) => `<div><small>Solde ${esc(b.currency)}</small><b>${money(b.balance, b.currency)}</b></div>`).join('')}<div><small>Clés API actives</small><b>${m.api_keys.length}</b></div></div>
     <div class="row-set"><div><h3>Webhook</h3><p>${m.webhook_url ? esc(m.webhook_url) : 'Aucune URL configurée : vous ne recevez pas de notification serveur.'}</p></div><a class="lk" href="/app#merchant">Configurer</a></div>
     <div class="row-set"><div><h3>Documentation de l'API</h3><p>Paiements, remboursements, webhooks signés, SDK navigateur.</p></div><a class="lk" href="/docs">Lire la doc</a></div>`;
+}
+
+/** Espace marchand pas encore activé : demande d'activation, examinée par l'équipe Pay243. */
+function sellerRequest(box, m, a) {
+  const day = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const tag = { requested: 'wait', rejected: 'no', disabled: 'no' }[a.status] || '';
+  const head = `<div class="row-set"><div><span class="tag ${tag}">${esc(a.label || 'Non activé')}</span><h3>${esc(m.name)}</h3><p>Identifiant marchand <span class="mono">${esc(m.id)}</span></p></div></div>`;
+  if (a.status === 'requested') {
+    box.innerHTML = head + `<div class="row-set"><div><h3>Demande d'activation en cours d'examen</h3><p>Envoyée le ${esc(day(a.requested_at))}. Notre équipe vérifie votre dossier et vous prévient par email. Une fois l'espace activé, l'onglet « Espace marchand » apparaît dans votre wallet : liens de paiement, clés API, webhooks.</p></div></div>`;
+    return;
+  }
+  const why = a.status === 'rejected' ? "Votre précédente demande n'a pas été retenue." : a.status === 'disabled' ? "Votre espace marchand a été désactivé par l'équipe." : '';
+  box.innerHTML = head + `${why ? `<div class="row-set"><div><h3>${why}</h3><p>${a.note ? 'Motif : ' + esc(a.note) : 'Écrivez au support pour en savoir plus.'}</p></div></div>` : ''}
+    <div class="row-set"><div><h3>Encaisser avec Pay243</h3><p>Liens de paiement WhatsApp, API pour votre site, paiements par wallet, Mobile Money et carte. L'espace marchand est réservé aux comptes entreprise et activé par notre équipe, sur demande.</p></div></div>
+    <form class="f" id="f-access" style="padding:4px 12px 12px"><label for="acc-msg">Présentez votre activité (facultatif)</label>
+      <textarea id="acc-msg" name="message" maxlength="600" rows="3" placeholder="Ce que vous vendez, votre site ou votre page, le volume de ventes attendu…" style="width:100%;font:15px var(--text);padding:12px 14px;border-radius:12px;border:1.5px solid #d6dce6;resize:vertical"></textarea>
+      <button class="btn btn-dark btn-sm" style="margin-top:10px">${a.status === 'none' ? "Demander l'activation" : 'Refaire une demande'}</button></form>`;
+  $('#f-access').onsubmit = async (e) => {
+    e.preventDefault(); const b = e.submitter; b.disabled = true;
+    try { await api('POST', '/v1/merchants/me/access-request', { message: e.target.message.value }); toast('Demande envoyée : notre équipe vous répond par email'); await loadSeller(); }
+    catch (x) { toast(x.message, true); } finally { b.disabled = false; }
+  };
 }
 
 async function loadStatements() {

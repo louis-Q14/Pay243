@@ -55,6 +55,17 @@ const emailOf = (name) => `${name.toLowerCase().normalize('NFD').replace(/[^a-z]
 let rccmSeq = 0;
 const businessOf = (name) => ({ rccm: `CD/KNG/RCCM/24-B-${String(++rccmSeq).padStart(5, '0')}`, address: '12, avenue du Commerce, Gombe', city: 'Kinshasa', phone: '0812345678', email: `contact${rccmSeq}@${String(name || 'entreprise').toLowerCase().replace(/[^a-z]/g, '')}.cd` });
 
+/** Espace marchand activé par l'équipe (back-office), puis clé API de test, comme un titulaire après activation. */
+async function openMerchant(token, { direct = false } = {}) {
+  const m = (await api('GET', '/v1/merchants/me', { token })).body;
+  const en = await api('POST', `/v1/admin/merchants/${m.id}/access`, { token: ADMIN_KEY, body: { action: 'enable', reason: 'Dossier entreprise vérifié' } });
+  assert.equal(en.status, 200, JSON.stringify(en.body));
+  if (direct) { const { issueKey } = await import('../src/services/merchants.js'); return issueKey(m.id, 'test'); }
+  const k = await api('POST', '/v1/merchants/me/keys', { token, body: { mode: 'test' } });
+  assert.equal(k.status, 201, JSON.stringify(k.body));
+  return k.body.secret_key;
+}
+
 async function register({ activate = true, ...body }) {
   if (body.account_type === 'business' && body.business === undefined) body.business = businessOf(body.business_name);
   const email = body.email || emailOf(body.full_name);
@@ -149,18 +160,57 @@ test('compte entreprise : RCCM, adresse et contact obligatoires, site web facult
   assert.equal(dup.body.error.code, 'rccm_taken');
 });
 
-test('compte entreprise : espace marchand et clé API créés à l\'inscription', async () => {
+test('compte entreprise : espace marchand non activé par défaut, activé sur demande par l\'équipe', async () => {
   const r = await register({ account_type: 'business', email: 'contact@kinmode.cd', business_name: 'Kin Mode SARL', full_name: 'Mamie Lukusa', password: 'motdepasse7', pin: '6291' });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   assert.equal(r.body.user.account_type, 'business');
   assert.equal(r.body.user.phone, null); // téléphone facultatif
   assert.equal(r.body.merchant.name, 'Kin Mode SARL');
-  assert.match(r.body.merchant.secret_key, /^sk_test_/);
-  const m = await api('GET', '/v1/merchants/me', { token: r.body.token });
+  assert.equal(r.body.merchant.secret_key, undefined); // plus de clé API à l'inscription
+  assert.equal(r.body.merchant.access.status, 'none');
+  const tok = r.body.token;
+  const m = await api('GET', '/v1/merchants/me', { token: tok });
   assert.equal(m.body.id, r.body.merchant.id);
-  const pay = await api('POST', '/v1/payments', { token: r.body.merchant.secret_key, body: { amount: 1000, currency: 'USD' } });
-  assert.equal(pay.status, 201);
-  state.bizToken = r.body.token;
+  assert.equal(m.body.access.enabled, false);
+  assert.equal(m.body.api_keys.length, 0);
+  // Rien n'est possible avant l'activation par l'équipe
+  for (const [method, path, body] of [['POST', '/v1/merchants/me/keys', { mode: 'test' }], ['POST', '/v1/merchants/me/payment-links', { amount: 1000, currency: 'USD' }],
+    ['GET', '/v1/merchants/me/payments'], ['PATCH', '/v1/merchants/me', { webhook_url: null }], ['POST', '/v1/merchants/me/webhook-secret', {}]]) {
+    const x = await api(method, path, { token: tok, body });
+    assert.equal(x.status, 403, `${path} ${JSON.stringify(x.body)}`);
+    assert.equal(x.body.error.code, 'merchant_not_enabled');
+  }
+  // Demande d'activation, visible dans le back-office
+  const ask = await api('POST', '/v1/merchants/me/access-request', { token: tok, body: { message: 'Vente de pagnes et de robes, boutique à Gombe' } });
+  assert.equal(ask.status, 200, JSON.stringify(ask.body));
+  assert.equal(ask.body.access.status, 'requested');
+  assert.equal((await api('POST', '/v1/merchants/me/access-request', { token: tok })).body.error.code, 'access_already_requested');
+  assert.equal((await api('POST', '/v1/merchants/me/keys', { token: tok, body: {} })).body.error.code, 'merchant_not_enabled');
+  const pending = await api('GET', '/v1/admin/merchants?access=requested', { token: ADMIN_KEY });
+  assert.ok(pending.body.summary.requested >= 1);
+  assert.ok(pending.body.data.some((x) => x.id === m.body.id && x.access_request.includes('Gombe')));
+  const access = (body) => api('POST', `/v1/admin/merchants/${m.body.id}/access`, { token: ADMIN_KEY, body });
+  assert.equal((await access({ action: 'enable' })).body.error.code, 'reason_required');
+  assert.equal((await access({ action: 'disable', reason: 'Pas encore activé' })).body.error.code, 'invalid_access_status');
+  // Refus, puis nouvelle demande, puis activation
+  assert.equal((await access({ action: 'reject', reason: 'RCCM illisible, merci de le renvoyer' })).status, 200);
+  const refused = (await api('GET', '/v1/merchants/me', { token: tok })).body.access;
+  assert.equal(refused.status, 'rejected'); assert.equal(refused.note, 'RCCM illisible, merci de le renvoyer');
+  assert.equal((await api('POST', '/v1/merchants/me/access-request', { token: tok, body: { message: 'RCCM renvoyé au support' } })).body.access.status, 'requested');
+  assert.equal((await access({ action: 'enable', reason: 'Dossier entreprise vérifié' })).status, 200);
+  assert.equal((await api('GET', '/v1/merchants/me', { token: tok })).body.access.enabled, true);
+  const key = await api('POST', '/v1/merchants/me/keys', { token: tok, body: { mode: 'test' } });
+  assert.match(key.body.secret_key, /^sk_test_/);
+  assert.equal((await api('POST', '/v1/payments', { token: key.body.secret_key, body: { amount: 1000, currency: 'USD' } })).status, 201);
+  // Désactivation : l'API refuse aussitôt la clé ; le motif est montré au titulaire
+  assert.equal((await access({ action: 'disable', reason: 'Contrôle de conformité en cours' })).status, 200);
+  assert.equal((await api('POST', '/v1/payments', { token: key.body.secret_key, body: { amount: 1000, currency: 'USD' } })).body.error.code, 'merchant_not_enabled');
+  assert.equal((await api('GET', '/v1/merchants/me', { token: tok })).body.access.note, 'Contrôle de conformité en cours');
+  assert.equal((await access({ action: 'enable', reason: 'Contrôle terminé' })).status, 200);
+  assert.equal((await api('POST', '/v1/payments', { token: key.body.secret_key, body: { amount: 1000, currency: 'USD' } })).status, 201);
+  const audit = (await api('GET', '/v1/admin/audit?action=merchant.', { token: ADMIN_KEY })).body.data;
+  assert.ok(['merchant.reject', 'merchant.enable', 'merchant.disable'].every((a) => audit.some((x) => x.action === a && x.target === m.body.id)));
+  state.bizToken = tok;
 });
 
 test('connexion par email ; numéro Mobile Money demandé seulement quand il manque', async () => {
@@ -298,10 +348,16 @@ test('conversion USD -> CDF', async () => {
 });
 
 test('marchand : création, paiement via wallet, webhook signé, remboursement', async () => {
+  // Réservé aux comptes entreprise : Alice passe d'abord en compte entreprise
+  assert.equal((await api('POST', '/v1/merchants', { token: state.alice, body: { name: 'Boutique Kin Mode' } })).body.error.code, 'business_only');
+  assert.equal((await api('POST', '/v1/merchants/me/access-request', { token: state.alice })).body.error.code, 'business_only');
+  const aliceId = (await api('GET', '/v1/me', { token: state.alice })).body.user.id;
+  await q.run("UPDATE users SET account_type='business' WHERE id=?", aliceId);
   const m = await api('POST', '/v1/merchants', { token: state.alice, body: { name: 'Boutique Kin Mode', webhook_url: hookUrl } });
-  assert.equal(m.status, 201);
-  assert.match(m.body.secret_key, /^sk_test_/);
-  state.sk = m.body.secret_key;
+  assert.equal(m.status, 201, JSON.stringify(m.body));
+  assert.equal(m.body.secret_key, undefined);
+  assert.equal(m.body.access.status, 'requested'); // créer l'espace vaut demande d'activation
+  state.sk = await openMerchant(state.alice);
   state.whsec = m.body.webhook_secret;
 
   const unauth = await api('POST', '/v1/payments', { body: { amount: 1000, currency: 'USD' } });
@@ -1055,7 +1111,8 @@ test('paramètres : notifications, relevé CSV, export, passage en entreprise, f
   const biz = await api('POST', '/v1/me/business', { token: tok, body: { business_name: 'Sarah Couture' } });
   assert.equal(biz.status, 200, JSON.stringify(biz.body));
   assert.equal(biz.body.user.account_type, 'business');
-  assert.match(biz.body.merchant.secret_key, /^sk_test_/);
+  assert.equal(biz.body.merchant.secret_key, undefined);
+  assert.equal(biz.body.merchant.access.status, 'none'); // l'espace marchand s'active sur demande
   const again = await api('POST', '/v1/me/business', { token: tok, body: { business_name: 'Sarah Couture' } });
   assert.equal(again.body.merchant.secret_key, undefined); // pas de second marchand
 
@@ -1068,7 +1125,6 @@ test('paramètres : notifications, relevé CSV, export, passage en entreprise, f
   assert.equal(closed.status, 200, JSON.stringify(closed.body));
   assert.equal((await api('GET', '/v1/me', { token: tok })).status, 401);
   assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'sarah.k@test.cd', password: 'nouveau-mdp-1' } })).body.error.code, 'account_closed');
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).status, 401);
   assert.equal((await api('POST', '/v1/transfers', { token: state.bob, body: { to: '@sarah.mwamba', amount: 100, currency: 'USD', pin: '9137' } })).body.error.code, 'recipient_not_found');
 });
 
@@ -1087,7 +1143,9 @@ test('emails : bienvenue, nouvel appareil, préférences de paiement respectées
   const biz = await register({ account_type: 'business', email: 'vente@kinshoes.cd', business_name: 'Kin Shoes', full_name: 'Rachel Mbala', password: 'motdepasse4', pin: '5173' });
   const bizWelcome = mails('vente@kinshoes.cd').find((m) => m.tag === 'account');
   assert.match(bizWelcome.subject, /Kin Shoes/);
-  assert.doesNotMatch(bizWelcome.html + bizWelcome.text, new RegExp(biz.body.merchant.secret_key)); // la clé ne part jamais par email
+  assert.doesNotMatch(bizWelcome.html + bizWelcome.text, /sk_(test|live)_/); // jamais de clé par email
+  assert.match(bizWelcome.text, /Outils vendeur/); // l'espace marchand se demande depuis les paramètres
+  assert.ok(biz.body.user.id);
 
   // Nouvel appareil : code, puis alerte de sécurité une fois l'appareil validé
   const first = await api('POST', '/v1/auth/login', { body: { identifier: 'nadia.kasongo@test.cd', password: 'motdepasse4', device_id: 'nadia-new-laptop-0001', device_label: 'Mozilla/5.0 (Windows NT 10.0) Chrome/130' } });
@@ -1229,18 +1287,19 @@ test('back-office : suspension d\'un compte et de son espace marchand', async ()
   const a = bo(state.adminToken);
   const biz = await register({ account_type: 'business', email: 'boutique.suspendue@test.cd', business_name: 'Boutique Suspendue', full_name: 'Paul Kabeya', password: 'motdepasse6', pin: '3816', device_id: 'paul-device-000000001' });
   const uid = biz.body.user.id;
+  const sk = await openMerchant(biz.body.token);
   assert.equal((await a('POST', `/users/${uid}/suspend`, { reason: 'x' })).body.error.code, 'reason_required');
   assert.equal((await a('POST', `/users/${uid}/suspend`, { reason: 'Activité suspecte signalée' })).status, 200);
   assert.equal((await api('GET', '/v1/me', { token: biz.body.token })).status, 401);
   assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'boutique.suspendue@test.cd', password: 'motdepasse6', device_id: 'paul-device-000000001' } })).body.error.code, 'account_disabled');
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).body.error.code, 'merchant_suspended');
+  assert.equal((await api('POST', '/v1/payments', { token: sk, body: { amount: 100, currency: 'USD' } })).body.error.code, 'merchant_suspended');
   assert.equal((await api('POST', '/v1/transfers', { token: state.bob, body: { to: 'boutique.suspendue@test.cd', amount: 100, currency: 'USD', pin: '9137' } })).body.error.code, 'recipient_not_found');
   assert.equal((await a('POST', `/users/${uid}/reactivate`, { reason: 'Vérification faite, rien à signaler' })).status, 200);
   assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'boutique.suspendue@test.cd', password: 'motdepasse6', device_id: 'paul-device-000000001' } })).status, 200);
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).status, 201);
+  assert.equal((await api('POST', '/v1/payments', { token: sk, body: { amount: 100, currency: 'USD' } })).status, 201);
   const m = (await a('GET', '/merchants?q=Boutique Suspendue')).body.data[0];
   assert.equal((await a('POST', `/merchants/${m.id}/revoke-keys`, { reason: 'Clé exposée publiquement' })).body.revoked, 1);
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 100, currency: 'USD' } })).status, 401);
+  assert.equal((await api('POST', '/v1/payments', { token: sk, body: { amount: 100, currency: 'USD' } })).status, 401);
   const audit = (await bo(state.superToken)('GET', '/audit?action=user.')).body.data;
   assert.ok(audit.some((x) => x.action === 'user.suspend' && x.actor === 'Amani Admin <admin@pay243.com>' && x.details.reason === 'Activité suspecte signalée'));
 });
@@ -1316,7 +1375,8 @@ test('compte non activé : aucune opération avant la validation de l\'identité
 
   // Un compte entreprise non activé ne peut pas encaisser par API
   const biz = await register({ activate: false, account_type: 'business', email: 'atelier.nouveau@test.cd', business_name: 'Atelier Nouveau', full_name: 'Joseph Mutombo', password: 'motdepasse7', pin: '5926' });
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
+  const bizSk = await openMerchant(biz.body.token, { direct: true });
+  assert.equal((await api('POST', '/v1/payments', { token: bizSk, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
 
   // Validation par l'équipe : le compte est activé et l'utilisateur prévenu
   const { outbox } = await import('../src/providers/email/index.js');
@@ -1331,9 +1391,9 @@ test('compte non activé : aucune opération avant la validation de l\'identité
   // Activation manuelle par un administrateur (niveau KYC 2), et retrait de l'activation
   const bizId = biz.body.user.id;
   assert.equal((await api('POST', `/v1/admin/users/${bizId}/kyc-level`, { token: ADMIN_KEY, body: { level: 2, reason: 'Dossier vérifié en agence' } })).body.user.activated, true);
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 500, currency: 'USD' } })).status, 201);
+  assert.equal((await api('POST', '/v1/payments', { token: bizSk, body: { amount: 500, currency: 'USD' } })).status, 201);
   assert.equal((await api('POST', `/v1/admin/users/${bizId}/kyc-level`, { token: ADMIN_KEY, body: { level: 1, reason: 'Pièce expirée, nouvelle vérification requise' } })).body.user.activated, false);
-  assert.equal((await api('POST', '/v1/payments', { token: biz.body.merchant.secret_key, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
+  assert.equal((await api('POST', '/v1/payments', { token: bizSk, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
 });
 
 test('grand livre équilibré (partie double)', async () => {

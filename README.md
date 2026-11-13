@@ -47,7 +47,7 @@ DATABASE_URL=postgres://user:mdp@hote:5432/pay243 npm start
 
 1. Sur `/signup`, choisissez **Particulier** ou **Entreprise**, puis saisissez votre email. En sandbox, aucun email n'est envoyé : le code s'affiche à l'écran et dans la console du serveur. Ajoutez un numéro **081…** (M-Pesa) pour recharger, puis cliquez sur **Recharger** : le crédit arrive après environ 3 s.
 2. Créez un deuxième compte avec un numéro **097…** (Airtel) et envoyez-lui de l'argent.
-3. Dans **Espace marchand**, créez votre boutique, puis générez un **lien de paiement** et ouvrez-le.
+3. Avec un **compte entreprise**, demandez l'activation de l'espace marchand (Paramètres › Outils vendeur), activez-la depuis le back-office (**Marchands**), puis, dans l'onglet **Espace marchand**, générez un **lien de paiement** et ouvrez-le.
 4. **Rapprochement :** une recharge vers un numéro finissant par `9999` perd son callback, `8888` simule un délai dépassé alors que l'opérateur a encaissé, `7777` ne répond jamais. Dans `/admin`, onglet **Rapprochement**, lancez la vérification des transactions en attente, importez un relevé CSV et traitez les écarts.
 5. **KYC :** dans le wallet, cliquez sur **Vérifier mon identité** et envoyez trois photos (n'importe quelles images en sandbox). Ouvrez ensuite `/admin` avec la clé affichée dans la console du serveur, puis validez : les plafonds passent au niveau 2.
 6. Payez avec le wallet, en Mobile Money (un numéro finissant par `0000` simule un refus) ou par carte (`4242 4242 4242 4242`).
@@ -255,6 +255,12 @@ Rubriques : tableau de bord, utilisateurs (recherche, fiche, suspension, PIN, se
 - soit avec une clé de service `ADMIN_KEYS` : lien « Utiliser une clé de service » sur la page de connexion, puis **Équipe → Ajouter un membre**.
 
 `ADMIN_KEYS="nom:clé[:rôle]"` (rôle par défaut `super_admin`) reste disponible pour les scripts et l'accès de secours. En production, sans `ADMIN_KEYS`, aucune clé n'existe : seuls les comptes nominatifs donnent accès.
+
+## Espace marchand : sur demande, activé par l'équipe
+
+L'espace marchand (liens de paiement, clés API, webhooks, encaissements) est réservé aux **comptes entreprise** et n'est **pas activé par défaut**, y compris pour les comptes entreprise. Le titulaire en demande l'activation depuis **Paramètres › Outils vendeur** (`POST /v1/merchants/me/access-request`, avec une présentation facultative de son activité). L'équipe traite les demandes dans la section **Marchands** du back-office (pastille des demandes en attente) : **activer**, **refuser** ou **désactiver**, avec un motif journalisé et envoyé au titulaire par email.
+
+Tant que l'espace n'est pas activé : pas d'onglet « Espace marchand » dans l'app, pas de clé API ni de lien de paiement (`403 merchant_not_enabled`), et l'API refuse les clés existantes. Les ventes déjà encaissées restent toujours versables sur le wallet du titulaire. À la migration, les marchands qui avaient déjà encaissé des paiements ont gardé leur accès.
 
 ## Centre d'aide et support (`/aide`, `/messages` et back-office)
 

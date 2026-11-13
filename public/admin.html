@@ -356,6 +356,7 @@ async function start() {
   $('#nav').innerHTML = SECTIONS.filter((s) => can(s.perm)).map((s) => `<button data-go="${s.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s.id]}</svg>${s.label}<span class="count" data-count="${s.id}" hidden></span></button>`).join('');
   $$('#nav button').forEach((b) => b.onclick = () => go(b.dataset.go));
   if (can('support.view')) api('GET', '/support/summary').then((s) => badge('support', s.open)).catch(() => {});
+  if (can('merchants.view')) api('GET', '/merchants?access=requested').then((r) => badge('merchants', r.summary.requested)).catch(() => {});
   go(location.hash.slice(1) || 'dashboard');
 }
 
@@ -588,7 +589,7 @@ async function openUser(id) {
         <dt>Nationalité · fuseau</dt><dd>${esc(u.nationality)} · ${esc(u.timezone)}</dd>
         <dt>Inscrit le</dt><dd>${dt(u.created_at)}</dd>
         <dt>Appareils · cartes</dt><dd>${d.devices} appareil(s) de confiance · ${d.cards} carte(s)</dd>
-        ${d.merchant ? `<dt>Espace marchand</dt><dd>${esc(d.merchant.name)} <span class="mono muted">${esc(d.merchant.id)}</span> ${d.merchant.suspended_at ? '<span class="pill err">suspendu</span>' : ''}</dd>` : ''}
+        ${d.merchant ? `<dt>Espace marchand</dt><dd>${esc(d.merchant.name)} <span class="mono muted">${esc(d.merchant.id)}</span> ${accessPill(d.merchant.access?.status)} ${d.merchant.suspended_at ? '<span class="pill err">suspendu</span>' : ''}${can('merchants.view') ? ' <button class="lk" id="u-merchant">Gérer</button>' : ''}</dd>` : ''}
         ${d.merchant?.business ? (() => { const b = d.merchant.business; return `<dt>RCCM</dt><dd class="mono">${esc(b.rccm || '—')}</dd>
           <dt>Adresse entreprise</dt><dd>${esc([b.address, b.city, b.country].filter(Boolean).join(', ') || '—')}</dd>
           <dt>Contact entreprise</dt><dd>${esc(b.phone || '—')}${b.email ? ' · ' + esc(b.email) : ''}${b.fax ? ' · fax ' + esc(b.fax) : ''}</dd>
@@ -601,6 +602,7 @@ async function openUser(id) {
     <div class="card tbl"><h2>Dernières opérations</h2>${d.transactions.length ? `<table><tbody>${d.transactions.map((t) => `<tr><td>${esc(TYPE[t.type] || t.type)} ${pill(t.status)}<div class="muted">${esc(t.description || '')}${t.counterparty ? ' — ' + esc(t.counterparty) : ''}</div><div class="muted mono">${esc(t.id)} · ${dt(t.created_at)}</div></td><td class="num"><b>${t.direction === 'credit' ? '+' : t.direction === 'internal' ? '↔ ' : '−'}${fmt(t.amount, t.currency)}</b>${t.fee && t.direction === 'credit' ? `<div class="muted">commission ${fmt(t.fee, t.currency)}</div>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune opération.</p>'}</div>
     ${d.kyc_submissions.length ? `<div class="card"><h2>Vérifications d'identité</h2><ul class="list">${d.kyc_submissions.map((k) => `<li><span>${pill(k.status)} ${esc(k.document_type)}</span><span class="muted">${dt(k.created_at)}${k.reviewer ? ' · ' + esc(k.reviewer) : ''}${k.review_note ? ' · ' + esc(k.review_note) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
   const after = async (msg) => { toast(msg); await loadUsers(); await openUser(id); };
+  $('#u-merchant')?.addEventListener('click', () => { M_FILTER = { q: d.merchant.id, access: '' }; go('merchants'); });
   $$('[data-ua]').forEach((b) => b.onclick = async () => {
     const a = b.dataset.ua;
     if (a === 'suspend') { const v = await dialog({ title: `Suspendre ${u.full_name} ?`, text: 'Le compte ne pourra plus se connecter ni effectuer d’opérations, et son espace marchand sera bloqué. L’utilisateur est prévenu par email.', fields: [reasonField()], confirm: 'Suspendre', danger: true }); if (v) run(b, async () => { await api('POST', `/users/${id}/suspend`, v); await after('Compte suspendu.'); }); }
@@ -639,24 +641,50 @@ async function renderTransactions() {
 // =====================================================================
 //  Marchands
 // =====================================================================
+const ACCESS = { none: ['Non demandé', ''], requested: ['Demande en attente', 'warn'], enabled: ['Activé', 'ok'], rejected: ['Refusé', 'err'], disabled: ['Désactivé', 'err'] };
+const accessPill = (s) => (s ? `<span class="pill ${ACCESS[s]?.[1] || ''}">${esc(ACCESS[s]?.[0] || s)}</span>` : '');
+let M_FILTER = { q: '', access: '' };
 async function renderMerchants() {
-  $('#view').innerHTML = `<form class="toolbar" id="f-m"><input name="q" placeholder="Nom commercial, email du titulaire ou identifiant mch_…"><button class="btn">Rechercher</button></form><div class="card tbl" id="m-list"></div>`;
+  $('#view').innerHTML = `<p class="muted" style="margin:-6px 0 14px">L'espace marchand (encaissements, liens de paiement, clés API) est réservé aux comptes entreprise et n'est ouvert qu'après activation par l'équipe, sur demande du titulaire.</p>
+    <form class="toolbar" id="f-m"><input name="q" placeholder="Nom commercial, email du titulaire ou identifiant mch_…" value="${esc(M_FILTER.q)}">
+      <select name="access"><option value="">Tous les espaces</option><option value="requested">Demandes en attente</option><option value="enabled">Activés</option><option value="none">Non demandés</option><option value="rejected">Refusés</option><option value="disabled">Désactivés</option></select>
+      <button class="btn">Rechercher</button></form><div class="card tbl" id="m-list"></div>`;
+  $('#f-m').access.value = M_FILTER.access;
   const load = async () => {
-    const r = await api('GET', '/merchants?' + new URLSearchParams([...new FormData($('#f-m'))].filter(([, v]) => v)));
-    $('#m-list').innerHTML = r.data.length ? `<table><thead><tr><th>Marchand</th><th>Titulaire</th><th class="num">Soldes</th><th>Clés · paiements</th><th></th></tr></thead><tbody>${r.data.map((m) => `<tr>
+    const r = await api('GET', '/merchants?' + new URLSearchParams(Object.entries(M_FILTER).filter(([, v]) => v)));
+    badge('merchants', r.summary.requested);
+    const manage = can('merchants.manage');
+    $('#m-list').innerHTML = r.data.length ? `<table><thead><tr><th>Marchand</th><th>Titulaire</th><th>Accès</th><th class="num">Soldes</th><th>Clés · paiements</th><th></th></tr></thead><tbody>${r.data.map((m) => `<tr>
       <td><b>${esc(m.name)}</b> ${m.suspended_at ? '<span class="pill err">suspendu</span>' : ''}<div class="muted mono">${esc(m.id)}</div><div class="muted">créé le ${dt(m.created_at)}</div></td>
-      <td>${esc(m.owner_name)}<div class="muted">${esc(m.owner_email || '')}</div></td>
+      <td>${esc(m.owner_name)}<div class="muted">${esc(m.owner_email || '')}</div><div class="muted">${m.owner_account_type === 'business' ? 'Compte entreprise' : '<b style="color:var(--err)">Compte particulier</b>'} · ${m.owner_activated ? 'identité vérifiée' : '<span style="color:var(--warn)">identité non vérifiée</span>'}</div></td>
+      <td>${accessPill(m.access_status)}${m.access_status === 'requested' ? `<div class="muted">demandé le ${dt(m.access_requested_at)}</div>` : m.access_decided_at ? `<div class="muted">le ${dt(m.access_decided_at)}</div>` : ''}${m.access_request ? `<div style="margin-top:4px;font-size:13px;max-width:280px;white-space:pre-wrap;overflow-wrap:anywhere">« ${esc(m.access_request)} »</div>` : ''}${m.access_note && m.access_status !== 'enabled' ? `<div class="muted">Motif : ${esc(m.access_note)}</div>` : ''}</td>
       <td class="num">${m.balances.map((b) => fmt(b.balance, b.currency)).join('<br>') || '—'}</td>
       <td>${m.active_keys} clé(s) active(s)<div class="muted">${m.paid_payments} paiement(s) reçu(s)</div>${m.webhook_url ? `<div class="muted">${esc(m.webhook_url)}</div>` : ''}</td>
-      <td>${can('merchants.manage') ? `<div class="actions">${m.suspended_at ? `<button class="btn ok sm" data-ma="reactivate" data-id="${esc(m.id)}">Réactiver</button>` : `<button class="btn danger sm" data-ma="suspend" data-id="${esc(m.id)}">Suspendre</button>`}${m.active_keys ? `<button class="btn light sm" data-ma="revoke-keys" data-id="${esc(m.id)}">Révoquer les clés</button>` : ''}</div>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucun marchand.</p>';
+      <td>${manage ? `<div class="actions">${m.access_status === 'enabled'
+        ? `<button class="btn light sm" data-acc="disable" data-id="${esc(m.id)}">Désactiver</button>`
+        : `${m.owner_account_type === 'business' ? `<button class="btn ok sm" data-acc="enable" data-id="${esc(m.id)}">Activer</button>` : ''}${m.access_status === 'requested' ? `<button class="btn light sm" data-acc="reject" data-id="${esc(m.id)}">Refuser</button>` : ''}`}
+        ${m.suspended_at ? `<button class="btn ok sm" data-ma="reactivate" data-id="${esc(m.id)}">Lever la suspension</button>` : `<button class="btn danger sm" data-ma="suspend" data-id="${esc(m.id)}">Suspendre</button>`}${m.active_keys ? `<button class="btn light sm" data-ma="revoke-keys" data-id="${esc(m.id)}">Révoquer les clés</button>` : ''}</div>` : ''}</td></tr>`).join('')}</tbody></table>`
+      : `<p class="muted">${M_FILTER.access === 'requested' ? "Aucune demande d'activation en attente." : 'Aucun marchand.'}</p>`;
+    $$('[data-acc]').forEach((b) => b.onclick = async () => {
+      const m = r.data.find((x) => x.id === b.dataset.id); const act = b.dataset.acc;
+      const title = { enable: `Activer l'espace marchand « ${m.name} » ?`, reject: `Refuser la demande de « ${m.name} » ?`, disable: `Désactiver l'espace marchand « ${m.name} » ?` }[act];
+      const text = {
+        enable: `Le titulaire pourra créer des liens de paiement, générer ses clés API et encaisser. Il est prévenu par email.${m.owner_activated ? '' : " Attention : son identité n'est pas encore vérifiée ; il ne pourra encaisser qu'après validation."}`,
+        reject: 'Le titulaire est prévenu par email avec le motif ; il pourra refaire une demande.',
+        disable: "Paiements, liens et clés API sont bloqués aussitôt, et l'onglet disparaît de son app. Ses ventes déjà encaissées restent versables sur son wallet. Le motif lui est envoyé par email.",
+      }[act];
+      const v = await dialog({ title, text, fields: [reasonField()], confirm: { enable: 'Activer', reject: 'Refuser', disable: 'Désactiver' }[act], danger: act !== 'enable' });
+      if (v) run(b, async () => { await api('POST', `/merchants/${b.dataset.id}/access`, { action: act, ...v }); toast({ enable: 'Espace marchand activé', reject: 'Demande refusée', disable: 'Espace marchand désactivé' }[act]); await load(); });
+    });
     $$('[data-ma]').forEach((b) => b.onclick = async () => {
-      const titles = { suspend: 'Suspendre ce marchand ?', reactivate: 'Réactiver ce marchand ?', 'revoke-keys': 'Révoquer toutes les clés API ?' };
+      const titles = { suspend: 'Suspendre ce marchand ?', reactivate: 'Lever la suspension de ce marchand ?', 'revoke-keys': 'Révoquer toutes les clés API ?' };
       const texts = { suspend: 'Ses appels API seront refusés tant qu’il est suspendu.', 'revoke-keys': 'Le marchand devra générer de nouvelles clés depuis son espace.' };
       const v = await dialog({ title: titles[b.dataset.ma], text: texts[b.dataset.ma] || '', fields: [reasonField()], confirm: 'Confirmer', danger: b.dataset.ma !== 'reactivate' });
       if (v) run(b, async () => { await api('POST', `/merchants/${b.dataset.id}/${b.dataset.ma}`, v); toast('Fait.'); await load(); });
     });
   };
-  $('#f-m').onsubmit = (e) => { e.preventDefault(); load().catch((x) => toast(x.message, true)); };
+  $('#f-m').onsubmit = (e) => { e.preventDefault(); M_FILTER = { q: e.target.q.value.trim(), access: e.target.access.value }; load().catch((x) => toast(x.message, true)); };
+  $('#f-m').access.onchange = () => $('#f-m').requestSubmit();
   await load();
 }
 
