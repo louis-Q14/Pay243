@@ -355,7 +355,7 @@ $('#f-reset').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
 function setSession(t) {
   TOKEN = t; try { sessionStorage.setItem('pay243_token', t); } catch {}
   const next = new URLSearchParams(location.search).get('next');
-  if (next && /^\/(settings|aide)(#[a-z]+)?$/.test(next)) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
+  if (next && (/^\/(settings|aide)(#[a-z]+)?$/.test(next) || /^\/messages(\?(t=[\w-]{1,64}|new=1[\w=&%.\-+]{0,300}))?$/.test(next))) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
   boot();
 }
 function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'); } catch {} $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#who').textContent = ''; }
@@ -391,7 +391,7 @@ async function boot() {
       if (newKey) { showKey(newKey); toast('Bienvenue ! Votre compte entreprise est prêt.'); }
       history.replaceState(null, '', '/app');
     } else if (location.hash === '#support') {
-      location.replace('/aide#support'); return; // le support a sa page : le centre d'aide
+      location.replace('/messages'); return; // le support a sa page : le centre de messages
     } else if (location.hash === '#cards') {
       $('[data-tab="cards"]').click(); history.replaceState(null, '', '/app');
     } else if (location.hash === '#kyc') {
@@ -619,7 +619,7 @@ $$('[data-open]').forEach((b) => b.onclick = () => {
 // ---------------- Support ----------------
 // Le centre de messages est sur /aide ; ici, seulement la pastille des réponses non lues sur le lien « Aide ».
 const SUP = { timer: null };
-function setSupBadge(n) { const b = $('#sup-badge'); b.hidden = !n; b.textContent = n || ''; }
+function setSupBadge(n) { const b = $('#sup-badge'); b.hidden = !n; b.textContent = n || ''; b.parentElement.href = n ? '/messages' : '/aide'; } // une réponse attend : droit au centre de messages
 async function refreshSupportBadge() { try { setSupBadge((await api('GET', '/v1/support/unread')).unread); } catch {} }
 function startSupportPolling() {
   if (SUP.timer) return;

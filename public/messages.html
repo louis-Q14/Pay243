@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centre de messages — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Centre de messages Pay243 : vos échanges avec le support.">
+<meta name="theme-color" content="#0b1424">
+<style>
+  /* Mêmes couleurs, polices et composants que le back-office */
+  :root {
+    --ink: #0b1424; --ink-2: #2a3547; --muted: #5d6879; --line: #e4e8ef; --soft: #f4f6fa; --bg: #eef2f8; --card: #fff;
+    --blue: #0057d9; --navy: #0a2a66; --side: #0b1424; --side-2: #1a2436; --red: #ce1021;
+    --ok: #12804a; --ok-bg: #e3f5ea; --warn: #8a5a00; --warn-bg: #fff1cc; --err: #b3121f; --err-bg: #fde8ea;
+    --r: 14px; --font: "Segoe UI Variable Text", -apple-system, "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 var(--font); color: var(--ink); background: var(--bg); }
+  [hidden] { display: none !important; }
+  .hidden { display: none !important; }
+  a { color: var(--blue); }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: var(--ink); width: 100%; padding: 10px 12px; border: 1.5px solid #d6dce6; border-radius: 10px; background: #fff; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 87, 217, .12); }
+  textarea { min-height: 76px; resize: vertical; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 12px 0 5px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 14px; background: var(--ink); color: #fff; white-space: nowrap; text-decoration: none; }
+  .btn:hover { filter: brightness(1.15); }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .btn.light { background: var(--soft); color: var(--ink); }
+  .btn svg { width: 16px; height: 16px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--soft); color: var(--ink-2); white-space: nowrap; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; z-index: 95; max-width: 92vw; box-shadow: 0 12px 30px rgba(0, 0, 0, .25); font-size: 14.5px; }
+  .toast.bad { background: var(--err); }
+
+  /* ---------- Barre du haut ---------- */
+  .top { background: var(--side); color: #c9d1de; }
+  .top .in { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 18px; }
+  .top .brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; text-decoration: none; }
+  .top .brand img { height: 28px; outline: 2px solid #fff; }
+  .top .brand span { padding-left: 12px; border-left: 1px solid var(--side-2); font-size: 14.5px; }
+  .top nav { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .top nav a { color: #c9d1de; text-decoration: none; font-weight: 600; font-size: 14px; padding: 7px 12px; border-radius: 10px; }
+  .top nav a:hover { background: var(--side-2); color: #fff; }
+
+  /* ---------- Page ---------- */
+  main { max-width: 1240px; margin: 0 auto; padding: 26px 24px 60px; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; }
+  .page-head .right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .need { font-size: 14.5px; color: var(--ink-2); }
+  .need a { font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .need a:hover { text-decoration: underline; }
+  .need svg { width: 17px; height: 17px; }
+  .count { background: var(--red); color: #fff; border-radius: 99px; font-size: 12px; padding: 1px 8px; font-weight: 800; }
+
+  .split { display: grid; grid-template-columns: minmax(0, 370px) minmax(0, 1fr); gap: 22px; align-items: start; }
+
+  /* Liste des conversations (colonne de gauche) */
+  .inbox { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .conv { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; width: 100%; padding: 14px 16px; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; }
+  .conv:hover { background: #fff; }
+  .conv:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .conv.sel { border-color: var(--ink); background: #fff; }
+  .conv .ic { grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; background: #e2e7f0; display: grid; place-items: center; color: var(--ink-2); }
+  .conv .ic svg { width: 16px; height: 16px; }
+  .conv.closed .ic { background: var(--ok-bg); color: var(--ok); }
+  .conv b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .conv.unread b { font-weight: 800; }
+  .conv .date { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
+  .conv .line { grid-column: 2 / 4; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--muted); }
+  .conv .line span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); flex: none; }
+  .inbox .none { padding: 20px 16px; color: var(--muted); font-size: 14px; }
+  .legal { margin: 18px 12px 0; text-align: center; color: var(--ink-2); font-size: 13px; line-height: 1.45; }
+
+  /* Conversation (colonne de droite) */
+  .pane { background: var(--card); border: 1px solid #d6dce6; border-radius: 12px; min-height: 620px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(11, 20, 36, .04); }
+  .pane-head { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 2px 12px; padding: 22px 28px 18px; border-bottom: 1px solid var(--line); }
+  .pane-head .ic { grid-row: span 3; width: 32px; height: 32px; border-radius: 50%; background: #e2e7f0; display: grid; place-items: center; color: var(--ink-2); }
+  .pane-head .ic svg { width: 16px; height: 16px; }
+  .pane-head .from { font-size: 14.5px; }
+  .pane-head .date { font-size: 14.5px; white-space: nowrap; }
+  .pane-head h2 { grid-column: 2 / 4; margin: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+  .pane-head .meta { grid-column: 2 / 4; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+  .back { display: none; border: 0; background: none; color: var(--blue); font-weight: 700; padding: 0; margin: 0 0 12px; font-size: 14px; }
+  .pane-body { flex: 1; padding: 22px 28px; }
+  .empty { flex: 1; display: grid; place-items: center; text-align: center; padding: 40px 24px; color: var(--muted); }
+  .empty svg { width: 54px; height: 54px; color: #b9c6da; }
+  .empty h3 { color: var(--ink); margin: 12px 0 4px; font-size: 18px; }
+  .empty p { margin: 0 auto 16px; max-width: 42ch; font-size: 14px; }
+
+  .thread { display: flex; flex-direction: column; gap: 10px; max-height: 56vh; overflow-y: auto; padding: 2px; }
+  .bubble { max-width: 82%; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; line-height: 1.5; }
+  .bubble small { display: block; color: var(--muted); font-size: 11.5px; margin-bottom: 3px; white-space: normal; }
+  .bubble.them { align-self: flex-start; background: var(--soft); }
+  .bubble.me { align-self: flex-end; background: #e7efff; }
+  .bubble.system { align-self: center; background: none; color: var(--muted); font-size: 12.5px; text-align: center; padding: 2px 8px; }
+  .reply { border-top: 1px solid var(--line); padding: 16px 28px 22px; }
+  .reply .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+  .reply .bar > div { display: flex; gap: 8px; flex-wrap: wrap; }
+  .closed-note { color: var(--muted); font-size: 13.5px; margin: 0 0 8px; }
+  .safety { background: var(--warn-bg); color: #5c4a00; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin: 0 0 6px; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
+
+  /* Pièces jointes */
+  .sa-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .sa-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px dashed #b9c6da; border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--blue); cursor: pointer; background: #fff; margin: 0; }
+  .sa-btn svg { width: 15px; height: 15px; }
+  .sa-list { display: contents; }
+  .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 10px; border-radius: 99px; background: #eef3fb; font-size: 12px; }
+  .sa-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+  .sa-chip.busy { opacity: .6; } .sa-chip.busy::after { content: "envoi…"; font-size: 11px; color: var(--muted); margin-right: 4px; }
+  .sa-chip button { all: unset; cursor: pointer; padding: 0 6px; font-size: 16px; line-height: 1; color: var(--muted); }
+  .sa-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; white-space: normal; }
+  .sa-files img { width: 128px; height: 96px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: rgba(0, 0, 0, .08); }
+  .sa-doc { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 8px; background: #fff; color: var(--ink) !important; font-size: 12px; text-decoration: none; border: 1px solid rgba(0, 0, 0, .08); max-width: 220px; }
+  .sa-doc b { font-size: 10px; padding: 2px 5px; border-radius: 4px; background: var(--red); color: #fff; }
+  .sa-doc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sa-zoom { position: fixed; inset: 0; z-index: 90; background: rgba(11, 20, 36, .85); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+  .sa-zoom div { display: grid; justify-items: center; }
+  .sa-zoom img { max-width: 94vw; max-height: 82vh; border-radius: 8px; }
+  .sa-zoom a { margin-top: 10px; color: #fff; font-size: 14px; font-weight: 600; }
+
+  /* ---------- Tablette et téléphone : une colonne, la liste puis la conversation ---------- */
+  @media (max-width: 860px) {
+    .top .in { padding: 0 16px; height: 54px; gap: 10px; }
+    .top .brand span { display: none; }
+    .top nav a { padding: 6px 9px; font-size: 13.5px; }
+    main { padding: 16px 16px 40px; }
+    .page-head { margin-bottom: 12px; }
+    .page-head h1 { font-size: 22px; }
+    .need { display: none; }
+    .split { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .split.reading .side { display: none; }
+    .split:not(.reading) .pane { display: none; }
+    .back { display: block; }
+    .conv { padding: 12px 12px; background: #fff; border-radius: 14px; }
+    .pane { min-height: 0; }
+    .pane-head { padding: 16px 16px 14px; }
+    .pane-body { padding: 16px; }
+    .reply { padding: 14px 16px 16px; }
+    .thread { max-height: none; }
+    .bubble { max-width: 90%; font-size: 14px; }
+    .reply .bar { flex-direction: column; align-items: stretch; }
+    .reply .bar .btn { flex: 1; }
+    .sa-files img { width: 104px; height: 78px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <a class="brand" href="/aide"><img src="/assets/logo.png" alt="Pay243"><span>Centre de messages</span></a>
+    <nav aria-label="Navigation">
+      <a href="/aide">Centre d'aide</a>
+      <a href="/app" data-member hidden>Mon wallet</a>
+      <a href="/app?next=%2Fmessages" data-guest>Se connecter</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <h1>Messages <span class="count" id="unread" hidden></span></h1>
+    <div class="right">
+      <span class="need">Besoin d'aide ? <a href="/aide">Consulter le centre d'aide <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c.5 4.6 2.9 7.5 10 10-7.1 2.5-9.5 5.4-10 10-.5-4.6-2.9-7.5-10-10 7.1-2.5 9.5-5.4 10-10z"/></svg></a></span>
+      <button class="btn" id="new-btn" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nouvelle demande</button>
+    </div>
+  </div>
+
+  <div class="split" id="split">
+    <!-- Colonne de gauche : les conversations -->
+    <div class="side">
+      <ul class="inbox" id="inbox"></ul>
+      <p class="legal">Vos échanges avec le support restent consultables ici, y compris après la résolution de la demande. Pay243 ne vous demandera jamais votre mot de passe, votre PIN ni un code de vérification.</p>
+    </div>
+
+    <!-- Colonne de droite : la conversation ouverte -->
+    <section class="pane" id="pane" aria-live="polite">
+      <!-- Visiteur -->
+      <div class="empty" id="v-guest" hidden><div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        <h3>Connectez-vous pour voir vos messages</h3>
+        <p>Écrivez au support, joignez une capture ou un reçu, et suivez les réponses de nos conseillers.</p>
+        <a class="btn" id="login-link" href="/app?next=%2Fmessages">Se connecter</a>
+      </div></div>
+
+      <!-- Aucune conversation ouverte -->
+      <div class="empty" id="v-empty" hidden><div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/></svg>
+        <h3 id="empty-title">Sélectionnez une conversation</h3>
+        <p id="empty-text">Les réponses du support s'affichent ici. Vous êtes aussi prévenu par email.</p>
+        <button class="btn" type="button" data-new>Nouvelle demande</button>
+      </div></div>
+
+      <!-- Nouvelle demande -->
+      <div id="v-new" hidden>
+        <div class="pane-head">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="from"><button class="back" type="button" data-back>← Messages</button>Support Pay243</div><div></div>
+          <h2>Nouvelle demande</h2>
+        </div>
+        <div class="pane-body">
+          <p class="safety">N'indiquez jamais votre mot de passe, votre PIN ni un code reçu par SMS ou email.</p>
+          <form id="f-new">
+            <label>Rubrique</label><select name="category"></select>
+            <label>Objet</label><input name="subject" maxlength="120" required placeholder="Ex : Ma recharge M-Pesa n'est pas arrivée">
+            <label>Opération concernée (facultatif)</label><select name="transaction_id"><option value="">Aucune</option></select>
+            <label>Message</label><textarea name="message" rows="6" maxlength="4000" required placeholder="Décrivez votre problème : date, montant, numéro utilisé…"></textarea>
+            <div class="sa-row" style="margin-top:10px"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
+            <p class="hint">Capture d'écran, reçu… : photo ou PDF, 5 Mo maximum, 3 fichiers par message.</p>
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn">Envoyer ma demande</button><button class="btn light" type="button" data-back-desk>Annuler</button></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Conversation -->
+      <div id="v-thread" hidden style="display:flex;flex-direction:column;flex:1">
+        <div class="pane-head">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v.3l-9 5.6-9-5.6z"/><path d="M3 9.2V17.5A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5V9.2l-8.5 5.3a1 1 0 0 1-1 0z"/></svg></div>
+          <div class="from"><button class="back" type="button" data-back>← Messages</button>Support Pay243</div><div class="date" id="t-date"></div>
+          <h2 id="t-title"></h2>
+          <div class="meta" id="t-meta"></div>
+        </div>
+        <div class="pane-body"><div class="thread" id="t-msgs"></div></div>
+        <div class="reply">
+          <p class="closed-note" id="t-closed" hidden>Cette demande est résolue. Écrivez un nouveau message pour la rouvrir.</p>
+          <form id="f-reply">
+            <textarea name="body" rows="3" maxlength="4000" placeholder="Votre message…"></textarea>
+            <div class="bar">
+              <div class="sa-row"><label class="sa-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Joindre<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden></label><span class="sa-list"></span></div>
+              <div><button type="button" class="btn light" id="t-close">Marquer comme résolue</button><button class="btn">Envoyer</button></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="sa-zoom" class="sa-zoom" hidden><div><img alt=""><a href="#" download>Télécharger</a></div></div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let TOKEN = null; let ME = null;
+try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+
+
+function toast(msg, err) {
+  $$('.toast').forEach((x) => x.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' bad' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401) { TOKEN = null; ME = null; try { sessionStorage.removeItem('pay243_token'); } catch {} showGuest(); }
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code });
+  }
+  return j;
+}
+async function busy(btn, fn) { if (btn) btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { if (btn) btn.disabled = false; } }
+const fmt = (minor, cur) => cur === 'USD'
+  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+const tz = () => ME?.timezone || undefined;
+const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: tz(), dateStyle: 'short', timeStyle: 'short' }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
+/** Date courte de la liste : l'heure aujourd'hui, « 12 nov. » cette année, sinon « 12/11/2025 ». */
+function shortDate(iso) {
+  const d = new Date(iso); const now = new Date();
+  try {
+    const day = (x) => x.toLocaleDateString('fr-FR', { timeZone: tz() });
+    if (day(d) === day(now)) return d.toLocaleTimeString('fr-FR', { timeZone: tz(), hour: '2-digit', minute: '2-digit' });
+    if (d.getFullYear() === now.getFullYear()) return d.toLocaleDateString('fr-FR', { timeZone: tz(), day: 'numeric', month: 'short' });
+    return day(d);
+  } catch { return d.toLocaleDateString('fr-FR'); }
+}
+const longDate = (iso) => { try { return new Date(iso).toLocaleDateString('fr-FR', { timeZone: tz(), day: 'numeric', month: 'long', year: 'numeric' }); } catch { return ''; } };
+const TYPE_LABEL = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
+const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v.3l-9 5.6-9-5.6z"/><path d="M3 9.2V17.5A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5V9.2l-8.5 5.3a1 1 0 0 1-1 0z"/></svg>';
+const ICON_DONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+// =====================================================================
+//  État : liste des demandes, conversation ouverte, panneau affiché
+// =====================================================================
+const S = { tickets: [], categories: [], open: null, count: 0, view: 'empty' };
+const STATUS = { open: ['En attente du support', 'warn'], answered: ['Le support a répondu', 'ok'], closed: ['Résolue', ''] };
+const pill = (s) => `<span class="pill ${STATUS[s]?.[1] || ''}">${esc(STATUS[s]?.[0] || s)}</span>`;
+
+/** Panneau de droite ; sur téléphone, la liste et la conversation s'affichent tour à tour. */
+function show(v) {
+  S.view = v;
+  ['guest', 'empty', 'new', 'thread'].forEach((x) => { $('#v-' + x).hidden = x !== v; });
+  $('#v-thread').style.display = v === 'thread' ? 'flex' : 'none';
+  $('#split').classList.toggle('reading', v === 'new' || v === 'thread');
+  if (v !== 'thread') S.open = null;
+  renderInbox();
+}
+function setUnread(n) { const c = $('#unread'); c.hidden = !n; c.textContent = n || ''; document.title = (n ? `(${n}) ` : '') + 'Centre de messages — Pay243'; }
+function setUrl(q) { history.replaceState(null, '', '/messages' + (q ? '?' + q : '')); }
+
+function showGuest() {
+  $$('[data-guest]').forEach((e) => { e.hidden = false; });
+  $$('[data-member]').forEach((e) => { e.hidden = true; });
+  $('#new-btn').hidden = true;
+  $('#login-link').href = '/app?next=' + encodeURIComponent(location.pathname + location.search);
+  S.tickets = []; setUnread(0); show('guest');
+}
+
+function renderInbox() {
+  const el = $('#inbox');
+  if (!ME) { el.innerHTML = ''; return; }
+  el.innerHTML = S.tickets.length ? S.tickets.map((t) => `<li><button type="button" class="conv ${S.open === t.id ? 'sel' : ''} ${t.unread ? 'unread' : ''} ${t.status === 'closed' ? 'closed' : ''}" data-tkt="${esc(t.id)}">
+      <span class="ic">${t.status === 'closed' ? ICON_DONE : ICON_MAIL}</span>
+      <b>${esc(t.subject)}</b><span class="date">${esc(shortDate(t.last_message_at))}</span>
+      <span class="line"><span>#${esc(t.number)} · ${esc(STATUS[t.status]?.[0] || t.status)}</span>${t.unread ? '<span class="dot" title="Nouvelle réponse"></span>' : ''}</span>
+    </button></li>`).join('')
+    : '<li class="none">Aucune demande pour l\'instant. Une question sans réponse dans le <a href="/aide">centre d\'aide</a> ? Écrivez-nous avec « Nouvelle demande ».</li>';
+  $$('[data-tkt]', el).forEach((b) => b.onclick = () => openTicket(b.dataset.tkt).catch((e) => toast(e.message, true)));
+}
+async function loadInbox() {
+  const r = await api('GET', '/v1/support/tickets');
+  S.tickets = r.data; S.categories = r.categories; setUnread(r.unread);
+  renderInbox();
+  return r;
+}
+function emptyState() {
+  $('#empty-title').textContent = S.tickets.length ? 'Sélectionnez une conversation' : 'Aucun message pour l\'instant';
+  $('#empty-text').textContent = S.tickets.length ? 'Les réponses du support s\'affichent ici. Vous êtes aussi prévenu par email.' : 'Une question ? Un conseiller Pay243 vous répond ici, et vous êtes prévenu par email.';
+  show('empty'); setUrl('');
+}
+
+// ---------------- Nouvelle demande ----------------
+async function openNew(category, subject) {
+  if (!ME) return;
+  if (!S.categories.length) await loadInbox();
+  show('new'); setUrl('new=1');
+  const f = $('#f-new'); f.reset(); ATT_NEW.reset();
+  f.category.innerHTML = S.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
+  if (category && S.categories.some((c) => c.id === category)) f.category.value = category;
+  if (subject) f.subject.value = subject.slice(0, 120);
+  (subject ? f.message : f.subject).focus({ preventScroll: true });
+  try {
+    const t = await api('GET', '/v1/transactions?limit=20');
+    f.transaction_id.innerHTML = '<option value="">Aucune</option>' + t.data.map((x) => `<option value="${esc(x.id)}">${esc(TYPE_LABEL[x.type] || x.type)} · ${fmt(x.amount, x.currency)} · ${when(x.created_at)}</option>`).join('');
+  } catch {}
+}
+
+// ---------------- Pièces jointes ----------------
+const SA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const SA_MAX = 5 * 1024 * 1024;
+const fsize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' Mo' : Math.max(1, Math.round(n / 1024)) + ' ko');
+/** Photo lourde (téléphone) : réduite à 1600 px en JPEG avant l'envoi. */
+async function shrinkImage(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1048576) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const b = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+    return b && b.size < file.size ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+  } catch { return file; }
+}
+function attacher(form) {
+  let items = [];
+  const input = $('input[type=file]', form); const list = $('.sa-list', form);
+  const render = () => {
+    list.innerHTML = items.map((it, i) => `<span class="sa-chip ${it.id ? '' : 'busy'}"><span title="${esc(it.name)}">${esc(it.name)}</span><button type="button" data-i="${i}" aria-label="Retirer">×</button></span>`).join('');
+    $$('[data-i]', list).forEach((b) => b.onclick = () => { items.splice(+b.dataset.i, 1); render(); });
+  };
+  input.onchange = async () => {
+    const files = [...input.files]; input.value = '';
+    for (const f of files) {
+      if (items.length >= 3) { toast('3 pièces jointes maximum par message.', true); break; }
+      if (!SA_TYPES.includes(f.type)) { toast(`${f.name} : photo (JPEG, PNG, WebP) ou PDF uniquement.`, true); continue; }
+      const it = { name: f.name }; items.push(it); render();
+      try {
+        const blob = await shrinkImage(f);
+        if (blob.size > SA_MAX) throw new Error(`${f.name} : 5 Mo maximum.`);
+        const r = await fetch('/v1/support/files', { method: 'POST', headers: { 'Content-Type': blob.type, Authorization: 'Bearer ' + TOKEN, 'X-File-Name': encodeURIComponent(f.name) }, body: blob });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error?.message || 'Envoi du fichier impossible.');
+        it.id = j.id; it.name = j.name;
+      } catch (e) { const i = items.indexOf(it); if (i >= 0) items.splice(i, 1); toast(e.message, true); }
+      render();
+    }
+  };
+  return { ids: () => items.filter((x) => x.id).map((x) => x.id), pending: () => items.some((x) => !x.id), reset: () => { items = []; render(); } };
+}
+const ATT_NEW = attacher($('#f-new')); const ATT_REPLY = attacher($('#f-reply'));
+const SA_URLS = new Map();
+function fileUrl(p) {
+  if (!SA_URLS.has(p)) {
+    SA_URLS.set(p, fetch(p, { headers: { Authorization: 'Bearer ' + TOKEN } })
+      .then((r) => { if (!r.ok) throw new Error('Fichier indisponible.'); return r.blob(); })
+      .then((b) => URL.createObjectURL(b))
+      .catch((e) => { SA_URLS.delete(p); throw e; }));
+  }
+  return SA_URLS.get(p);
+}
+const msgFiles = (m) => (m.attachments?.length ? `<div class="sa-files">${m.attachments.map((a) => {
+  const p = `/v1/support/tickets/${encodeURIComponent(S.open)}/files/${encodeURIComponent(a.id)}`;
+  return a.mime.startsWith('image/') ? `<img data-src="${esc(p)}" data-name="${esc(a.name)}" alt="${esc(a.name)}">`
+    : `<a href="#" class="sa-doc" data-src="${esc(p)}" data-name="${esc(a.name)}"><b>PDF</b><span>${esc(a.name)}</span> ${fsize(a.size)}</a>`;
+}).join('')}</div>` : '');
+function saveBlob(u, name) { const l = document.createElement('a'); l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove(); }
+function hydrateFiles(box) {
+  $$('img[data-src]', box).forEach((img) => {
+    fileUrl(img.dataset.src).then((u) => { img.onload = () => { box.scrollTop = box.scrollHeight; }; img.src = u; }).catch(() => { img.alt = 'Image indisponible'; });
+    img.onclick = () => fileUrl(img.dataset.src).then((u) => {
+      const z = $('#sa-zoom'); $('img', z).src = u; const a = $('a', z); a.href = u; a.download = img.dataset.name; z.hidden = false;
+    }).catch((e) => toast(e.message, true));
+  });
+  $$('a.sa-doc', box).forEach((a) => a.onclick = (e) => { e.preventDefault(); fileUrl(a.dataset.src).then((u) => saveBlob(u, a.dataset.name)).catch((x) => toast(x.message, true)); });
+}
+$('#sa-zoom').onclick = (e) => { if (e.target.tagName !== 'A') $('#sa-zoom').hidden = true; };
+
+// ---------------- Conversation ----------------
+function renderThread(d) {
+  const t = d.ticket; S.open = t.id; S.count = d.messages.length;
+  const i = S.tickets.findIndex((x) => x.id === t.id);
+  if (i >= 0) S.tickets[i] = { ...S.tickets[i], ...t, unread: 0 }; else S.tickets.unshift({ ...t, unread: 0 });
+  renderInbox();
+  $('#t-title').textContent = t.subject;
+  $('#t-date').textContent = shortDate(t.created_at);
+  $('#t-date').title = longDate(t.created_at);
+  $('#t-meta').innerHTML = `${pill(t.status)} <span class="muted">Demande #${esc(t.number)} · ${esc(t.category_label)}${t.transaction_id ? ' · opération <span style="font-family:ui-monospace,Menlo,monospace">' + esc(t.transaction_id) + '</span>' : ''}</span>`;
+  $('#t-msgs').innerHTML = d.messages.map((m) => (m.author === 'system'
+    ? `<div class="bubble system">${esc(m.body)} · ${when(m.created_at)}</div>`
+    : `<div class="bubble ${m.author === 'user' ? 'me' : 'them'}"><small>${m.author === 'user' ? 'Vous' : esc(m.author_name || 'Support Pay243') + ' · Support Pay243'} · ${when(m.created_at)}</small>${esc(m.body)}${msgFiles(m)}</div>`)).join('');
+  hydrateFiles($('#t-msgs'));
+  $('#t-close').hidden = t.status === 'closed';
+  $('#t-closed').hidden = t.status !== 'closed';
+  const box = $('#t-msgs'); box.scrollTop = box.scrollHeight;
+}
+async function openTicket(id) {
+  const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(id));
+  if (S.open !== id) { ATT_REPLY.reset(); $('#f-reply').reset(); }
+  show('thread'); renderThread(d); setUrl('t=' + encodeURIComponent(id));
+  if (matchMedia('(max-width: 860px)').matches) scrollTo({ top: 0 });
+  refreshUnread();
+}
+async function refreshUnread() { try { setUnread((await api('GET', '/v1/support/unread')).unread); } catch {} }
+
+$('#new-btn').onclick = () => openNew().catch((e) => toast(e.message, true));
+$$('[data-new]').forEach((b) => b.onclick = () => openNew().catch((e) => toast(e.message, true)));
+$$('[data-back]').forEach((b) => b.onclick = () => { emptyState(); loadInbox().catch(() => {}); });
+$('[data-back-desk]').onclick = () => emptyState();
+$('#f-new').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  if (ATT_NEW.pending()) throw new Error('Patientez : envoi du fichier en cours.');
+  const d = Object.fromEntries(new FormData(e.target)); if (!d.transaction_id) delete d.transaction_id;
+  d.attachments = ATT_NEW.ids();
+  const r = await api('POST', '/v1/support/tickets', d);
+  ATT_NEW.reset(); show('thread'); renderThread(r); setUrl('t=' + encodeURIComponent(r.ticket.id));
+  toast(`Demande #${r.ticket.number} envoyée`);
+}); };
+$('#f-reply').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+  if (ATT_REPLY.pending()) throw new Error('Patientez : envoi du fichier en cours.');
+  const attachments = ATT_REPLY.ids();
+  if (!e.target.body.value.trim() && !attachments.length) throw new Error('Écrivez un message ou joignez un fichier.');
+  const r = await api('POST', `/v1/support/tickets/${encodeURIComponent(S.open)}/messages`, { body: e.target.body.value, attachments });
+  e.target.reset(); ATT_REPLY.reset(); renderThread(r);
+}); };
+$('#t-close').onclick = (e) => busy(e.currentTarget, async () => {
+  renderThread(await api('POST', `/v1/support/tickets/${encodeURIComponent(S.open)}/close`)); toast('Demande marquée comme résolue');
+});
+
+/** Toutes les 20 s : nouvelles réponses dans la liste et dans la conversation ouverte. */
+setInterval(async () => {
+  if (!TOKEN || !ME || document.hidden) return;
+  try { await loadInbox(); } catch { return; }
+  if (S.open && S.view === 'thread') {
+    try { const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(S.open)); if (d.messages.length !== S.count) renderThread(d); } catch {}
+  }
+}, 20000);
+
+(async () => {
+  if (!TOKEN) { showGuest(); return; }
+  try {
+    ME = (await api('GET', '/v1/me')).user;
+    $$('[data-guest]').forEach((e) => { e.hidden = true; });
+    $$('[data-member]').forEach((e) => { e.hidden = false; });
+    $('#new-btn').hidden = false;
+    await loadInbox();
+  } catch { if (!ME) { showGuest(); return; } }
+  // Liens directs : /messages?t=<demande> (emails), /messages?new=1&cat=…&subject=… (articles d'aide)
+  const p = new URLSearchParams(location.search);
+  const wide = !matchMedia('(max-width: 860px)').matches;
+  if (p.get('t')) { try { await openTicket(p.get('t')); return; } catch (e) { toast(e.message, true); } }
+  if (p.get('new')) { await openNew(p.get('cat'), p.get('subject')).catch((e) => toast(e.message, true)); return; }
+  // Sur ordinateur, la conversation la plus récente s'ouvre d'office, comme une messagerie.
+  if (wide && S.tickets.length) { try { await openTicket(S.tickets[0].id); return; } catch {} }
+  emptyState();
+})();
+</script>
+</body>
+</html>

@@ -256,9 +256,9 @@ Rubriques : tableau de bord, utilisateurs (recherche, fiche, suspension, PIN, se
 
 `ADMIN_KEYS="nom:clé[:rôle]"` (rôle par défaut `super_admin`) reste disponible pour les scripts et l'accès de secours. En production, sans `ADMIN_KEYS`, aucune clé n'existe : seuls les comptes nominatifs donnent accès.
 
-## Centre d'aide et support (`/aide` et back-office)
+## Centre d'aide et support (`/aide`, `/messages` et back-office)
 
-La page **/aide** (menu « Aide » du site, de l'app et des paramètres) réunit les articles d'aide, avec recherche et filtres par sujet, et le **centre de messages** du support. Un article qui n'a pas répondu à la question ouvre une demande dans la rubrique correspondante. Les utilisateurs écrivent au support depuis cette page, même avant l'activation de leur compte ; l'app affiche sur le lien « Aide » une pastille des réponses non lues. Chaque demande a un numéro (#1001…), une rubrique, et peut citer une de leurs opérations. La conversation se poursuit dans l'application ; l'utilisateur est prévenu par email à chaque réponse, avec une pastille des réponses non lues.
+La page **/aide** (menu « Aide » du site, de l'app et des paramètres) réunit les articles d'aide, avec recherche et filtres par sujet, et donne accès au **centre de messages**. Le centre de messages a sa propre page, **/messages**, au style du back-office : la liste des demandes à gauche, la conversation ouverte à droite (une colonne à la fois sur téléphone). Un article qui n'a pas répondu à la question ouvre une demande préremplie (`/messages?new=1&cat=…&subject=…`), et les emails du support mènent directement à la demande (`/messages?t=…`). Les utilisateurs écrivent au support depuis cette page, même avant l'activation de leur compte ; l'app affiche sur le lien « Aide » une pastille des réponses non lues, qui mène alors au centre de messages.
 
 Côté équipe, la section **Support** du back-office présente la file des demandes (à traiter, répondues, closes, mes demandes, non attribuées). Un conseiller peut prendre une demande en charge, répondre, ajouter une **note interne** (jamais visible par l'utilisateur), clore ou rouvrir. Répondre à une demande non attribuée l'attribue automatiquement. Les membres au rôle Support sont prévenus par email de chaque nouvelle demande, et chaque action est inscrite au journal d'audit.
 

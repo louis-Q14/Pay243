@@ -24,7 +24,7 @@ const checkPassword = async (user, password) => {
   if (!(await verifySecret(password || '', user.password_hash))) throw new HttpError(401, 'invalid_password', 'Mot de passe incorrect.');
 };
 
-const RESERVED_HANDLES = new Set(['admin', 'support', 'pay243', 'pay', 'kongo', 'kongowallet', 'aide', 'help', 'api', 'app', 'checkout', 'settings', 'parametres', 'signup', 'login', 'securite', 'security']);
+const RESERVED_HANDLES = new Set(['admin', 'support', 'pay243', 'pay', 'kongo', 'kongowallet', 'aide', 'help', 'messages', 'api', 'app', 'checkout', 'settings', 'parametres', 'signup', 'login', 'securite', 'security']);
 export function normalizeHandle(input) {
   const h = String(input || '').trim().replace(/^@/, '').toLowerCase();
   if (!/^[a-z][a-z0-9._]{2,29}$/.test(h) || /[._]{2}/.test(h) || /[._]$/.test(h)) {
