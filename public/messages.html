@@ -104,7 +104,11 @@
   .reply { border-top: 1px solid var(--line); padding: 16px 28px 22px; }
   .reply .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
   .reply .bar > div { display: flex; gap: 8px; flex-wrap: wrap; }
-  .closed-note { color: var(--muted); font-size: 13.5px; margin: 0 0 8px; }
+  .closed-box { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; background: var(--soft); border-radius: 12px; padding: 14px 16px; }
+  .closed-box .ic { width: 38px; height: 38px; border-radius: 50%; background: #e2e7f0; display: grid; place-items: center; color: var(--ink-2); }
+  .closed-box .ic svg { width: 18px; height: 18px; }
+  .closed-box b { display: block; font-size: 14.5px; }
+  .closed-box small { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; }
   .safety { background: var(--warn-bg); color: #5c4a00; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin: 0 0 6px; }
   .hint { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
 
@@ -148,6 +152,8 @@
     .thread { max-height: none; }
     .bubble { max-width: 90%; font-size: 14px; }
     .reply .bar { flex-direction: column; align-items: stretch; }
+    .closed-box { grid-template-columns: auto minmax(0, 1fr); }
+    .closed-box .btn { grid-column: 1 / -1; }
     .reply .bar .btn { flex: 1; }
     .sa-files img { width: 104px; height: 78px; }
   }
@@ -231,7 +237,11 @@
         </div>
         <div class="pane-body"><div class="thread" id="t-msgs"></div></div>
         <div class="reply">
-          <p class="closed-note" id="t-closed" hidden>Cette demande est résolue. Écrivez un nouveau message pour la rouvrir.</p>
+          <div class="closed-box" id="t-closed" hidden>
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+            <div><b>Conversation close</b><small>Cette demande est résolue : vous pouvez relire les échanges, mais plus y répondre. Une autre question ? Ouvrez une nouvelle demande.</small></div>
+            <button class="btn" type="button" id="t-new">Nouvelle demande</button>
+          </div>
           <form id="f-reply">
             <textarea name="body" rows="3" maxlength="4000" placeholder="Votre message…"></textarea>
             <div class="bar">
@@ -428,7 +438,7 @@ $('#sa-zoom').onclick = (e) => { if (e.target.tagName !== 'A') $('#sa-zoom').hid
 
 // ---------------- Conversation ----------------
 function renderThread(d) {
-  const t = d.ticket; S.open = t.id; S.count = d.messages.length;
+  const t = d.ticket; S.open = t.id; S.count = d.messages.length; S.status = t.status;
   const i = S.tickets.findIndex((x) => x.id === t.id);
   if (i >= 0) S.tickets[i] = { ...S.tickets[i], ...t, unread: 0 }; else S.tickets.unshift({ ...t, unread: 0 });
   renderInbox();
@@ -438,10 +448,13 @@ function renderThread(d) {
   $('#t-meta').innerHTML = `${pill(t.status)} <span class="muted">Demande #${esc(t.number)} · ${esc(t.category_label)}${t.transaction_id ? ' · opération <span style="font-family:ui-monospace,Menlo,monospace">' + esc(t.transaction_id) + '</span>' : ''}</span>`;
   $('#t-msgs').innerHTML = d.messages.map((m) => (m.author === 'system'
     ? `<div class="bubble system">${esc(m.body)} · ${when(m.created_at)}</div>`
-    : `<div class="bubble ${m.author === 'user' ? 'me' : 'them'}"><small>${m.author === 'user' ? 'Vous' : esc(m.author_name || 'Support Pay243') + ' · Support Pay243'} · ${when(m.created_at)}</small>${esc(m.body)}${msgFiles(m)}</div>`)).join('');
+    : `<div class="bubble ${m.author === 'user' ? 'me' : 'them'}"><small>${m.author === 'user' ? 'Vous' : esc(m.author_name || 'Support Pay243')} · ${when(m.created_at)}</small>${esc(m.body)}${msgFiles(m)}</div>`)).join('');
   hydrateFiles($('#t-msgs'));
-  $('#t-close').hidden = t.status === 'closed';
-  $('#t-closed').hidden = t.status !== 'closed';
+  // Close ou résolue : lecture seule (le serveur refuse aussi tout nouveau message).
+  const closed = t.status === 'closed';
+  $('#f-reply').hidden = closed; $('#t-closed').hidden = !closed;
+  if (closed) { ATT_REPLY.reset(); $('#f-reply').reset(); }
+  S.cat = t.category;
   const box = $('#t-msgs'); box.scrollTop = box.scrollHeight;
 }
 async function openTicket(id) {
@@ -457,6 +470,7 @@ $('#new-btn').onclick = () => openNew().catch((e) => toast(e.message, true));
 $$('[data-new]').forEach((b) => b.onclick = () => openNew().catch((e) => toast(e.message, true)));
 $$('[data-back]').forEach((b) => b.onclick = () => { emptyState(); loadInbox().catch(() => {}); });
 $('[data-back-desk]').onclick = () => emptyState();
+$('#t-new').onclick = () => openNew(S.cat).catch((e) => toast(e.message, true));
 $('#f-new').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
   if (ATT_NEW.pending()) throw new Error('Patientez : envoi du fichier en cours.');
   const d = Object.fromEntries(new FormData(e.target)); if (!d.transaction_id) delete d.transaction_id;
@@ -469,7 +483,9 @@ $('#f-reply').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
   if (ATT_REPLY.pending()) throw new Error('Patientez : envoi du fichier en cours.');
   const attachments = ATT_REPLY.ids();
   if (!e.target.body.value.trim() && !attachments.length) throw new Error('Écrivez un message ou joignez un fichier.');
-  const r = await api('POST', `/v1/support/tickets/${encodeURIComponent(S.open)}/messages`, { body: e.target.body.value, attachments });
+  let r;
+  try { r = await api('POST', `/v1/support/tickets/${encodeURIComponent(S.open)}/messages`, { body: e.target.body.value, attachments }); }
+  catch (x) { if (x.code === 'ticket_closed') renderThread(await api('GET', '/v1/support/tickets/' + encodeURIComponent(S.open))); throw x; }
   e.target.reset(); ATT_REPLY.reset(); renderThread(r);
 }); };
 $('#t-close').onclick = (e) => busy(e.currentTarget, async () => {
@@ -481,7 +497,7 @@ setInterval(async () => {
   if (!TOKEN || !ME || document.hidden) return;
   try { await loadInbox(); } catch { return; }
   if (S.open && S.view === 'thread') {
-    try { const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(S.open)); if (d.messages.length !== S.count) renderThread(d); } catch {}
+    try { const d = await api('GET', '/v1/support/tickets/' + encodeURIComponent(S.open)); if (d.messages.length !== S.count || d.ticket.status !== S.status) renderThread(d); } catch {}
   }
 }, 20000);
 

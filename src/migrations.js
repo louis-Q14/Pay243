@@ -456,4 +456,12 @@ CREATE INDEX idx_support_files_ticket ON support_files (ticket_id);
 CREATE INDEX idx_support_files_owner ON support_files (owner_type, owner_id, created_at);
 `,
   },
+  {
+    version: 9,
+    name: 'support : demandes closes en lecture seule (texte du message système)',
+    sql: `
+UPDATE support_messages SET body = 'Demande close par le support Pay243. Pour une autre question, ouvrez une nouvelle demande.'
+ WHERE author_type = 'system' AND body = 'Demande close par le support Pay243. Un nouveau message de votre part la rouvre.';
+`,
+  },
 ];

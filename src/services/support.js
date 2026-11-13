@@ -3,7 +3,7 @@
 //  Une demande (« ticket ») contient un fil de messages. Statuts :
 //    open     : en attente d'une réponse du support
 //    answered : le support a répondu, en attente de l'utilisateur
-//    closed   : résolue (un nouveau message de l'utilisateur la rouvre)
+//    closed   : résolue ; lecture seule pour l'utilisateur (seule l'équipe peut la rouvrir)
 // =====================================================================
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -252,10 +252,12 @@ export async function userReply(user, id, body) {
   const message = bodyOrEmpty(body?.body ?? body?.message, attachments);
   await tx(async () => {
     const t = await ownTicket(user, id, true);
+    // Une demande close ou résolue se relit mais ne reçoit plus de message : l'utilisateur ouvre une nouvelle demande.
+    if (t.status === 'closed') throw new HttpError(409, 'ticket_closed', 'Cette demande est close : vous pouvez relire les échanges, mais plus y répondre. Ouvrez une nouvelle demande pour une autre question.');
     await assertRoom(t.id);
     const mid = await addMessage(t.id, { type: 'user', authorId: user.id, authorName: user.full_name, body: message });
     await linkFiles({ type: 'user', id: user.id }, attachments, t.id, mid);
-    // Un message de l'utilisateur remet la demande dans la file du support (et la rouvre si elle était close).
+    // Un message de l'utilisateur remet la demande dans la file du support.
     await q.run("UPDATE support_tickets SET status='open', closed_at=NULL, staff_unread = staff_unread + 1, last_author='user', last_message_at=?, updated_at=? WHERE id=?", now(), now(), t.id);
   });
   return getUserTicket(user, id);
@@ -386,7 +388,7 @@ export async function setTicketStatus(admin, id, status) {
     const t = await findTicket(id, true);
     if (t.status === status || (status === 'open' && t.status !== 'closed')) return;
     if (status === 'closed') {
-      await addMessage(t.id, { type: 'system', body: 'Demande close par le support Pay243. Un nouveau message de votre part la rouvre.' });
+      await addMessage(t.id, { type: 'system', body: 'Demande close par le support Pay243. Pour une autre question, ouvrez une nouvelle demande.' });
       await q.run("UPDATE support_tickets SET status='closed', closed_at=?, staff_unread=0, updated_at=? WHERE id=?", now(), now(), t.id);
     } else {
       await addMessage(t.id, { type: 'system', body: 'Demande rouverte par le support Pay243.' });

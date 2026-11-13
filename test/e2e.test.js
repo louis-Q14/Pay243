@@ -509,13 +509,19 @@ test('support : demande, réponse du conseiller, note interne invisible, droits'
   assert.equal(seen.body.messages[1].author_name, 'conformite · Support Pay243'); // prénom du conseiller seulement
   assert.equal((await api('GET', '/v1/support/unread', { token: tok })).body.unread, 0);
 
-  // L'utilisateur répond : la demande revient dans la file. Close par l'équipe, rouverte par un nouveau message.
+  // L'utilisateur répond : la demande revient dans la file. Close par l'équipe : lecture seule pour l'utilisateur.
   const back = await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Merci, j’attends.' } });
   assert.equal(back.body.ticket.status, 'open');
   assert.equal((await sa('POST', `/support/tickets/${t.id}/status`, { status: 'closed' })).body.ticket.status, 'closed');
-  const reopened = await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Toujours rien.' } });
-  assert.equal(reopened.body.ticket.status, 'open');
+  const locked = await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Toujours rien.' } });
+  assert.equal(locked.status, 409); assert.equal(locked.body.error.code, 'ticket_closed');
+  const still = await api('GET', `/v1/support/tickets/${t.id}`, { token: tok }); // toujours lisible
+  assert.equal(still.body.ticket.status, 'closed'); assert.ok(!still.body.messages.some((m) => m.body === 'Toujours rien.'));
+  // Seule l'équipe peut la rouvrir ; l'utilisateur peut alors répondre, puis la marquer comme résolue.
+  assert.equal((await sa('POST', `/support/tickets/${t.id}/status`, { status: 'open' })).body.ticket.status, 'open');
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Toujours rien.' } })).body.ticket.status, 'open');
   assert.equal((await api('POST', `/v1/support/tickets/${t.id}/close`, { token: tok })).body.ticket.status, 'closed');
+  assert.equal((await api('POST', `/v1/support/tickets/${t.id}/messages`, { token: tok, body: { body: 'Encore ?' } })).status, 409);
 
   // Vue équipe : tout l'historique, notes internes comprises ; actions journalisées.
   const full = await sa('GET', `/support/tickets/${t.id}`);
