@@ -24,6 +24,7 @@
   /* ---------- Lien vers le centre d'aide (pastille des réponses du support) ---------- */
   .tabs .badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #ce1021; color: #fff; font-size: 11px; font-weight: 800; margin-left: 4px; }
   .tabs .badge[hidden] { display: none; }
+  .tabs a.tab-link[hidden] { display: none; }
   .tabs a.tab-link { display: inline-flex; align-items: center; padding: 10px 16px; border-radius: 10px; color: var(--muted); font-weight: 600; text-decoration: none; margin-left: auto; }
   .tabs a.tab-link:hover { color: var(--ink); background: var(--card); }
 
@@ -262,7 +263,7 @@
     <button class="on" data-tab="home">Wallet</button>
     <button data-tab="cards">Mes cartes</button>
     <button data-tab="merchant" class="hidden">Espace marchand</button>
-    <a class="tab-link" href="/aide" title="Centre d'aide et messages du support">Aide <span class="badge" id="sup-badge" hidden></span></a>
+    <a class="tab-link" id="sup-link" href="/messages" title="Le support vous a répondu" hidden>Messages <span class="badge" id="sup-badge"></span></a>
   </div>
 
   <section id="tab-home">
@@ -684,9 +685,9 @@ $$('[data-open]').forEach((b) => b.onclick = () => {
 });
 
 // ---------------- Support ----------------
-// Le centre de messages est sur /aide ; ici, seulement la pastille des réponses non lues sur le lien « Aide ».
+// Pas de bouton « Aide » ici : un lien « Messages » n'apparaît que lorsqu'une réponse du support attend.
 const SUP = { timer: null };
-function setSupBadge(n) { const b = $('#sup-badge'); b.hidden = !n; b.textContent = n || ''; b.parentElement.href = n ? '/messages' : '/aide'; } // une réponse attend : droit au centre de messages
+function setSupBadge(n) { $('#sup-link').hidden = !n; $('#sup-badge').textContent = n || ''; }
 async function refreshSupportBadge() { try { setSupBadge((await api('GET', '/v1/support/unread')).unread); } catch {} }
 function startSupportPolling() {
   if (SUP.timer) return;
