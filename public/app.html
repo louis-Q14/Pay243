@@ -251,6 +251,27 @@
   .btn-del.armed { background: #b3121f !important; color: #fff !important; }
   .test-note { font-size: 12.5px; color: var(--muted); background: var(--bg); border-radius: 12px; padding: 10px 12px; margin: 14px 0 0; }
   .test-note code { font-size: 12px; }
+  /* ================= Convertisseur (simulation seule) ================= */
+  .fx { max-width: 560px; }
+  .fx h2 { margin-bottom: 4px; }
+  .fx-sub { margin: 0 0 16px; font-size: 14px; }
+  .fx-box { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+  .fx-box label, .fx-lbl { display: block; margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .fx-row { display: flex; align-items: center; gap: 10px; }
+  .fx-row input, .fx-row output { flex: 1; min-width: 0; margin: 0; border: 0; background: none; padding: 0; font-family: inherit; font-size: 30px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em; color: var(--ink); outline: none; }
+  .fx-row output { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-cur { flex: none; font-weight: 800; font-size: 14px; background: #fff; border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; }
+  .fx-out { background: #eef4ff; border-color: #d4e2fb; }
+  .fx-out output { color: #0b3d91; }
+  .fx-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+  .fx-chips button { margin: 0; width: auto; padding: 5px 11px; border-radius: 99px; font-size: 13px; font-weight: 700; background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .fx-chips button:hover { border-color: #0b3d91; color: #0b3d91; }
+  .fx-swap { display: grid; place-items: center; width: 42px !important; height: 42px; margin: -10px auto !important; padding: 0 !important; position: relative; z-index: 1; border-radius: 50% !important; font-size: 20px; background: #0b3d91 !important; color: #fff !important; border: 3px solid #fff !important; transition: transform .25s; }
+  .fx-swap:hover { transform: rotate(180deg); }
+  .fx-info { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 16px 0 0; font-size: 14px; }
+  .fx-info dt { color: var(--muted); } .fx-info dd { margin: 0; font-weight: 700; text-align: right; }
+  @media (max-width: 560px) { .fx-row input, .fx-row output { font-size: 26px; } }
+  @media (prefers-reduced-motion: reduce) { .fx-swap { transition: none; } }
   @media (max-width: 860px) { .cw { grid-template-columns: minmax(0, 1fr); } .wallet { max-width: 460px; width: 100%; margin: 0 auto; } }
   @media (max-width: 560px) {
     .wallet { border-radius: 22px; padding: 14px 12px 18px; }
@@ -312,6 +333,7 @@
 <main id="app" class="hidden">
   <div class="tabs">
     <button class="on" data-tab="home">Wallet</button>
+    <button data-tab="fx">Convertisseur</button>
     <button data-tab="cards">Mes cartes</button>
     <button data-tab="merchant" class="hidden">Espace marchand</button>
     <a class="tab-link" id="sup-link" href="/messages" title="Le support vous a répondu" hidden>Messages <span class="badge" id="sup-badge"></span></a>
@@ -335,6 +357,27 @@
       <ul class="list" id="history"><li class="muted">Aucune opération pour l'instant.</li></ul>
     </div>
     <p class="muted" id="limits"></p>
+  </section>
+
+  <section id="tab-fx" class="hidden">
+    <div class="card fx">
+      <h2>Convertisseur</h2>
+      <p class="muted fx-sub">Simulez une conversion entre francs congolais et dollars : rien n'est débité, c'est seulement pour savoir combien vous recevriez.</p>
+      <form id="f-fx" autocomplete="off">
+        <div class="fx-box">
+          <label for="fx-amt">Vous convertissez</label>
+          <div class="fx-row"><input id="fx-amt" inputmode="decimal" placeholder="0" aria-describedby="fx-bal"><span class="fx-cur" id="fx-from">USD</span></div>
+          <div class="fx-chips" id="fx-chips"></div>
+          <small class="muted" id="fx-bal"></small>
+        </div>
+        <button type="button" class="fx-swap" id="fx-swap" title="Inverser les devises" aria-label="Inverser les devises">⇅</button>
+        <div class="fx-box fx-out">
+          <span class="fx-lbl">Vous recevriez</span>
+          <div class="fx-row"><output id="fx-res" for="fx-amt" aria-live="polite">—</output><span class="fx-cur" id="fx-to">CDF</span></div>
+        </div>
+      </form>
+      <dl class="fx-info" id="fx-info"></dl>
+    </div>
   </section>
 
   <section id="tab-cards" class="hidden">
@@ -475,8 +518,9 @@ function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'
 // ---------------- Onglets ----------------
 $$('[data-tab]').forEach((b) => b.onclick = () => {
   $$('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
-  ['home', 'cards', 'merchant'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+  ['home', 'fx', 'cards', 'merchant'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
   if (b.dataset.tab === 'merchant') loadMerchant();
+  if (b.dataset.tab === 'fx') renderFx();
   if (b.dataset.tab === 'cards') loadCards();
 });
 
@@ -520,8 +564,54 @@ async function loadWallets() {
   const w = await api('GET', '/v1/wallets');
   w.data.forEach((x) => $('#bal-' + x.currency).textContent = fmt(x.balance, x.currency));
   window.FX = w.fx;
+  window.BAL = Object.fromEntries(w.data.map((x) => [x.currency, x.balance]));
+  if (!$('#tab-fx').classList.contains('hidden')) renderFx();
   await loadSales().catch(() => {});
 }
+
+// ---------------- Convertisseur : simulation, aucune opération ----------------
+const FXS = { from: 'USD' };
+const FX_CHIPS = { USD: [10, 50, 100, 500], CDF: [10000, 50000, 100000, 500000] };
+const otherCur = (c) => (c === 'USD' ? 'CDF' : 'USD');
+const numFr = (minor, cur) => (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 });
+/** Même calcul que POST /v1/conversions (montants en centimes, marge déduite, arrondi inférieur). */
+const fxQuote = (minor, from, spreadPct = FX.spread_percent) =>
+  Math.floor((from === 'USD' ? minor * FX.usd_to_cdf : minor / FX.usd_to_cdf) * (1 - spreadPct / 100));
+const fxAmount = () => { const v = $('#fx-amt').value.replace(/[\s  ]/g, '').replace(',', '.'); return /^\d*\.?\d*$/.test(v) && v !== '' && v !== '.' ? Math.round(parseFloat(v) * 100) : NaN; };
+function renderFx() {
+  const from = FXS.from, to = otherCur(from);
+  $('#fx-from').textContent = from; $('#fx-to').textContent = to;
+  const bal = window.BAL?.[from];
+  $('#fx-chips').innerHTML = FX_CHIPS[from].map((v) => `<button type="button" data-v="${v}">${v.toLocaleString('fr-FR')} ${from === 'USD' ? '$' : 'FC'}</button>`).join('')
+    + (bal > 0 ? `<button type="button" data-v="${bal / 100}">Mon solde</button>` : '');
+  $$('#fx-chips button').forEach((b) => b.onclick = () => { $('#fx-amt').value = String(b.dataset.v).replace('.', ','); computeFx(); });
+  computeFx();
+}
+function computeFx() {
+  const from = FXS.from, to = otherCur(from), res = $('#fx-res'), info = $('#fx-info'), bal = window.BAL?.[from];
+  if (!window.FX) { res.textContent = '—'; info.innerHTML = '<dt>Taux</dt><dd>indisponible pour le moment</dd>'; return; }
+  const applied = from === 'USD' ? FX.usd_to_cdf * (1 - FX.spread_percent / 100) : FX.usd_to_cdf / (1 - FX.spread_percent / 100);
+  let rows = `<dt>Taux du marché</dt><dd>1 $ = ${FX.usd_to_cdf.toLocaleString('fr-FR')} FC</dd>
+    <dt>Marge Pay243</dt><dd>${FX.spread_percent.toLocaleString('fr-FR')} %</dd>
+    <dt>Taux appliqué</dt><dd>1 $ = ${applied.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} FC</dd>`;
+  const m = fxAmount();
+  let note = bal != null ? `Solde disponible : ${fmt(bal, from)}` : '';
+  if (!(m > 0)) res.textContent = '—';
+  else {
+    const out = fxQuote(m, from);
+    if (out <= 0) res.textContent = 'Montant trop faible';
+    else {
+      res.textContent = numFr(out, to);
+      rows += `<dt>Coût de la marge</dt><dd>${fmt(fxQuote(m, from, 0) - out, to)}</dd>`;
+    }
+    if (bal != null && m > bal) note += ' · ce montant dépasse votre solde';
+  }
+  $('#fx-bal').textContent = note;
+  info.innerHTML = rows;
+}
+$('#fx-amt').oninput = computeFx;
+$('#f-fx').onsubmit = (e) => e.preventDefault(); // simulation : Entrée ne soumet rien
+$('#fx-swap').onclick = () => { FXS.from = otherCur(FXS.from); renderFx(); $('#fx-amt').focus(); };
 
 // ---------------- Ventes du compte marchand ----------------
 let MERCHANT; // undefined : pas encore chargé · null : pas d'espace marchand
