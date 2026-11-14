@@ -148,7 +148,7 @@
   .stack { display: flex; flex-direction: column; }
   /* une carte : format bancaire (85,6 × 54 mm). Tailles en cqw : tout suit la largeur de la carte.
      4 modèles (m0…m3) ; chacun place ses éléments à sa façon. */
-  .wcard { position: relative; width: 100%; aspect-ratio: 1.607; container-type: inline-size; border-radius: 3.6cqw; padding: 0; color: #fff; background: #1b1c1c; box-shadow: 0 -1px 0 rgba(255, 255, 255, .14) inset, 0 10px 26px rgba(0, 0, 0, .45); overflow: hidden; cursor: pointer; border: 0; text-align: left; font: inherit; display: block; transition: transform .25s ease, box-shadow .25s ease, filter .25s; isolation: isolate; }
+  .wcard { position: relative; width: 100%; aspect-ratio: 1.607; container-type: inline-size; border-radius: 3.6% / 5.8%; /* pas de cqw ici : sur la carte elle-même, l'unité se rapporterait à la fenêtre */ padding: 0; color: #fff; background: #1b1c1c; box-shadow: 0 -1px 0 rgba(255, 255, 255, .14) inset, 0 10px 26px rgba(0, 0, 0, .45); overflow: hidden; cursor: pointer; border: 0; text-align: left; font: inherit; display: block; transition: transform .25s ease, box-shadow .25s ease, filter .25s; isolation: isolate; }
   .wcard::before, .wcard::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
   .wcard > * { position: absolute; }
   .wcard:hover { transform: translateY(-4px); }
