@@ -16,7 +16,7 @@
 <!-- Bandeau -->
 <div class="ribbon" id="ribbon">
   <div class="wrap">
-    <span>M-Pesa, Airtel Money et Orange Money réunis dans un seul wallet. <a href="/signup">Ouvrir mon compte gratuit ›</a></span>
+    <span><span class="lg">M-Pesa, Airtel Money et Orange Money réunis dans un seul wallet.</span><span class="sm">Tous vos Mobile Money, un seul wallet.</span> <a href="/signup">Ouvrir mon compte gratuit ›</a></span>
     <button type="button" aria-label="Fermer le bandeau" onclick="document.getElementById('ribbon').remove()">×</button>
   </div>
 </div>
@@ -85,11 +85,11 @@
 <div class="partners">
   <div class="wrap">
     <p>Rechargez et retirez avec</p>
-    <span class="chip"><i style="background:#e60000"></i>M-Pesa</span>
+    <div class="chips"><span class="chip"><i style="background:#e60000"></i>M-Pesa</span>
     <span class="chip"><i style="background:#ed1c24"></i>Airtel Money</span>
     <span class="chip"><i style="background:#ff7900"></i>Orange Money</span>
     <span class="chip"><i style="background:#1a1f71"></i>Visa</span>
-    <span class="chip"><i style="background:linear-gradient(90deg,#eb001b 50%,#f79e1b 50%)"></i>Mastercard</span>
+    <span class="chip"><i style="background:linear-gradient(90deg,#eb001b 50%,#f79e1b 50%)"></i>Mastercard</span></div>
   </div>
 </div>
 
@@ -100,7 +100,7 @@
     <h2 class="big">La nouvelle app pour votre argent de tous les jours</h2>
     <p class="sub">Un seul wallet pour vos francs congolais et vos dollars, quel que soit votre opérateur.</p>
   </div>
-  <div class="wrap features">
+  <div class="wrap features" id="features">
     <article class="feature blue reveal">
       <h3>Rechargez en un geste</h3>
       <p>Depuis M-Pesa, Airtel Money, Orange Money ou une carte enregistrée. Vous validez sur votre téléphone, l'argent arrive dans votre wallet.</p>
@@ -127,10 +127,11 @@
       </div></div>
     </article>
   </div>
+  <div class="dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
 </section>
 
 <!-- Lien de paiement -->
-<section style="padding-top:0">
+<section class="sec-link" style="padding-top:0">
   <div class="wrap split">
     <div class="reveal">
       <span class="eyebrow">Sans site web</span>
@@ -141,7 +142,7 @@
         <li>Votre client choisit son moyen de paiement</li>
         <li>Votre solde est disponible immédiatement, puis vous le retirez quand vous voulez</li>
       </ul>
-      <a class="btn btn-dark btn-lg" href="/signup">Créer mon premier lien</a>
+      <a class="btn btn-dark btn-lg cta-link" href="/signup">Créer mon premier lien</a>
     </div>
     <div class="visual reveal" aria-hidden="true">
       <div class="stack">
@@ -173,7 +174,7 @@
         <li>Mode test complet avec des opérateurs simulés</li>
         <li>Rapprochement quotidien et notifications fiables, même si le réseau coupe</li>
       </ul>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div class="biz-ctas" style="display:flex;gap:12px;flex-wrap:wrap">
         <a class="btn btn-white btn-lg" href="/signup?type=business">Ouvrir un compte marchand</a>
         <a class="btn btn-lg" style="background:rgba(255,255,255,.1);color:#fff" href="/docs">Lire la documentation</a>
       </div>
@@ -328,6 +329,14 @@ const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries)
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
 }), { threshold: 0.12 }) : null;
 document.querySelectorAll('.reveal').forEach((el) => (io ? io.observe(el) : el.classList.add('in')));
+
+// Carrousel des avantages (mobile) : points de position
+const feats = document.getElementById('features');
+const dots = [...document.querySelectorAll('.dots i')];
+feats.addEventListener('scroll', () => {
+  const i = Math.round(feats.scrollLeft / (feats.scrollWidth - feats.clientWidth || 1) * (dots.length - 1));
+  dots.forEach((d, k) => d.classList.toggle('on', k === i));
+}, { passive: true });
 
 document.getElementById('year').textContent = new Date().getFullYear();
 </script>
