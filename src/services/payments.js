@@ -1,4 +1,5 @@
 import { verifyPin } from '../auth.js';
+import { assertNoRecentSimSwap } from './simSwap.js';
 import { config } from '../config.js';
 import { q, tx } from '../db.js';
 import { createTxn, getTxn, getWallet, lockWallet, move, systemWallet, updateTxn } from '../ledger.js';
@@ -148,6 +149,7 @@ export async function payWithWallet(paymentId, user, pin) {
   const merchant = await merchantOf(p0);
   if (merchant.owner_user_id === user.id) throw new HttpError(400, 'self_payment', 'Vous ne pouvez pas payer votre propre boutique.');
   await verifyPin(user, pin);
+  await assertNoRecentSimSwap(user, 'payment');
   return tx(async () => {
     const p = await lockPayment(paymentId); // revérifié sous verrou
     await assertPayable(p);

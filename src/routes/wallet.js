@@ -8,6 +8,7 @@ import { idempotent, rateLimit } from '../middleware.js';
 import { cardProcessor } from '../providers/cards/index.js';
 import { listOperators } from '../providers/mobileMoney/index.js';
 import { refreshPending, startCollection, startPayout } from '../services/mobileMoney.js';
+import { assertNoRecentSimSwap } from '../services/simSwap.js';
 import { appUrl, notifyUser } from '../services/notify.js';
 import { HttpError, assertAmount, assertCurrency, formatMoney, isEmail, newId, normalizeEmail, normalizePhone, now, percentFee } from '../util.js';
 
@@ -124,6 +125,7 @@ walletRouter.post('/transfers', idem, async (req, res) => {
   if (target.id === req.user.id) throw new HttpError(400, 'self_transfer', 'Impossible de vous envoyer de l\'argent à vous-même.');
   if (!target.activated_at) throw new HttpError(403, 'recipient_not_verified', "Ce destinataire n'a pas encore activé son compte Pay243 : il doit d'abord faire vérifier son identité.");
   await verifyPin(req.user, pin);
+  await assertNoRecentSimSwap(req.user, 'transfer');
   const from = await getWallet('user', req.user.id, currency);
   const to = await getWallet('user', target.id, currency);
   const txn = await tx(async () => {
@@ -155,6 +157,7 @@ walletRouter.post('/withdrawals', idem, async (req, res) => {
   const amount = assertAmount(req.body?.amount);
   const currency = assertCurrency(req.body?.currency);
   await verifyPin(req.user, pin);
+  await assertNoRecentSimSwap(req.user, 'withdrawal');
   const fee = percentFee(amount, config.fees.withdrawalPercent);
   const wallet = await getWallet('user', req.user.id, currency);
   const txn = await startPayout({

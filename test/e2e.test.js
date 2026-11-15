@@ -10,6 +10,7 @@ process.env.RATE_LIMIT_OTP = '1000';
 process.env.RATE_LIMIT_KYC_UPLOAD = '1000';
 process.env.RATE_LIMIT_LOGIN_ACCOUNT = '1000';
 process.env.RATE_LIMIT_MONEY = '1000';
+process.env.SIMSWAP_MOCK_SWAPPED = '+243851234567'; // SIM « changée » pour le pilote simulé
 const ADMIN_KEY = 'adm_test_0123456789abcdefghijkl';
 process.env.ADMIN_KEYS = `conformite:${ADMIN_KEY}`;
 const fs = await import('node:fs');
@@ -320,6 +321,92 @@ test('transfert vers une adresse email', async () => {
   assert.equal(back.status, 201);
 });
 
+test('SIM changée récemment : retrait, envoi et paiement wallet bloqués, recharge permise, alerte unique', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const r = await register({ email: 'sifa.mwamba@test.cd', phone: '0851234567', full_name: 'Sifa Mwamba', password: 'motdepasse5', pin: '4826' });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const sifa = r.body.token;
+  assert.equal((await api('POST', '/v1/transfers', { token: state.alice, body: { to_email: 'sifa.mwamba@test.cd', amount: 1000, currency: 'USD', pin: '2580' } })).status, 201);
+  const usd = async () => (await api('GET', '/v1/wallets', { token: sifa })).body.data.find((x) => x.currency === 'USD').balance;
+
+  // Mauvais PIN : refusé comme d'habitude, sans révéler le blocage SIM
+  const badPin = await api('POST', '/v1/withdrawals', { token: sifa, body: { amount: 100, currency: 'USD', pin: '0000' } });
+  assert.equal(badPin.status, 401);
+
+  const w = await api('POST', '/v1/withdrawals', { token: sifa, body: { amount: 100, currency: 'USD', pin: '4826' } });
+  assert.equal(w.status, 403);
+  assert.equal(w.body.error.code, 'sim_swap_hold');
+  assert.match(w.body.error.message, /72 h/);
+  const t = await api('POST', '/v1/transfers', { token: sifa, body: { to_email: 'grace.mbuyi@test.cd', amount: 100, currency: 'USD', pin: '4826' } });
+  assert.equal(t.body.error.code, 'sim_swap_hold');
+  assert.equal(await usd(), 1000); // rien n'est sorti
+
+  state.sifa = sifa; // paiement marchand depuis son wallet : vérifié dans le test marchand
+
+  // Les recharges restent possibles : l'argent entre, il ne sort pas
+  const top = await api('POST', '/v1/topups', { token: sifa, body: { amount: 500, currency: 'USD' } });
+  assert.equal(top.status, 202, JSON.stringify(top.body));
+
+  // Une seule alerte de sécurité malgré plusieurs tentatives
+  const alerts = outbox.filter((m) => m.to === 'sifa.mwamba@test.cd' && /carte SIM/.test(m.subject));
+  assert.equal(alerts.length, 1);
+  assert.match(alerts[0].text, /contactez immédiatement/);
+
+  // Les autres comptes ne sont pas concernés
+  const ok = await api('POST', '/v1/transfers', { token: state.alice, body: { to_email: 'sifa.mwamba@test.cd', amount: 100, currency: 'USD', pin: '2580' } });
+  assert.equal(ok.status, 201);
+});
+
+test('SIM Swap Orange : jeton mis en cache, SIM changée, numéro non couvert, jeton expiré, panne', async () => {
+  const { orangeSimSwap } = await import('../src/providers/simSwap/index.js');
+  const calls = [];
+  let tokens = 0; let revokeNext = false;
+  const fake = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', () => {
+      calls.push({ url: req.url, auth: req.headers.authorization, raw });
+      res.setHeader('Content-Type', 'application/json');
+      if (req.url === '/token') {
+        tokens += 1;
+        return res.end(JSON.stringify({ token_type: 'Bearer', access_token: `tok${tokens}`, expires_in: 3600 }));
+      }
+      if (revokeNext) { revokeNext = false; res.statusCode = 401; return res.end('{"code":"UNAUTHENTICATED"}'); }
+      const { phoneNumber, maxAge } = JSON.parse(raw);
+      if (phoneNumber === '+990100000009') { res.statusCode = 503; return res.end('{"code":"UNAVAILABLE"}'); }
+      if (phoneNumber === '+990100000404') { res.statusCode = 422; return res.end('{"code":"NOT_SUPPORTED"}'); }
+      res.end(JSON.stringify({ swapped: phoneNumber === '+990100000001' && maxAge === 72 }));
+    });
+  }).listen(0);
+  const root = `http://127.0.0.1:${fake.address().port}`;
+  try {
+    const p = orangeSimSwap({ clientId: 'id', clientSecret: 'secret', tokenUrl: `${root}/token`, baseUrl: `${root}/camara/playground/api`, timeoutMs: 2000 });
+    // Playground : seuls les numéros fictifs +990 sont envoyés, jamais ceux des clients
+    assert.equal(p.supports('+990100000000'), true);
+    assert.equal(p.supports('+243851234567'), false);
+
+    assert.deepEqual(await p.check({ phone: '+990100000000', maxAgeHours: 72 }), { swapped: false });
+    assert.deepEqual(await p.check({ phone: '+990100000001', maxAgeHours: 72 }), { swapped: true });
+    assert.equal(tokens, 1); // jeton réutilisé
+    assert.equal(calls[0].auth, `Basic ${Buffer.from('id:secret').toString('base64')}`);
+    assert.match(calls[0].raw, /grant_type=client_credentials/);
+    assert.equal(calls[1].url, '/camara/playground/api/sim-swap/v1/check');
+    assert.equal(calls[1].auth, 'Bearer tok1');
+
+    assert.deepEqual(await p.check({ phone: '+990100000404', maxAgeHours: 72 }), { unsupported: true });
+    revokeNext = true; // jeton révoqué : un nouveau est demandé, l'appel est rejoué une fois
+    assert.deepEqual(await p.check({ phone: '+990100000000', maxAgeHours: 72 }), { swapped: false });
+    assert.equal(tokens, 2);
+    await assert.rejects(p.check({ phone: '+990100000009', maxAgeHours: 72 }), /HTTP 503/);
+
+    // Réseau réel (hors Playground) : seuls les abonnés Orange RDC sont interrogés
+    const live = orangeSimSwap({ clientId: 'id', clientSecret: 'secret', tokenUrl: `${root}/token`, baseUrl: `${root}/camara/api`, timeoutMs: 2000 });
+    assert.equal(live.supports('+243851234567'), true);
+    assert.equal(live.supports('+243812345678'), false); // Vodacom
+    assert.equal(live.supports('+990100000000'), false);
+  } finally { fake.close(); }
+});
+
 test('plafond KYC niveau 1 appliqué', async () => {
   const t = await api('POST', '/v1/transfers', { token: state.alice, body: { to_phone: '0971112222', amount: 15000, currency: 'USD', pin: '2580' } });
   assert.equal(t.status, 403);
@@ -370,6 +457,11 @@ test('marchand : création, paiement via wallet, webhook signé, remboursement',
 
   const view = await api('GET', `/v1/checkout/${pay.body.id}`);
   assert.equal(view.body.merchant.name, 'Boutique Kin Mode');
+
+  // SIM changée récemment (voir le test SIM) : le paiement depuis le wallet est refusé, le lien reste payable
+  const blocked = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: state.sifa, body: { method: 'wallet', pin: '4826' } });
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.body.error.code, 'sim_swap_hold');
 
   const paid = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: state.bob, body: { method: 'wallet', pin: '9137' } });
   assert.equal(paid.status, 200);
