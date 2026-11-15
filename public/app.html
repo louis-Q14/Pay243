@@ -230,6 +230,16 @@
   .wcard.m3 .val span { font-size: 3.5cqw; }
   .wcard.m3 .val b { border-left-width: .8cqw; border-top-width: .6cqw; border-bottom-width: .6cqw; align-self: flex-end; margin-bottom: .4cqw; order: -1; }
   .wcard.m3 .who { left: 10.6%; right: 30%; top: 83.2%; font-size: 4.1cqw; letter-spacing: .5em; text-transform: uppercase; }
+
+  /* Réseau de la carte : logo officiel à la place du texte (Visa en blanc sur les fonds sombres) */
+  .wcard .net.logo { background: none !important; filter: none !important; transform: none !important; padding: 0 !important; text-shadow: none !important; line-height: 0; }
+  .wcard .net.logo::after { display: none; }
+  .wcard .net.logo img { display: block; width: auto; height: 100%; }
+  .wcard .net.logo.visa img { filter: brightness(0) invert(1); }
+  .wcard.m0 .net.logo { top: 9.6%; height: 6.4cqw; } .wcard.m0 .net.logo.mastercard { top: 7.4%; height: 9.4cqw; }
+  .wcard.m1 .net.logo { top: 40.5%; height: 3.2cqw; } .wcard.m1 .net.logo.mastercard { top: 39.5%; height: 5.2cqw; }
+  .wcard.m2 .net.logo { top: 11%; height: 6.6cqw; } .wcard.m2 .net.logo.mastercard { top: 8.5%; height: 10cqw; }
+  .wcard.m3 .net.logo { top: 9%; height: 4.4cqw; } .wcard.m3 .net.logo.mastercard { top: 7.5%; height: 7cqw; }
   /* pile : chaque carte ne laisse voir que son bandeau supérieur, la dernière est entière */
   .stack .wcard + .wcard { margin-top: calc(-62.23% + 62px); }
   .stack.focus .wcard.sel { margin-bottom: 18px; transform: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, .5), 0 18px 40px rgba(0, 0, 0, .5); }
@@ -440,6 +450,10 @@ const fmt = (minor, cur) => cur === 'USD'
   : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
 const toMinor = (v) => Math.round(parseFloat(String(v).replace(',', '.')) * 100);
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
+const BRAND_LOGO = {
+  mpesa: '/assets/brands/mpesa-wordmark.png', airtel: '/assets/brands/airtel-money.png', orange: '/assets/brands/orange-money.png',
+  visa: '/assets/brands/visa.png', mastercard: '/assets/brands/mastercard.png',
+};
 const detectOp = (phone) => {
   const d = String(phone).replace(/\D/g, '').replace(/^243/, '').replace(/^0/, '').slice(0, 2);
   if (['81','82','83'].includes(d)) return 'mpesa';
@@ -762,7 +776,7 @@ $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
 const curSelect = `<label>Devise</label><select name="currency"><option value="USD">USD — Dollar</option><option value="CDF">CDF — Franc congolais</option></select>`;
 const amountInput = `<label>Montant</label><input name="amount" type="number" step="0.01" min="0.01" required>`;
 const pinInput = `<label>PIN de transaction</label><input name="pin" type="password" inputmode="numeric" required>`;
-const opPicker = (sel) => `<label>Opérateur</label><div class="op">${Object.entries(OPS).map(([k, v]) => `<label><input type="radio" name="operator" value="${k}" ${k === sel ? 'checked' : ''}><span><i class="dot ${k}"></i>${v}</span></label>`).join('')}</div>`;
+const opPicker = (sel) => `<label>Opérateur</label><div class="op">${Object.entries(OPS).map(([k, v]) => `<label title="${v}"><input type="radio" name="operator" value="${k}" ${k === sel ? 'checked' : ''}><span><img class="op-logo ${k}" src="${BRAND_LOGO[k]}" alt="${v}"></span></label>`).join('')}</div>`;
 
 async function pollTxn(id) {
   for (let i = 0; i < 60; i++) {
@@ -891,7 +905,9 @@ function cardFace(c, { model, tag = 'button' } = {}) {
   const net = b === 'mastercard' ? 'Mastercard' : b === 'amex' ? 'Amex' : b === 'visa' ? 'Visa' : '';
   return `<${tag} class="wcard m${m}" ${c.id ? `style="view-transition-name:vt-${esc(String(c.id).replace(/[^\w-]/g, ''))}" data-cid="${esc(c.id)}" aria-label="${esc(NET_LABEL[b] || 'Carte')} se terminant par ${esc(c.last4 || '')}"` : ''} ${tag === 'button' ? 'type="button"' : ''}>
     ${m === 3 ? '<span class="map" aria-hidden="true"></span>' : ''}
-    <span class="lbl title">Carte bancaire</span><span class="lbl net${net.length > 6 ? ' long' : ''}">${esc(net)}</span>${c.id && expired(c) ? '<span class="tag exp">Expirée</span>' : ''}
+    <span class="lbl title">Carte bancaire</span>${BRAND_LOGO[b] && b !== 'mpesa'
+      ? `<span class="lbl net logo ${b}"><img src="${BRAND_LOGO[b]}" alt="${esc(net)}"></span>`
+      : `<span class="lbl net${net.length > 6 ? ' long' : ''}">${esc(net)}</span>`}${c.id && expired(c) ? '<span class="tag exp">Expirée</span>' : ''}
     <img class="chip" src="${CHIPS[m]}" alt="">
     ${m === 1 || m === 2 ? `<img class="holo" src="${HOLO}" alt="">` : ''}${m === 3 ? `<img class="nfc" src="${NFC}" alt="">` : ''}
     <span class="num" aria-hidden="true"><i class="d">••••</i><i class="d">••••</i><i class="d">••••</i><i>${esc(c.last4 || '••••')}</i></span>
@@ -952,7 +968,7 @@ function renderPanel() {
     return;
   }
   const full = CARDS.length >= 5;
-  panel.innerHTML = `<h3>Ajouter une carte</h3><p class="sub">Visa ou Mastercard. Elle apparaît aussitôt dans votre wallet.</p>
+  panel.innerHTML = `<h3>Ajouter une carte</h3><p class="sub"><span class="brand-logos" style="margin-right:8px"><img class="visa" src="${BRAND_LOGO.visa}" alt="Visa"><img class="mastercard" src="${BRAND_LOGO.mastercard}" alt="Mastercard"></span>Elle apparaît aussitôt dans votre wallet.</p>
     <div class="preview" id="cw-preview">${cardFace({ brand: 'unknown' }, { model: nextModel(), tag: 'div' })}</div>
     ${full ? '<p class="notice">Vous avez atteint 5 cartes : supprimez-en une pour en ajouter une autre.</p>' : `<form id="f-card">
       <label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="23" required>

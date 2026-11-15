@@ -19,14 +19,20 @@
   .state .big { font-size: 46px; }
   .spinner { width: 42px; height: 42px; border: 4px solid #dbe6f5; border-top-color: var(--blue); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 14px; }
   @keyframes s { to { transform: rotate(360deg); } }
-  .secure { text-align: center; margin-top: 14px; }
+  .secure { text-align: center; margin: 14px 0 6px; }
+  .secure-logos { text-align: center; margin: 0; }
+  .secure-logos .brand-logos { flex-wrap: wrap; justify-content: center; gap: 14px; opacity: .9; }
+  .methods button .brand-logos { gap: 6px; }
 </style>
 </head>
 <body>
 <main class="center" style="margin-top:4vh">
   <div style="display:flex;justify-content:center;margin-bottom:14px"><div class="brand"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></div></div>
   <div class="card" id="box"><div class="state"><div class="spinner"></div>Chargement…</div></div>
-  <p class="muted secure">🔒 Paiement sécurisé · Wallet · M-Pesa · Airtel Money · Orange Money · Visa / Mastercard</p>
+  <p class="muted secure">🔒 Paiement sécurisé</p>
+  <p class="secure-logos"><span class="brand-logos">
+    <img class="mpesa" src="/assets/brands/mpesa-wordmark.png" alt="M-Pesa"><img class="airtel" src="/assets/brands/airtel-money.png" alt="Airtel Money"><img class="orange" src="/assets/brands/orange-money.png" alt="Orange Money"><img class="visa" src="/assets/brands/visa.png" alt="Visa"><img class="mastercard" src="/assets/brands/mastercard.png" alt="Mastercard">
+  </span></p>
 </main>
 <script>
 const $ = (s, el = document) => el.querySelector(s);
@@ -34,6 +40,7 @@ const ID = location.pathname.split('/').pop();
 let TOKEN = null; try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
 let P = null; let METHOD = 'mobile_money';
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
+const BRAND_LOGO = { mpesa: '/assets/brands/mpesa-wordmark.png', airtel: '/assets/brands/airtel-money.png', orange: '/assets/brands/orange-money.png' };
 const fmt = (m, c) => c === 'USD' ? (m / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $' : (m / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const detectOp = (phone) => { const d = String(phone).replace(/\D/g, '').replace(/^243/, '').replace(/^0/, '').slice(0, 2);
@@ -72,7 +79,7 @@ function render() {
   }
   $('#box').innerHTML = header() + `
     <div class="methods">
-      <button data-m="mobile_money"><span class="dot mpesa"></span><span class="dot airtel"></span><span class="dot orange"></span>&nbsp;Mobile Money</button>
+      <button data-m="mobile_money"><span class="brand-logos">${['mpesa', 'airtel', 'orange'].map((k) => `<img class="${k}" src="${BRAND_LOGO[k]}" alt="">`).join('')}</span>&nbsp; Mobile Money</button>
       <button data-m="wallet">👛&nbsp; Wallet Pay243</button>
       <button data-m="card">💳&nbsp; Carte bancaire</button>
     </div>
@@ -88,7 +95,7 @@ function pane() {
   const el = $('#pane');
   if (METHOD === 'mobile_money') {
     el.innerHTML = `<form id="f"><label>Votre numéro Mobile Money</label><input name="phone" inputmode="tel" placeholder="0812345678" required id="ph">
-      <div class="op" style="margin-top:10px">${P.operators.map((o) => `<label><input type="radio" name="operator" value="${esc(o.id)}"><span><i class="dot ${esc(o.id)}"></i>${esc(o.label.replace(' (Vodacom)', ''))}</span></label>`).join('')}</div>
+      <div class="op" style="margin-top:10px">${P.operators.map((o) => `<label title="${esc(o.label.replace(' (Vodacom)', ''))}"><input type="radio" name="operator" value="${esc(o.id)}"><span>${BRAND_LOGO[o.id] ? `<img class="op-logo ${esc(o.id)}" src="${BRAND_LOGO[o.id]}" alt="${esc(o.label.replace(' (Vodacom)', ''))}">` : esc(o.label)}</span></label>`).join('')}</div>
       <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
       ${P.sandbox ? '<p class="muted">Test : un numéro finissant par 0000 simule un refus.</p>' : ''}</form>`;
     $('#ph').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };

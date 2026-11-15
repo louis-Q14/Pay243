@@ -87,6 +87,9 @@
   .item { display: flex; align-items: center; gap: 16px; padding: 14px 12px; border-radius: 14px; }
   .item + .item { border-top: 1px solid var(--line); border-radius: 0; }
   .item svg.ic { width: 24px; height: 24px; flex: none; align-self: flex-start; margin-top: 18px; }
+  .item .bic { flex: none; width: 64px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .item .bic img { display: block; width: auto; max-width: 54px; height: 20px; object-fit: contain; }
+  .item .bic img.mpesa { height: 12px; } .item .bic img.airtel { height: 24px; } .item .bic img.visa { height: 13px; } .item .bic img.mastercard { height: 24px; }
   .item .txt { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.35; }
   .item .txt small { display: block; color: var(--muted); font-size: 13px; }
   .item .acts { display: flex; gap: 14px; align-items: center; }
@@ -436,6 +439,12 @@ const COUNTRIES = ['CD', 'CG', 'AO', 'ZM', 'RW', 'BI', 'UG', 'TZ', 'CF', 'SS', '
 const regionName = (() => { try { const d = new Intl.DisplayNames(['fr'], { type: 'region' }); return (c) => (c === 'CD' ? 'RD Congo' : c === 'CG' ? 'Congo-Brazzaville' : d.of(c) || c); } catch { return (c) => c; } })();
 const countryOptions = (sel) => [...new Set([sel, ...COUNTRIES])].filter(Boolean).map((c) => `<option value="${c}" ${c === sel ? 'selected' : ''}>${esc(regionName(c))}</option>`).join('');
 const OPS = { mpesa: 'M-Pesa (Vodacom)', airtel: 'Airtel Money', orange: 'Orange Money', africell: 'Africell' };
+const BRAND_LOGO = {
+  mpesa: '/assets/brands/mpesa-wordmark.png', airtel: '/assets/brands/airtel-money.png', orange: '/assets/brands/orange-money.png',
+  visa: '/assets/brands/visa.png', mastercard: '/assets/brands/mastercard.png',
+};
+/** Logo de l'opérateur ou du réseau de carte à la place de l'icône générique, quand on le connaît. */
+const brandIc = (key, fallback) => (BRAND_LOGO[key] ? `<span class="bic"><img class="${key}" src="${BRAND_LOGO[key]}" alt=""></span>` : fallback);
 const initials = (n) => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
 const fmtDate = (iso, opts = { dateStyle: 'medium', timeStyle: 'short' }) => { try { return new Date(iso).toLocaleString('fr-FR', { ...opts, timeZone: S?.user.timezone }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
 const maskPhone = (p) => p ? p.replace(/^(\+243)(\d)(\d{3})(\d{3})(\d{2})$/, '$1 $2•• ••• •$5') : '';
@@ -775,12 +784,12 @@ const money = (minor, cur) => cur === 'USD' ? (minor / 100).toLocaleString('fr-F
 async function loadPayments() {
   const [cards, me] = await Promise.all([api('GET', '/v1/cards'), api('GET', '/v1/me')]);
   LIMITS = me.limits;
-  $('#cards').innerHTML = cards.data.length ? cards.data.map((c) => `<div class="item">${IC.card}<div class="txt"><b>${esc(c.brand.toUpperCase())} •••• ${esc(c.last4)}</b><small>Expire ${String(c.exp_month).padStart(2, '0')}/${c.exp_year}</small></div><div class="acts"><button class="lk danger" data-card="${esc(c.id)}">Supprimer</button></div></div>`).join('')
+  $('#cards').innerHTML = cards.data.length ? cards.data.map((c) => `<div class="item">${brandIc(c.brand, IC.card)}<div class="txt"><b>${esc(c.brand.toUpperCase())} •••• ${esc(c.last4)}</b><small>Expire ${String(c.exp_month).padStart(2, '0')}/${c.exp_year}</small></div><div class="acts"><button class="lk danger" data-card="${esc(c.id)}">Supprimer</button></div></div>`).join('')
     : '<div class="empty">Aucune carte. Ajoutez une carte Visa ou Mastercard pour recharger votre wallet.</div>';
   $$('[data-card]').forEach((b) => b.onclick = () => confirmBox('Supprimer cette carte ?', 'Vous pourrez la rajouter à tout moment.', 'Supprimer', async () => { await api('DELETE', '/v1/cards/' + b.dataset.card); loadPayments(); toast('Carte supprimée'); }));
   const u = S.user;
   $('#mm').innerHTML = u.phone
-    ? `<div class="item">${IC.phone}<div class="txt"><b>${esc(OPS[u.operator] || 'Mobile Money')}</b><small>${esc(maskPhone(u.phone))} · proposé par défaut pour les recharges et retraits</small></div><div class="acts"><button class="lk" data-act="phone">Modifier</button></div></div>`
+    ? `<div class="item">${brandIc(u.operator, IC.phone)}<div class="txt"><b>${esc(OPS[u.operator] || 'Mobile Money')}</b><small>${esc(maskPhone(u.phone))} · proposé par défaut pour les recharges et retraits</small></div><div class="acts"><button class="lk" data-act="phone">Modifier</button></div></div>`
     : '<div class="empty">Aucun numéro Mobile Money. <button class="lk" data-act="phone">Ajouter un numéro</button></div>';
   const L = LIMITS;
   $('#limits').innerHTML = `<div><small>Par opération</small><b>${L.perTxnUsd} $</b></div><div><small>Par jour</small><b>${L.dailyUsd} $</b></div><div><small>Solde maximum</small><b>${L.maxBalanceUsd} $</b></div>`;

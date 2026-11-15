@@ -180,8 +180,11 @@ h2.big { font: 800 clamp(38px, 5.2vw, 72px)/1.02 var(--display); letter-spacing:
 .partners .wrap { display: flex; align-items: center; justify-content: center; gap: 18px 40px; flex-wrap: wrap; }
 .partners p { margin: 0; color: var(--muted); font-weight: 600; font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 40px; }
-.chip { display: inline-flex; align-items: center; gap: 10px; font: 800 18px/1 var(--display); letter-spacing: -.02em; color: var(--ink-2); }
-.chip i { width: 14px; height: 14px; border-radius: 50%; }
+.chip { display: inline-flex; align-items: center; }
+/* hauteurs ajustées logo par logo pour un poids visuel équivalent */
+.chip img { display: block; width: auto; height: 34px; }
+.chip img.mpesa { height: 54px; } .chip img.airtel { height: 40px; } .chip img.orange { height: 36px; }
+.chip img.visa { height: 24px; } .chip img.mastercard { height: 40px; }
 
 /* Section split */
 .split { display: grid; grid-template-columns: 1.05fr 1fr; gap: 64px; align-items: center; }
@@ -314,8 +317,9 @@ footer { padding: 80px 0 40px; }
   .partners p { font-size: 12px; text-align: center; margin-bottom: 10px; }
   .chips { display: flex; flex-wrap: nowrap; justify-content: flex-start; gap: 22px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
-  .chip { font-size: 15px; white-space: nowrap; gap: 7px; }
-  .chip i { width: 10px; height: 10px; }
+  .chip { flex: none; }
+  .chip img { height: 26px; } .chip img.mpesa { height: 40px; } .chip img.airtel { height: 30px; } .chip img.orange { height: 27px; }
+  .chip img.visa { height: 18px; } .chip img.mastercard { height: 30px; }
 
   /* Sections */
   section { padding: 44px 0; }

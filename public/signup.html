@@ -61,7 +61,11 @@
     transform: rotate(var(--a)) translateY(calc(min(215px, 42vw) * -1)) rotate(calc(var(--a) * -1)); }
   .orbit span b { animation: spin 38s linear infinite reverse; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; height: 34px; white-space: nowrap;
     border-radius: 999px; font: 800 12px/1 var(--display); letter-spacing: .01em; color: #fff; background: rgba(15,15,20,.72); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(8px); }
-  .orbit span b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  /* logos officiels sur pastille blanche (le noir d'Orange Money disparaîtrait sur le fond sombre) */
+  .orbit span b { background: rgba(255,255,255,.94); border-color: rgba(255,255,255,.6); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .orbit span b img { display: block; width: auto; height: 22px; }
+  .orbit span b img.mpesa { height: 17px; } .orbit span b img.airtel { height: 27px; } .orbit span b img.orange { height: 22px; }
+  .orbit span b img.visa { height: 15px; } .orbit span b img.mastercard { height: 26px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .pcard { position: relative; width: min(340px, 78%); aspect-ratio: 1.586; border-radius: 22px; padding: 22px 24px; color: #fff; transform: translateZ(60px);
@@ -195,6 +199,7 @@
     .orbit { width: 240px; }
     .orbit span { transform: rotate(var(--a)) translateY(-120px) rotate(calc(var(--a) * -1)); }
     .orbit span b { height: 26px; padding: 0 9px; font-size: 10.5px; }
+    .orbit span b img { transform: scale(.85); }
     .pcard { width: min(230px, 70%); padding: 12px 14px; border-radius: 14px; transform: translateY(-8px); }
     .pcard .amt { font-size: 20px; } .pcard .brand { font-size: 15px; } .pcard .chipm { width: 30px; height: 22px; }
     .note.n0, .note.n2 { display: none; }
@@ -241,11 +246,11 @@
 
     <div class="stage" id="stage">
       <div class="orbit">
-        <span style="--a:0deg;--c:#e60000"><b>M-Pesa</b></span>
-        <span style="--a:72deg;--c:#ff3b3b"><b>Airtel Money</b></span>
-        <span style="--a:144deg;--c:#ff7900"><b>Orange Money</b></span>
-        <span style="--a:216deg;--c:#4f7cff"><b>Visa</b></span>
-        <span style="--a:288deg;--c:#ffb000"><b>Mastercard</b></span>
+        <span style="--a:0deg"><b><img class="mpesa" src="/assets/brands/mpesa-wordmark.png" alt="M-Pesa"></b></span>
+        <span style="--a:72deg"><b><img class="airtel" src="/assets/brands/airtel-money.png" alt="Airtel Money"></b></span>
+        <span style="--a:144deg"><b><img class="orange" src="/assets/brands/orange-money.png" alt="Orange Money"></b></span>
+        <span style="--a:216deg"><b><img class="visa" src="/assets/brands/visa.png" alt="Visa"></b></span>
+        <span style="--a:288deg"><b><img class="mastercard" src="/assets/brands/mastercard.png" alt="Mastercard"></b></span>
       </div>
 
       <div class="pcard" id="pcard">

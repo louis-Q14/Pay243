@@ -56,8 +56,14 @@ button:disabled { opacity: .55; cursor: wait; }
 .op input { display: none; }
 .op input:checked + span { color: var(--blue-d); }
 .op label:has(input:checked) { border-color: var(--blue); background: #eef5ff; }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
-.dot.mpesa { background: #e60000; } .dot.airtel { background: #ed1c24; box-shadow: inset 0 0 0 2px #fff, 0 0 0 1px #ed1c24; } .dot.orange { background: #ff7900; }
+/* Logos des opérateurs et réseaux de cartes (public/assets/brands) */
+.op label { display: grid; place-items: center; min-height: 50px; padding: 8px 6px; background: #fff; }
+.op-logo { display: block; width: auto; max-width: 100%; height: 22px; object-fit: contain; }
+.op-logo.mpesa { height: 17px; } .op-logo.airtel { height: 26px; } .op-logo.orange { height: 22px; }
+.brand-logos { display: inline-flex; align-items: center; gap: 10px; vertical-align: middle; }
+.brand-logos img { display: block; width: auto; height: 18px; }
+.brand-logos img.mpesa { height: 13px; } .brand-logos img.airtel { height: 20px; } .brand-logos img.orange { height: 17px; }
+.brand-logos img.visa { height: 12px; } .brand-logos img.mastercard { height: 20px; }
 code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 .secret { background: #0f1b2d; color: #f7d618; padding: 10px 12px; border-radius: 10px; word-break: break-all; }
 .notice { background: #fffbe6; border: 1px solid #f5e08a; border-radius: 10px; padding: 10px 12px; font-size: 13px; }
