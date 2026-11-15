@@ -147,6 +147,11 @@
   .cw-add:disabled { opacity: .45; cursor: default; }
   .wallet { background: radial-gradient(120% 70% at 50% 0, #1d2433 0, #07090f 70%); border-radius: 28px; padding: 18px 16px 22px; box-shadow: 0 24px 60px rgba(7, 9, 15, .28); min-height: 300px; }
   .wallet .hint { color: #8d97aa; font-size: 12.5px; text-align: center; margin: 14px 0 0; }
+  /* la même pile, en plus compact, dans la fenêtre de recharge */
+  .tp-wallet { min-height: 0; border-radius: 20px; padding: 14px 12px 12px; margin: 2px 0 6px; box-shadow: 0 12px 30px rgba(7, 9, 15, .22); }
+  .tp-wallet .hint { margin-top: 10px; }
+  .tp-wallet .hint:empty { display: none; }
+  .tp-wallet .stack.focus .wcard.sel { margin-bottom: 12px; }
   .stack { display: flex; flex-direction: column; }
   /* une carte : format bancaire (85,6 × 54 mm). Tailles en cqw : tout suit la largeur de la carte.
      4 modèles (m0…m3) ; chacun place ses éléments à sa façon. */
@@ -795,15 +800,21 @@ const ACTIONS = {
     openModal(`<h3>Recharger mon wallet</h3><p class="muted">Par Mobile Money ou par carte enregistrée.</p>
       <form><label>Moyen</label><select name="method" id="tm"><option value="mobile_money">Mobile Money</option><option value="card" ${CARDS.length ? '' : 'disabled'}>Carte enregistrée${CARDS.length ? '' : ' (aucune)'}</option></select>
       <div id="mm">${opPicker(def)}<label>Numéro Mobile Money</label><input name="phone" value="${ME.phone || ''}" placeholder="0812345678" inputmode="tel" id="tp"></div>
-      <div id="cc" class="hidden"><label>Carte</label><select name="card_id">${CARDS.map((c) => `<option value="${esc(c.id)}">${esc(String(c.brand).toUpperCase())} •••• ${esc(c.last4)}</option>`).join('')}</select></div>
+      <div id="cc" class="hidden"><label>Carte</label><input type="hidden" name="card_id" id="tc">
+        <div class="wallet tp-wallet"><div class="stack focus" id="tstack"></div><p class="hint" id="thint"></p></div></div>
       ${amountInput}${curSelect}<button class="full">Recharger</button></form>`, async (d) => {
         const body = { method: d.method, amount: toMinor(d.amount), currency: d.currency };
-        if (d.method === 'mobile_money') Object.assign(body, { phone: d.phone, operator: d.operator }); else body.card_id = d.card_id;
+        if (d.method === 'mobile_money') Object.assign(body, { phone: d.phone, operator: d.operator });
+        else if (!d.card_id) throw new Error('Choisissez une carte valide.');
+        else body.card_id = d.card_id;
         const t = await api('POST', '/v1/topups', body, { 'Idempotency-Key': crypto.randomUUID() });
         closeModal(); loadHistory();
         if (t.status === 'pending') { toast(t.next_action?.message || 'Confirmez sur votre téléphone'); pollTxn(t.id); } else { toast('Recharge réussie'); loadWallets(); }
       });
-    $('#tm').onchange = (e) => { $('#mm').classList.toggle('hidden', e.target.value !== 'mobile_money'); $('#cc').classList.toggle('hidden', e.target.value !== 'card'); };
+    $('#tm').onchange = (e) => {
+      $('#mm').classList.toggle('hidden', e.target.value !== 'mobile_money'); $('#cc').classList.toggle('hidden', e.target.value !== 'card');
+      if (e.target.value === 'card') pickTopupCard($('#tc').value || null, { animate: false });
+    };
     $('#tp').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
   },
   send() {
@@ -957,7 +968,7 @@ function renderPanel() {
       <div class="acts">${expired(c) ? '' : '<button class="full" id="cw-topup">Recharger avec cette carte</button>'}<button class="full btn-del" id="cw-del">Supprimer la carte</button><button class="link full" id="cw-close">Ranger la carte</button></div>`;
     $('#cw-topup')?.addEventListener('click', () => {
       if (!ME.activated) return toast('Activez d\'abord votre compte en vérifiant votre identité.', true);
-      ACTIONS.topup(); $('#tm').value = 'card'; $('#tm').onchange({ target: $('#tm') }); $('#modal-body [name=card_id]').value = c.id;
+      ACTIONS.topup(); $('#tm').value = 'card'; $('#tc').value = c.id; $('#tm').onchange({ target: $('#tm') });
     });
     const del = $('#cw-del');
     del.onclick = () => {
@@ -998,6 +1009,32 @@ function renderPanel() {
   }); };
 }
 $('#cw-add').onclick = () => { CW.sel = null; CW.adding = true; renderWallet(); $('#f-card')?.number.focus(); if (matchMedia('(max-width: 860px)').matches) $('#cw-panel').scrollIntoView({ behavior: 'smooth' }); };
+/**
+ * Choix de la carte dans la fenêtre de recharge : même pile que « Mes cartes ».
+ * La carte choisie passe devant, entière ; les autres restent en bandeaux dessous et se touchent pour la choisir.
+ * Une carte expirée reste visible mais ne peut pas être choisie.
+ */
+function pickTopupCard(id, { animate = true } = {}) {
+  const st = $('#tstack'); if (!st) return;
+  const usable = CARDS.filter((c) => !expired(c));
+  const sel = usable.find((c) => c.id === id) || usable[0] || null;
+  $('#tc').value = sel?.id || '';
+  const order = sel ? [sel, ...CARDS.filter((c) => c.id !== sel.id)] : CARDS;
+  const draw = () => {
+    // noms de transition propres à la fenêtre (la pile de « Mes cartes » peut être affichée derrière)
+    st.innerHTML = order.map((c) => cardFace(c).replace('view-transition-name:vt-', 'view-transition-name:tp-')
+      .replace('class="wcard ', `class="wcard ${c.id === sel?.id ? 'sel ' : ''}`)).join('');
+    $('#thint').textContent = !usable.length ? 'Toutes vos cartes ont expiré : ajoutez-en une dans « Mes cartes ».'
+      : CARDS.length > 1 ? 'Touchez une autre carte pour la choisir.' : '';
+    $$('[data-cid]', st).forEach((el) => el.onclick = () => {
+      const c = CARDS.find((x) => x.id === el.dataset.cid);
+      if (c && expired(c)) return toast('Cette carte a expiré : choisissez-en une autre.', true);
+      if (el.dataset.cid !== $('#tc').value) pickTopupCard(el.dataset.cid);
+    });
+  };
+  if (animate && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(draw); else draw();
+}
+
 async function loadCards() {
   const c = await api('GET', '/v1/cards'); CARDS = c.data;
   renderWallet();
