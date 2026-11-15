@@ -3,6 +3,7 @@ import { config } from '../config.js';
 import { acquireLease, isUniqueViolation, q, releaseLease, tx } from '../db.js';
 import { getTxn, lockTxn, updateTxn } from '../ledger.js';
 import { HttpError, newId, now, parseJson } from '../util.js';
+import { getProvider } from '../providers/mobileMoney/index.js';
 import { COLLECTION_TYPES, PAYOUT_TYPES, handleProviderResult, refreshPending } from './mobileMoney.js';
 import { getPayment } from './payments.js';
 import { audit } from './kyc.js';
@@ -180,9 +181,13 @@ export async function importStatement({ operator, date, csv, replace = false }, 
     const ours = await q.all("SELECT * FROM transactions WHERE operator=? AND method='mobile_money' AND created_at >= ? AND created_at < ?", operator, start, end);
     const byRef = new Map(ours.filter((t) => t.provider_ref).map((t) => [t.provider_ref, t]));
     const byId = new Map(ours.map((t) => [t.id, t]));
-    const find = async (r) => byRef.get(r.provider_ref) || (r.reference && byId.get(r.reference))
+    // La colonne « reference » du relevé contient notre identifiant, ou la référence que nous avons transmise
+    // à l'opérateur quand son format l'impose (M-Pesa : alphanumérique) ; le pilote sait la retraduire.
+    const driver = getProvider(operator);
+    const idOf = (ref) => (ref ? (driver.txnIdFromReference?.(ref) || ref) : '');
+    const find = async (r) => byRef.get(r.provider_ref) || (r.reference && byId.get(idOf(r.reference)))
       // Hors fenêtre (opération à cheval sur minuit) : recherche globale.
-      || q.get('SELECT * FROM transactions WHERE operator=? AND (provider_ref=? OR id=?)', operator, r.provider_ref, r.reference || '');
+      || q.get('SELECT * FROM transactions WHERE operator=? AND (provider_ref=? OR id=?)', operator, r.provider_ref, idOf(r.reference));
 
     const seen = new Set();
     const totals = {};

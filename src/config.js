@@ -1,6 +1,7 @@
 // Configuration centrale de Pay243. Toutes les valeurs sont surchargeables via variables d'environnement.
 import crypto from 'node:crypto';
 import path from 'node:path';
+import { SANDBOX_PUBLIC_KEY } from './providers/mobileMoney/mpesaKeys.js';
 
 const env = process.env;
 const port = Number(env.PORT || 3000);
@@ -63,10 +64,20 @@ export const config = {
       label: 'M-Pesa (Vodacom)',
       driver: env.MPESA_DRIVER || 'mock',
       env: env.MPESA_ENV || 'sandbox',
-      host: env.MPESA_HOST || 'openapi.m-pesa.com',
+      baseUrl: (env.MPESA_BASE_URL || `https://${env.MPESA_HOST || 'openapi.m-pesa.com'}`).replace(/\/+$/, ''),
+      market: env.MPESA_MARKET || 'vodacomDRC',
+      country: env.MPESA_COUNTRY || 'DRC',
       apiKey: env.MPESA_API_KEY,
-      publicKey: env.MPESA_PUBLIC_KEY,
+      // Bac à sable : clé publique publiée par le portail (onglet SANDBOX) si aucune n'est fournie.
+      publicKey: env.MPESA_PUBLIC_KEY || ((env.MPESA_ENV || 'sandbox') === 'live' ? undefined : SANDBOX_PUBLIC_KEY),
       serviceProviderCode: env.MPESA_SERVICE_PROVIDER_CODE,
+      // Doit correspondre à la durée de session réglée sur la page « Applications » du portail.
+      sessionMinutes: Number(env.MPESA_SESSION_MINUTES || 50),
+      sessionWarmupMs: Number(env.MPESA_SESSION_WARMUP_MS ?? 30_000), // une nouvelle session met jusqu'à 30 s à s'activer
+      origin: env.MPESA_ORIGIN || '*', // doit correspondre aux « Trusted Sources » de l'application
+      // Devises acceptées en paiement simple pour la RDC : le portail n'indique que l'USD (CDF à confirmer avec Vodacom).
+      currencies: (env.MPESA_CURRENCIES || 'USD,CDF').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean),
+      sandboxMsisdn: env.MPESA_SANDBOX_MSISDN || null, // ex. 000000000001 : numéro de test imposé (bac à sable seulement)
     },
     airtel: {
       label: 'Airtel Money',
@@ -138,6 +149,23 @@ export const config = {
     money: Number(env.RATE_LIMIT_MONEY || 30), // opérations d'argent par utilisateur et par minute
   },
 
+  // Détection des changements de carte SIM avant toute sortie d'argent (retrait, envoi, paiement depuis le wallet).
+  simSwap: {
+    driver: env.SIMSWAP_DRIVER || 'mock', // off | mock | orange
+    // Fenêtre de blocage après un changement de SIM (l'API accepte 1 à 2160 heures).
+    maxAgeHours: Math.min(2160, Math.max(1, Number(env.SIMSWAP_MAX_AGE_HOURS || 72))),
+    // Pilote mock : numéros (E.164) considérés comme « SIM changée », pour les démonstrations et les tests.
+    mockSwapped: (env.SIMSWAP_MOCK_SWAPPED || '').split(',').map((s) => s.trim()).filter(Boolean),
+    orange: {
+      clientId: env.ORANGE_NETAPI_CLIENT_ID,
+      clientSecret: env.ORANGE_NETAPI_CLIENT_SECRET,
+      // Par défaut : Playground (numéros fictifs +990…). À remplacer par les adresses de production fournies par Orange.
+      tokenUrl: env.ORANGE_NETAPI_TOKEN_URL || 'https://api.orange.com/openidconnect/playground/v1.0/token',
+      baseUrl: (env.ORANGE_NETAPI_BASE_URL || 'https://api.orange.com/camara/playground/api').replace(/\/+$/, ''),
+      timeoutMs: Number(env.ORANGE_NETAPI_TIMEOUT_MS || 5000),
+    },
+  },
+
   sms: {
     driver: env.SMS_DRIVER || 'mock', // mock | africastalking
     africastalking: {
@@ -164,6 +192,16 @@ export function assertProductionConfig() {
   if (config.email.driver === 'resend' && !config.email.resend.apiKey) throw new Error('EMAIL_DRIVER=resend exige RESEND_API_KEY.');
   if (config.email.driver !== 'mock' && !/<[^@\s]+@[^>\s]+>$|^[^@\s]+@[^@\s]+$/.test(config.email.from)) throw new Error('EMAIL_FROM invalide (ex. "Pay243 <no-reply@pay243.com>").');
   if (config.sms.driver === 'africastalking' && !config.sms.africastalking.apiKey) throw new Error('SMS_DRIVER=africastalking exige AT_API_KEY.');
+  const mp = config.providers.mpesa;
+  if (mp.driver === 'mpesa') {
+    const missing = [['MPESA_API_KEY', mp.apiKey], ['MPESA_PUBLIC_KEY', mp.publicKey], ['MPESA_SERVICE_PROVIDER_CODE', mp.serviceProviderCode]].filter(([, v]) => !v).map(([k]) => k);
+    if (missing.length) throw new Error(`MPESA_DRIVER=mpesa exige ${missing.join(', ')}.`);
+    if (!mp.currencies.length || mp.currencies.some((cur) => !config.currencies.includes(cur))) throw new Error('MPESA_CURRENCIES invalide (USD et/ou CDF).');
+  }
+  if (!['off', 'mock', 'orange'].includes(config.simSwap.driver)) throw new Error(`SIMSWAP_DRIVER inconnu : ${config.simSwap.driver} (off, mock ou orange).`);
+  if (config.simSwap.driver === 'orange' && (!config.simSwap.orange.clientId || !config.simSwap.orange.clientSecret)) {
+    throw new Error('SIMSWAP_DRIVER=orange exige ORANGE_NETAPI_CLIENT_ID et ORANGE_NETAPI_CLIENT_SECRET.');
+  }
   const weak = ['dev-only-secret-change-me', 'dev-callback-secret', 'change-me', ''];
   if (config.exposed) {
     // Serveur en ligne, même en démonstration : aucun secret par défaut (ils sont publics dans le code source).

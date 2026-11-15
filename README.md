@@ -298,12 +298,33 @@ Chaque opérateur se configure indépendamment avec `MPESA_DRIVER`, `AIRTEL_DRIV
 
 | Opérateur | Pilote | Ce qu'il faut obtenir |
 |---|---|---|
-| **Vodacom M-Pesa** | `mpesa` | Compte marchand Vodacom RDC, accès au portail M-Pesa Open API (marché `vodacomDRC`), clé API, clé publique, *Service Provider Code*, **IP de vos serveurs whitelistée**. Certains marchands sont encore raccordés à l'ancienne passerelle IPG (SOAP) : vérifiez lequel des deux systèmes vous est attribué. |
+| **Vodacom M-Pesa** | `mpesa` | Compte marchand Vodacom RDC, accès au portail M-Pesa Open API (marché `vodacomDRC`), clé API, clé publique (onglet OPENAPI en production ; celle du bac à sable est intégrée), *Service Provider Code*, **IP de vos serveurs déclarée dans les « Trusted Sources »** de l'application. Produits à activer sur l'application : C2B Single Stage, B2C Single Stage, Query Transaction Status (sinon `INS-997`). Pour la mise en ligne : rattacher le compte développeur à l'organisation Vodacom, puis *Send for Review*. Certains marchands sont encore raccordés à l'ancienne passerelle IPG (SOAP) : vérifiez lequel des deux systèmes vous est attribué. |
 | **Airtel Money** | `airtel` | Application sur developers.airtel.africa (produits *Collection* et *Disbursement*), validation KYC pour la production, `client_id` et `client_secret`, PIN de décaissement chiffré. Pays `CD`, devises `CDF` et `USD`. |
 | **Orange Money** | `aggregator` | L'accès API direct se négocie avec Orange RDC. En attendant, passez par un **agrégateur** qui couvre les trois opérateurs (le pilote fourni suit l'API *deposits/payouts* de type pawaPay ; FlexPay, MaxiCash, CinetPay, etc. s'adaptent en modifiant `aggregator.js`). |
 | **Cartes** | à écrire | Acquéreur local (banque) ou PSP certifié **PCI DSS** avec champs de saisie hébergés et **3-D Secure**. Implémentez `retrieveToken`, `charge` et `refund` dans `src/providers/cards/`. |
 
+**M-Pesa, points d'attention** (pilote `src/providers/mobileMoney/mpesa.js`, conforme à la documentation du portail de novembre 2026) :
+- **Session :** une nouvelle clé met jusqu'à 30 s à s'activer. La suivante est préparée en arrière-plan avant l'expiration (`MPESA_SESSION_MINUTES` = durée réglée sur le portail). Limites de session atteintes (`INS-993`/`994`) : nouvelle clé puis nouvel essai.
+- **Références :** M-Pesa n'accepte que lettres et chiffres. L'identifiant Pay243 est transmis encodé en base 62 (17 caractères, `P243` + référence pour la conversation) ; le rapprochement retraduit la colonne `reference` du relevé.
+- **Issue inconnue :** `INS-1`, `INS-9`, `INS-10` (doublon) et erreurs 5xx laissent l'opération en attente. Elle est ensuite vérifiée (Query Transaction Status), jamais déclarée échouée d'office.
+- **Devises :** pour la RDC, le portail n'indique que l'USD en paiement simple. Faites confirmer le CDF par Vodacom, sinon mettez `MPESA_CURRENCIES=USD`.
+- **Bac à sable :** `MPESA_SANDBOX_MSISDN=000000000001` envoie toutes les opérations vers un numéro de test (`…004` PIN incorrect, `…008` solde insuffisant, `…002` délai dépassé). On peut aussi enregistrer jusqu'à 3 vrais numéros sur la page TEST MSISDN du portail pour recevoir la demande de PIN.
+
 > Astuce : pour aller vite, mettez les trois opérateurs sur `aggregator`. Un seul contrat suffit alors pour lancer le produit, et vous négocierez les intégrations directes, moins chères, une fois le volume atteint.
+
+### Anti-fraude : changement de carte SIM
+
+Avant un **retrait**, un **envoi** ou un **paiement depuis le wallet**, Pay243 vérifie, après le PIN, que la carte SIM du numéro du compte n'a pas changé dans les `SIMSWAP_MAX_AGE_HOURS` dernières heures (72 par défaut). Si elle a changé, l'opération est refusée (`403 sim_swap_hold`) et le titulaire reçoit une alerte de sécurité (une par jour au plus). Les recharges restent possibles. C'est la parade au vol de compte par duplication de SIM : l'escroc reçoit les codes SMS de la victime, mais ne peut pas sortir l'argent.
+
+Le contrôle ne bloque jamais quand il est impossible (compte sans numéro, opérateur non couvert, opérateur qui ne répond pas) : l'opération passe et l'incident est journalisé.
+
+| `SIMSWAP_DRIVER` | Comportement |
+|---|---|
+| `mock` (défaut) | Aucun appel externe. Les numéros de `SIMSWAP_MOCK_SWAPPED` sont traités comme « SIM changée » (démonstration). |
+| `orange` | API CAMARA *SIM Swap* d'Orange (`ORANGE_NETAPI_CLIENT_ID` / `_SECRET`, application créée sur developer.orange.com). Par défaut sur le **Playground**, qui ne connaît que des numéros fictifs `+990…` : les numéros des clients ne lui sont jamais envoyés. Vérifiez vos identifiants avec `npm run simswap:check -- +990100000000`. |
+| `off` | Contrôle désactivé. |
+
+Pour la production : la disponibilité de SIM Swap chez **Orange RDC** reste à confirmer avec Orange, et Orange y exige un OAuth2 « 3 étapes » (consentement de l'abonné) au lieu du jeton applicatif du Playground. Il faudra donc adapter `src/providers/simSwap/`. Les abonnés Vodacom et Airtel nécessiteront leur propre accès (Open Gateway ou agrégateur).
 
 ---
 
