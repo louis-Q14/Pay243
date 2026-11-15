@@ -102,6 +102,7 @@ export function serializeTxn(t, perspectiveWalletIds = []) {
     description: t.description,
     counterparty: meta.counterparty || null,
     failure_reason: t.failure_reason,
+    provider_ref: t.provider_ref || null, // référence de l'opérateur (ex. n° de reçu M-Pesa), utile au support
     payment_id: t.payment_id,
     metadata: meta,
     created_at: t.created_at,

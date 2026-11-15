@@ -138,6 +138,33 @@
     .login-panel .alt { margin-top: 16px; font-size: 14px; }
   }
 
+  /* ================= Historique : liste allégée + détail au clic ================= */
+  #history .h-item { cursor: pointer; justify-content: flex-start; gap: 12px; padding: 11px 8px; margin: 0 -8px; border-radius: 12px; transition: background .15s; }
+  #history .h-item:hover { background: #f4f7fc; }
+  #history .h-item:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .h-ic { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; font-weight: 800; background: #eef3fb; color: var(--blue-d); }
+  .h-ic.credit { background: #e6f6ee; color: var(--ok); }
+  .h-ic.pending, .h-ic.processing { background: #fff4dc; color: var(--warn); }
+  .h-ic.failed { background: #fde8e9; color: var(--err); }
+  .h-txt { flex: 1; min-width: 0; }
+  .h-t { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .h-t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .h-s { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .h-amt { flex: none; text-align: right; font-weight: 700; white-space: nowrap; }
+  .h-amt.credit, .tx-amt.credit { color: var(--ok); }
+  .h-amt.void, .tx-amt.void { color: var(--muted); text-decoration: line-through; }
+  .tx-head { text-align: center; padding: 4px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .tx-head .h-ic.big { width: 52px; height: 52px; font-size: 22px; margin: 0 auto 8px; }
+  .tx-head h3 { margin: 0; font-size: 16px; }
+  .tx-amt { font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin-top: 4px; }
+  .tx-dl { display: grid; grid-template-columns: auto 1fr; gap: 9px 16px; margin: 0 0 16px; font-size: 14px; }
+  .tx-dl dt { color: var(--muted); }
+  .tx-dl dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+  .tx-dl code { font-size: 12.5px; background: var(--bg); padding: 2px 6px; border-radius: 6px; }
+  .tx-dl .h-copy { padding: 0 2px; font-size: 13px; font-weight: 700; }
+  .tx-help { display: block; text-align: center; font-size: 13.5px; margin: 12px 0 0; }
+  @media (max-width: 560px) { .h-ic { width: 34px; height: 34px; font-size: 14px; } #history .h-item { gap: 10px; } .tx-amt { font-size: 24px; } }
+
   /* ================= Mes cartes : style wallet ================= */
   .cw { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 22px; align-items: start; }
   .cw-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 12px; }
@@ -669,16 +696,95 @@ function openSweep(currency) {
       loadWallets(); loadHistory(); if (!$('#tab-merchant').classList.contains('hidden')) loadMerchant();
     });
 }
+// ---------------- Historique : liste allégée, détail complet au clic ----------------
+let HIST = new Map(); // id -> opération
+const TXN_ICON = { topup: '＋', transfer: '↗', payment: '🛍', refund: '↩', withdrawal: '↓', conversion: '⇄', payout: '↓' };
+const signOf = (x) => (x.direction === 'credit' ? '+' : x.direction === 'internal' ? '' : '−');
+const txnTitle = (x) => (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '');
+/** Transfert : seulement l'autre personne (« À … » ou « De … »), pas « Moi → Lui ». */
+const transferPeer = (x) => {
+  const [from, to] = String(x.counterparty || '').split(' → ');
+  if (!to) return x.counterparty || '';
+  return x.direction === 'debit' ? `À ${to}` : `De ${from}`;
+};
+const shortWhen = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ME?.timezone }); } catch { return when(iso); } };
+
 async function loadHistory() {
   const t = await api('GET', '/v1/transactions?limit=30');
+  HIST = new Map(t.data.map((x) => [x.id, x]));
   $('#history').innerHTML = t.data.length ? t.data.map((x) => {
-    const sign = x.direction === 'credit' ? '+' : x.direction === 'internal' ? '' : '−';
-    const label = (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '');
-    const extra = x.type === 'conversion' ? ` → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}` : '';
-    return `<li><div><div><b>${label}</b> <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span></div>
-      <div class="muted">${esc(x.description || '')}${x.counterparty ? ' — ' + esc(x.counterparty) : ''} · ${when(x.created_at)}${x.failure_reason ? '<br><span style="color:var(--err)">' + esc(x.failure_reason) + '</span>' : ''}</div></div>
-      <div class="${x.direction}">${sign}${fmt(x.amount, x.currency)}${extra}${x.fee ? `<div class="muted">frais ${fmt(x.fee, x.currency)}</div>` : ''}</div></li>`;
+    const who = x.type === 'transfer' ? transferPeer(x) : x.counterparty || x.description;
+    const amount = x.type === 'conversion'
+      ? `${fmt(x.amount, x.currency)} → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}`
+      : `${signOf(x)}${fmt(x.amount, x.currency)}`;
+    return `<li class="h-item" data-txn="${esc(x.id)}" role="button" tabindex="0" aria-label="${esc(txnTitle(x))}, ${esc(amount)} : voir le détail">
+      <span class="h-ic ${x.direction || ''} ${x.status}" aria-hidden="true">${TXN_ICON[x.type] || '•'}</span>
+      <div class="h-txt"><div class="h-t"><b>${esc(txnTitle(x))}</b>${x.status !== 'succeeded' ? ` <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span>` : ''}</div>
+        <div class="muted h-s">${shortWhen(x.created_at)}${who ? ' · ' + esc(who) : ''}</div></div>
+      <div class="h-amt ${x.status === 'failed' ? 'void' : x.direction}">${amount}</div></li>`;
   }).join('') : '<li class="muted">Aucune opération pour l\'instant.</li>';
+}
+$('#history').addEventListener('click', (e) => { const li = e.target.closest('[data-txn]'); if (li) openTxn(li.dataset.txn); });
+$('#history').addEventListener('keydown', (e) => {
+  const li = e.target.closest('[data-txn]');
+  if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openTxn(li.dataset.txn); }
+});
+
+/** Fenêtre de détail d'une opération (avec actualisation du statut si elle est en attente). */
+function openTxn(id) {
+  const x = HIST.get(id); if (!x) return;
+  const m = x.metadata || {};
+  const rows = [];
+  const row = (k, v) => { if (v !== null && v !== undefined && v !== '') rows.push(`<dt>${k}</dt><dd>${v}</dd>`); };
+  row('Statut', `<span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span>`);
+  row('Date', esc(when(x.created_at)));
+  if (x.updated_at && x.status !== 'pending' && new Date(x.updated_at) - new Date(x.created_at) >= 60_000) row(x.status === 'failed' ? 'Échouée le' : 'Confirmée le', esc(when(x.updated_at)));
+  row('Moyen', esc(x.method === 'mobile_money' ? `Mobile Money${x.operator ? ' · ' + OPS[x.operator] : ''}` : x.method === 'card' ? 'Carte bancaire' : 'Wallet Pay243'));
+  if (x.phone) row('Numéro', esc(x.phone));
+  if (x.type === 'transfer') {
+    const [from, to] = String(x.counterparty || '').split(' → ');
+    if (x.direction === 'debit') row('Destinataire', esc(to || x.counterparty || ''));
+    else row('Expéditeur', esc(from || x.counterparty || ''));
+    if (x.description && x.description !== 'Transfert Pay243') row('Motif', esc(x.description));
+  } else {
+    if (x.counterparty) row(x.type === 'payment' ? 'Marchand' : 'Contrepartie', esc(x.counterparty));
+    if (x.description) row('Description', esc(x.description));
+  }
+  if (x.type === 'conversion') {
+    row('Converti', esc(fmt(x.amount, x.currency)));
+    row('Reçu', esc(fmt(m.to_amount, m.to_currency)));
+    if (m.rate) row('Taux du marché', `1 $ = ${Number(m.rate).toLocaleString('fr-FR')} FC${m.spread_percent ? ` · marge ${Number(m.spread_percent).toLocaleString('fr-FR')} %` : ''}`);
+  } else {
+    row('Montant', esc(fmt(x.amount, x.currency)));
+    if (x.fee) {
+      row('Frais', esc(fmt(x.fee, x.currency)));
+      if (x.direction === 'debit') row('Total débité', `<b>${esc(fmt(x.amount + x.fee, x.currency))}</b>`);
+    }
+  }
+  if (x.failure_reason) row('Motif de l’échec', `<span style="color:var(--err)">${esc(x.failure_reason)}</span>`);
+  row('Référence', `<code>${esc(x.id)}</code> <button type="button" class="link h-copy" data-copy="${esc(x.id)}">Copier</button>`);
+  if (x.provider_ref && !/^mock_/.test(x.provider_ref)) row('Réf. opérateur', `<code>${esc(x.provider_ref)}</code>`);
+
+  const big = x.type === 'conversion' ? `${fmt(x.amount, x.currency)} → ${fmt(m.to_amount, m.to_currency)}` : `${signOf(x)}${fmt(x.amount, x.currency)}`;
+  $('#modal-body').innerHTML = `<div class="tx-head"><span class="h-ic big ${x.direction || ''} ${x.status}" aria-hidden="true">${TXN_ICON[x.type] || '•'}</span>
+      <h3>${esc(txnTitle(x))}</h3><div class="tx-amt ${x.status === 'failed' ? 'void' : x.direction}">${esc(big)}</div></div>
+    <dl class="tx-dl">${rows.join('')}</dl>
+    ${x.status === 'pending' ? '<button class="full" id="tx-refresh">Actualiser le statut</button>' : ''}
+    <a class="link full tx-help" href="/messages">Un problème avec cette opération ? Contacter le support</a>
+    <button class="link full" data-close>Fermer</button>`;
+  $('#modal').classList.remove('hidden');
+  $('[data-close]').onclick = closeModal;
+  $('.h-copy').onclick = async (e) => {
+    try { await navigator.clipboard.writeText(e.target.dataset.copy); toast('Référence copiée'); } catch { toast('Copie impossible : sélectionnez la référence.', true); }
+  };
+  const r = $('#tx-refresh');
+  if (r) r.onclick = () => busy(r, async () => {
+    const fresh = await api('GET', '/v1/transactions/' + x.id);
+    HIST.set(x.id, { ...x, ...fresh, direction: fresh.direction ?? x.direction });
+    if (fresh.status !== 'pending') { toast(fresh.status === 'succeeded' ? 'Opération confirmée' : 'Opération échouée', fresh.status !== 'succeeded'); loadWallets(); loadHistory(); }
+    else toast('Toujours en attente de l’opérateur.');
+    openTxn(x.id);
+  });
 }
 const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: ME?.timezone }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
