@@ -8,12 +8,14 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="description" content="Ouvrez gratuitement votre compte Pay243, particulier ou entreprise, avec votre adresse email.">
 <meta name="theme-color" content="#111111">
+<link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/fonts.css">
 <style>
   :root {
     --y: #fdb813; --y-soft: rgba(253, 184, 19, .14); --bg: #111; --panel: #000; --tile: #141416; --tile-2: #1d1d1f; --line: #2a2a2e;
     --txt: #f2f2f2; --txt-2: #c9c9cd; --muted: #8d8d93; --ok: #2fd27a; --err: #ff6b6b;
-    --display: "Segoe UI Variable Display", "SF Pro Display", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
-    --text: "Segoe UI Variable Text", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --display: var(--font-sans);
+    --text: var(--font-sans);
   }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: grid; align-content: center; color: var(--txt); font: 16px/1.55 var(--text); -webkit-font-smoothing: antialiased;

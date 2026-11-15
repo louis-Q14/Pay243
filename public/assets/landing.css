@@ -15,8 +15,8 @@
   --red: #ce1021;
   --green: #12a150;
   --radius: 28px;
-  --display: "Segoe UI Variable Display", "SF Pro Display", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
-  --text: "Segoe UI Variable Text", -apple-system, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --display: var(--font-sans);
+  --text: var(--font-sans);
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }

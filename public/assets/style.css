@@ -4,7 +4,7 @@
   --ok: #138a4b; --warn: #b26b00; --err: #c0262d; --r: 14px;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+body { margin: 0; font: 15px/1.5 var(--font-sans); color: var(--ink); background: var(--bg); }
 a { color: var(--blue); }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
 .brand .logo-img { height: 30px; width: auto; display: block; }

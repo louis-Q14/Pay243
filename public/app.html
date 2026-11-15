@@ -6,6 +6,8 @@
 <title>Mon wallet — Pay243</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/fonts.css">
 <link rel="stylesheet" href="/assets/style.css">
 <style>
   /* Compte non activé : les opérations sont verrouillées jusqu'à la validation de l'identité */
@@ -141,7 +143,7 @@
   .cw-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 12px; }
   .cw-head h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
   .cw-head small { color: var(--muted); font-weight: 600; }
-  .cw-add { border: 0; border-radius: 999px; padding: 9px 16px; font: 700 14px/1 inherit; background: var(--ink); color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .cw-add { border: 0; border-radius: 999px; padding: 9px 16px; font-family: inherit; font-size: 14px; font-weight: 700; line-height: 1; background: var(--ink); color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
   .cw-add:disabled { opacity: .45; cursor: default; }
   .wallet { background: radial-gradient(120% 70% at 50% 0, #1d2433 0, #07090f 70%); border-radius: 28px; padding: 18px 16px 22px; box-shadow: 0 24px 60px rgba(7, 9, 15, .28); min-height: 300px; }
   .wallet .hint { color: #8d97aa; font-size: 12.5px; text-align: center; margin: 14px 0 0; }
@@ -154,7 +156,7 @@
   .wcard:hover { transform: translateY(-4px); }
   .wcard:focus-visible { outline: 3px solid #f7d618; outline-offset: 3px; }
   .wcard .lbl { white-space: nowrap; line-height: 1; }
-  .wcard .tag { top: 3.5%; left: 50%; transform: translateX(-50%); font: 800 2.6cqw/1 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; padding: 1cqw 2cqw; border-radius: 99px; text-shadow: none !important; }
+  .wcard .tag { top: 3.5%; left: 50%; transform: translateX(-50%); font: 800 2.6cqw/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; padding: 1cqw 2cqw; border-radius: 99px; text-shadow: none !important; }
   .wcard .tag.exp { background: #ffd2d2; color: #9b1020; }
   .wcard .chip, .wcard .holo, .wcard .nfc { height: auto; display: block; }
   .wcard .num { display: flex; justify-content: space-between; font: 400 7cqw/1 Bahnschrift, "DIN Alternate", "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; letter-spacing: .06em; white-space: nowrap; }
