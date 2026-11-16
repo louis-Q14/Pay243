@@ -353,19 +353,37 @@ function emptyState() {
 }
 
 // ---------------- Nouvelle demande ----------------
-async function openNew(category, subject) {
+// Rubrique proposée selon le type de l'opération signalée
+const CATEGORY_OF_TXN = { topup: 'topup', withdrawal: 'topup', payment: 'payment', transfer: 'payment', refund: 'payment', conversion: 'payment', payout: 'merchant' };
+const txnOption = (x) => `<option value="${esc(x.id)}">${esc(TYPE_LABEL[x.type] || x.type)} · ${fmt(x.amount, x.currency)} · ${when(x.created_at)}</option>`;
+
+/**
+ * Nouvelle demande. `txnId` (lien « Un problème avec cette opération ? » de l'historique) : l'opération est
+ * jointe à la demande, sa référence devient l'objet et la rubrique est choisie d'après son type.
+ */
+async function openNew(category, subject, txnId) {
   if (!ME) return;
   if (!S.categories.length) await loadInbox();
-  show('new'); setUrl('new=1');
+  show('new'); setUrl(txnId ? `new=1&txn=${encodeURIComponent(txnId)}` : 'new=1');
   const f = $('#f-new'); f.reset(); ATT_NEW.reset();
   f.category.innerHTML = S.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
+  let list = [];
+  try { list = (await api('GET', '/v1/transactions?limit=20')).data; } catch {}
+  let txn = null;
+  if (txnId) {
+    txn = list.find((x) => x.id === txnId) || null;
+    // Opération plus ancienne que les 20 dernières : on la charge à part (refusée si elle n'est pas à l'utilisateur).
+    if (!txn) { try { txn = await api('GET', '/v1/transactions/' + encodeURIComponent(txnId)); list = [txn, ...list]; } catch { toast('Opération introuvable : choisissez-la dans la liste ou décrivez-la dans votre message.', true); } }
+  }
+  f.transaction_id.innerHTML = '<option value="">Aucune</option>' + list.map(txnOption).join('');
+  if (txn) {
+    f.transaction_id.value = txn.id;
+    category = category || CATEGORY_OF_TXN[txn.type];
+    subject = subject || `Opération ${txn.id} · ${TYPE_LABEL[txn.type] || txn.type} ${txn.direction === 'credit' ? '+' : txn.direction === 'debit' ? '−' : ''}${fmt(txn.amount, txn.currency)}`;
+  }
   if (category && S.categories.some((c) => c.id === category)) f.category.value = category;
   if (subject) f.subject.value = subject.slice(0, 120);
   (subject ? f.message : f.subject).focus({ preventScroll: true });
-  try {
-    const t = await api('GET', '/v1/transactions?limit=20');
-    f.transaction_id.innerHTML = '<option value="">Aucune</option>' + t.data.map((x) => `<option value="${esc(x.id)}">${esc(TYPE_LABEL[x.type] || x.type)} · ${fmt(x.amount, x.currency)} · ${when(x.created_at)}</option>`).join('');
-  } catch {}
 }
 
 // ---------------- Pièces jointes ----------------
@@ -512,11 +530,12 @@ setInterval(async () => {
     $('#new-btn').hidden = false;
     await loadInbox();
   } catch { if (!ME) { showGuest(); return; } }
-  // Liens directs : /messages?t=<demande> (emails), /messages?new=1&cat=…&subject=… (articles d'aide)
+  // Liens directs : /messages?t=<demande> (emails), /messages?new=1&cat=…&subject=… (articles d'aide),
+  // /messages?new=1&txn=<opération> (détail d'une opération dans l'historique du wallet)
   const p = new URLSearchParams(location.search);
   const wide = !matchMedia('(max-width: 860px)').matches;
   if (p.get('t')) { try { await openTicket(p.get('t')); return; } catch (e) { toast(e.message, true); } }
-  if (p.get('new')) { await openNew(p.get('cat'), p.get('subject')).catch((e) => toast(e.message, true)); return; }
+  if (p.get('new') || p.get('txn')) { await openNew(p.get('cat'), p.get('subject'), p.get('txn')).catch((e) => toast(e.message, true)); return; }
   // Sur ordinateur, la conversation la plus récente s'ouvre d'office, comme une messagerie.
   if (wide && S.tickets.length) { try { await openTicket(S.tickets[0].id); return; } catch {} }
   emptyState();
