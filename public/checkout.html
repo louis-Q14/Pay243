@@ -39,6 +39,8 @@ const $ = (s, el = document) => el.querySelector(s);
 const ID = location.pathname.split('/').pop();
 let TOKEN = null; try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
 let P = null; let METHOD = 'mobile_money';
+// Le marchand peut ouvrir la page sur un moyen precis : /checkout/<id>?method=card (ou wallet, mobile_money).
+{ const m = new URLSearchParams(location.search).get('method'); if (['mobile_money', 'wallet', 'card'].includes(m)) METHOD = m; }
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
 const BRAND_LOGO = { mpesa: '/assets/brands/mpesa-wordmark.png', airtel: '/assets/brands/airtel-money.png', orange: '/assets/brands/orange-money.png' };
 const fmt = (m, c) => c === 'USD' ? (m / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $' : (m / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
