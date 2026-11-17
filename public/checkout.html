@@ -40,6 +40,8 @@ const ID = location.pathname.split('/').pop();
 let TOKEN = null; try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
 let P = null; let METHOD = 'mobile_money';
 // Le marchand peut ouvrir la page sur un moyen precis : /checkout/<id>?method=card (ou wallet, mobile_money).
+// ?method=card : seule la carte est proposee (le marchand a calcule le montant pour un paiement par carte).
+const CARD_ONLY = new URLSearchParams(location.search).get('method') === 'card';
 { const m = new URLSearchParams(location.search).get('method'); if (['mobile_money', 'wallet', 'card'].includes(m)) METHOD = m; }
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
 const BRAND_LOGO = { mpesa: '/assets/brands/mpesa-wordmark.png', airtel: '/assets/brands/airtel-money.png', orange: '/assets/brands/orange-money.png' };
@@ -81,8 +83,8 @@ function render() {
   }
   $('#box').innerHTML = header() + `
     <div class="methods">
-      <button data-m="mobile_money"><span class="brand-logos">${['mpesa', 'airtel', 'orange'].map((k) => `<img class="${k}" src="${BRAND_LOGO[k]}" alt="">`).join('')}</span>&nbsp; Mobile Money</button>
-      <button data-m="wallet">👛&nbsp; Wallet Pay243</button>
+      ${CARD_ONLY ? '' : `<button data-m="mobile_money"><span class="brand-logos">${['mpesa', 'airtel', 'orange'].map((k) => `<img class="${k}" src="${BRAND_LOGO[k]}" alt="">`).join('')}</span>&nbsp; Mobile Money</button>
+      <button data-m="wallet">👛&nbsp; Wallet Pay243</button>`}
       <button data-m="card">💳&nbsp; Carte bancaire</button>
     </div>
     <div id="pane" style="margin-top:14px"></div>
@@ -136,7 +138,7 @@ function pane() {
     el.innerHTML = `<form id="f">
       ${saved.length ? `<label>Carte enregistrée</label><select name="card_id"><option value="">— Nouvelle carte —</option>${saved.map((c) => `<option value="${esc(c.id)}">${esc(String(c.brand).toUpperCase())} •••• ${esc(c.last4)}</option>`).join('')}</select>` : ''}
       <div id="newcard"><label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number">
-      <div class="row"><div><label>MM</label><input name="exp_month"></div><div><label>AAAA</label><input name="exp_year"></div><div><label>CVC</label><input name="cvc"></div></div></div>
+      <div class="row"><div><label>MM</label><input name="exp_month" inputmode="numeric" maxlength="2" autocomplete="cc-exp-month"></div><div><label>AAAA</label><input name="exp_year" inputmode="numeric" maxlength="4" autocomplete="cc-exp-year"></div><div><label>CVC</label><input name="cvc" inputmode="numeric" maxlength="4" autocomplete="cc-csc"></div></div></div>
       <div id="pinbox" class="hidden"><label>PIN Pay243</label><input name="pin" type="password" inputmode="numeric"></div>
       <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
       ${P.sandbox ? '<p class="muted">Test : 4242 4242 4242 4242 (acceptée), 4000 0000 0000 0002 (refusée).</p>' : ''}</form>`;
