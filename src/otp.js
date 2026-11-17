@@ -5,7 +5,7 @@ import { emailProvider, layoutHtml, layoutText } from './providers/email/index.j
 import { smsProvider } from './providers/sms/index.js';
 import { HttpError, isEmail, newId, now, safeEqual, sha256 } from './util.js';
 
-export const OTP_PURPOSES = ['register', 'login', 'email_change', 'phone_change', 'password_reset', 'staff_login'];
+export const OTP_PURPOSES = ['register', 'login', 'checkout_login', 'email_change', 'phone_change', 'password_reset', 'staff_login'];
 
 const hashCode = (destination, purpose, code) =>
   crypto.createHmac('sha256', config.jwtSecret).update(`${destination}:${purpose}:${code}`).digest('hex');
@@ -13,6 +13,7 @@ const hashCode = (destination, purpose, code) =>
 const SMS = {
   register: (code) => `Pay243 : votre code de vérification est ${code}. Il expire dans 5 minutes. Ne le communiquez à personne.`,
   login: (code) => `Pay243 : code de connexion sur un nouvel appareil : ${code}. Si ce n'est pas vous, changez votre mot de passe.`,
+  checkout_login: (code) => `Pay243 : code pour payer avec votre wallet : ${code}. Il expire dans 5 minutes. Si ce n'est pas vous, changez votre mot de passe.`,
   phone_change: (code) => `Pay243 : code pour ajouter ce numéro à votre compte : ${code}. Il expire dans 5 minutes.`,
   password_reset: (code) => `Pay243 : code de réinitialisation du mot de passe : ${code}. Si ce n'est pas vous, ignorez ce message.`,
 };
@@ -29,6 +30,12 @@ const EMAIL = {
     title: 'Connexion depuis un nouvel appareil',
     intro: "Quelqu'un (vous, normalement) essaie de se connecter à votre compte depuis un appareil inconnu. Saisissez ce code pour l'autoriser.",
     footer: "Si ce n'est pas vous, ne communiquez ce code à personne et changez votre mot de passe.",
+  }),
+  checkout_login: (code) => ({
+    subject: `${code} : connexion à votre wallet pour un paiement`,
+    title: 'Connexion pour un paiement',
+    intro: 'Vous vous connectez à votre wallet Pay243 pour payer un achat. Saisissez ce code sur la page de paiement pour continuer. Il expire dans 5 minutes.',
+    footer: "Si ce n'est pas vous, ne communiquez ce code à personne et changez votre mot de passe. Pay243 ne vous demandera jamais ce code par téléphone.",
   }),
   email_change: () => ({
     subject: 'Confirmez votre nouvelle adresse email Pay243',

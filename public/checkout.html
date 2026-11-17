@@ -104,12 +104,13 @@ function pane() {
     if (!P.customer) {
       el.innerHTML = `<form id="f"><p class="muted">Connectez-vous à votre wallet Pay243.</p><label>Email ou téléphone</label><input name="identifier" required autocomplete="username">
         <label>Mot de passe</label><input name="password" type="password" required>
-        <div id="otpbox" class="hidden"><label>Code de vérification (nouvel appareil)</label><input name="otp_code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+        <div id="otpbox" class="hidden"><label>Code de vérification reçu par email</label><input name="otp_code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
         <button class="full">Se connecter</button>
         <p class="muted">Pas de compte ? <a href="/signup" target="_blank">Créer un wallet</a></p></form>`;
       $('#f').onsubmit = async (e) => { e.preventDefault(); e.submitter.disabled = true;
         const d = Object.fromEntries(new FormData(e.target)); if (!d.otp_code) delete d.otp_code;
         if (DEVICE_ID) d.device_id = DEVICE_ID;
+        d.context = 'checkout'; // code email exige a chaque connexion depuis la page de paiement
         try { const r = await api('POST', '/v1/auth/login', d); TOKEN = r.token; try { sessionStorage.setItem('pay243_token', TOKEN); } catch {} await load(); }
         catch (x) {
           if (x.code === 'otp_required') { $('#otpbox').classList.remove('hidden'); $('#otpbox input').required = true; $('#otpbox input').focus(); }

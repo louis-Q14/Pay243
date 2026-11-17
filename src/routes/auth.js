@@ -144,18 +144,24 @@ authRouter.post('/auth/login', limiter, accountLimiter('login_account'), async (
   if (user.status === 'closed') throw new HttpError(403, 'account_closed', 'Ce compte a été fermé.');
   if (user.status !== 'active') throw new HttpError(403, 'account_disabled', 'Compte suspendu.');
   const deviceHash = normalizeDeviceId(device_id);
-  if (!(await isTrustedDevice(user.id, deviceHash))) {
+  // Connexion depuis la page de paiement : code email exigé à chaque fois, même sur un appareil reconnu.
+  const checkout = req.body?.context === 'checkout';
+  const trusted = await isTrustedDevice(user.id, deviceHash);
+  if (checkout || !trusted) {
     const destination = user.email || user.phone;
+    const purpose = checkout ? 'checkout_login' : 'login';
     if (!otp_code) {
-      const sent = await issueOtp(destination, 'login').catch((e) => {
+      const sent = await issueOtp(destination, purpose).catch((e) => {
         if (e.code === 'otp_too_soon') return null; // un code récent est encore valable
         throw e;
       });
       throw new HttpError(403, 'otp_required',
-        `Nouvel appareil : saisissez le code envoyé ${isEmail(destination) ? 'par email à' : 'par SMS au'} ${mask(destination)}.`,
+        `${checkout ? 'Vérification' : 'Nouvel appareil'} : saisissez le code envoyé ${isEmail(destination) ? 'par email à' : 'par SMS au'} ${mask(destination)}.`,
         { channel: isEmail(destination) ? 'email' : 'sms', ...(sent || {}) });
     }
-    await verifyOtp(destination, 'login', otp_code);
+    await verifyOtp(destination, purpose, otp_code);
+  }
+  if (!trusted) {
     await trustDevice(user.id, deviceHash, device_label);
     notifyUser(user, 'security', 'Nouvelle connexion à votre compte Pay243', 'Votre compte vient d’être ouvert depuis un nouvel appareil, désormais reconnu.', {
       paragraphs: ['Votre compte Pay243 vient d’être ouvert depuis un nouvel appareil. Il est désormais reconnu : aucun code ne sera demandé lors des prochaines connexions depuis celui-ci.'],

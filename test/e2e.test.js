@@ -273,6 +273,18 @@ test('connexion par téléphone : appareil connu direct, nouvel appareil -> code
 
   const noDevice = await api('POST', '/v1/auth/login', { body: { phone: '0812345678', password: 'motdepasse1' } });
   assert.equal(noDevice.body.error.code, 'otp_required');
+
+  // Page de paiement : code exigé à chaque connexion, même depuis un appareil de confiance.
+  const checkout = { ...newDev, context: 'checkout' };
+  const ch = await api('POST', '/v1/auth/login', { body: checkout });
+  assert.equal(ch.status, 403);
+  assert.equal(ch.body.error.code, 'otp_required');
+  const loginCode = await api('POST', '/v1/auth/login', { body: { ...checkout, otp_code: code } });
+  assert.equal(loginCode.status, 400, 'un code de connexion ne sert pas pour le paiement');
+  const paid = await api('POST', '/v1/auth/login', { body: { ...checkout, otp_code: ch.body.error.details.sandbox_code } });
+  assert.equal(paid.status, 200);
+  const again2 = await api('POST', '/v1/auth/login', { body: newDev });
+  assert.equal(again2.status, 200, 'connexion normale inchangée sur un appareil de confiance');
 });
 
 test('recharge M-Pesa (simulée) créditée après confirmation', async () => {
