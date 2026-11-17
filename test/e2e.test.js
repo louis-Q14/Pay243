@@ -104,6 +104,16 @@ before(async () => {
 
 after(async () => { server.close(); hookServer.close(); await closeDb(); fs.rmSync(process.env.KYC_STORAGE_DIR, { recursive: true, force: true }); });
 
+test('page de paiement integrable par SOMBATEKA uniquement, le reste interdit en cadre', async () => {
+  const page = await fetch(`${base}/checkout/pay_test`);
+  const csp = page.headers.get('content-security-policy') || '';
+  assert.match(csp, /frame-ancestors 'self' https:\/\/sombateka\.com https:\/\/www\.sombateka\.com/);
+  assert.equal(page.headers.get('x-frame-options'), null);
+  const wallet = await fetch(`${base}/app`);
+  assert.equal(wallet.headers.get('x-frame-options'), 'DENY');
+  assert.match(wallet.headers.get('content-security-policy') || '', /frame-ancestors 'none'/);
+});
+
 test('inscription par email et wallets CDF/USD créés', async () => {
   const a = await register({ email: 'Grace.Mbuyi@Test.cd', phone: '0812345678', full_name: 'Grace Mbuyi', password: 'motdepasse1', pin: '2580', device_id: DEVICE_A });
   assert.equal(a.status, 201, JSON.stringify(a.body));

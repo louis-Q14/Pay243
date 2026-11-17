@@ -4,7 +4,7 @@ import express from 'express';
 import { config } from './config.js';
 import { q } from './db.js';
 import { auditLedger } from './ledger.js';
-import { securityHeaders } from './middleware.js';
+import { checkoutFrameHeaders, securityHeaders } from './middleware.js';
 import { providerEvents } from './providers/mobileMoney/index.js';
 import { backofficeRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
@@ -47,7 +47,7 @@ export function createApp() {
   app.use('/v1', authRouter, settingsRouter, walletRouter, kycRouter, supportRouter, backofficeRouter, adminRouter, reconRouter, supportAdminRouter, merchantAdminRouter, merchantApiRouter, checkoutRouter);
   app.use(callbackRouter, sandboxRouter);
 
-  app.get('/checkout/:id', (_req, res) => res.sendFile(path.join(publicDir, 'checkout.html')));
+  app.get('/checkout/:id', checkoutFrameHeaders, (_req, res) => res.sendFile(path.join(publicDir, 'checkout.html')));
   app.use(express.static(publicDir, { extensions: ['html'] }));
 
   app.use('/v1', (_req, _res) => { throw new HttpError(404, 'not_found', 'Endpoint inconnu.'); });

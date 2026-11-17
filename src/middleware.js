@@ -87,6 +87,23 @@ export function securityHeaders(_req, res, next) {
   next();
 }
 
+/**
+ * Page de paiement hebergee (/checkout/:id) : peut etre affichee dans un cadre (iframe) par les sites
+ * marchands de confiance listes dans CHECKOUT_FRAME_ANCESTORS (par defaut : SOMBATEKA), pour un paiement
+ * sans quitter le site sur mobile. Toutes les autres pages Pay243 restent interdites d'affichage en cadre.
+ */
+const CHECKOUT_FRAME_ANCESTORS = String(process.env.CHECKOUT_FRAME_ANCESTORS || 'https://sombateka.com https://www.sombateka.com')
+  .split(/[\s,]+/).filter((o) => /^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(o) || /^http:\/\/localhost(:\d+)?$/i.test(o));
+
+export function checkoutFrameHeaders(_req, res, next) {
+  if (CHECKOUT_FRAME_ANCESTORS.length) {
+    res.removeHeader('X-Frame-Options'); // remplace par frame-ancestors, plus precis
+    res.set('Content-Security-Policy', String(res.get('Content-Security-Policy') || '')
+      .replace(/frame-ancestors [^;]*/, `frame-ancestors 'self' ${CHECKOUT_FRAME_ANCESTORS.join(' ')}`));
+  }
+  next();
+}
+
 /** CORS ouvert uniquement pour le SDK navigateur (lecture publique du checkout). */
 export function publicCors(req, res, next) {
   res.set('Access-Control-Allow-Origin', '*');
