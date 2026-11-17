@@ -118,10 +118,15 @@ function pane() {
     } else {
       const enough = P.customer.balance >= P.amount;
       el.innerHTML = `<form id="f"><p>Bonjour <b>${esc(P.customer.full_name)}</b>. Solde ${P.currency} : <b>${fmt(P.customer.balance, P.currency)}</b></p>
+        <p class="muted" style="margin-top:-4px">Ce n'est pas vous ? <a href="#" id="switch">Se déconnecter et changer de compte</a></p>
         ${enough ? '' : '<p class="notice">Solde insuffisant. <a href="/app" target="_blank">Recharger mon wallet</a> puis réessayez.</p>'}
         <label>PIN de transaction</label><input name="pin" type="password" inputmode="numeric" required>
         <button class="full" ${enough ? '' : 'disabled'}>Payer ${fmt(P.amount, P.currency)}</button></form>`;
       $('#f').onsubmit = submit((d) => ({ method: 'wallet', pin: d.pin }));
+      // Deconnexion du wallet sur cette page : on oublie le jeton et on recharge le paiement sans client.
+      $('#switch').onclick = async (e) => { e.preventDefault();
+        TOKEN = null; try { sessionStorage.removeItem('pay243_token'); } catch {}
+        METHOD = 'wallet'; await load(); };
     }
   } else {
     const saved = P.customer?.cards || [];
