@@ -8,7 +8,8 @@ import { checkIncoming, lockUsers } from '../limits.js';
 import { idempotent } from '../middleware.js';
 import { assertPublicUrl } from '../netguard.js';
 import { refreshPending, startPayout } from '../services/mobileMoney.js';
-import { cancelPayment, createPayment, getPayment, refundPayment, serializePayment } from '../services/payments.js';
+import { cancelPayment, createPayment, getPayment, refundPayment, serializePayment, updatePaymentInfo } from '../services/payments.js';
+import { monitoringSummary, outflowsCsv, paymentDetail, paymentsCsv, searchOutflows, searchPayments } from '../services/merchantMonitoring.js';
 import { listEvents } from '../services/webhooks.js';
 import { accessOf, assertMerchantEnabled, businessProfileOf, createMerchantAccount, issueKey } from '../services/merchants.js';
 import { appUrl, notifyUser } from '../services/notify.js';
@@ -155,9 +156,47 @@ merchantAdminRouter.post('/merchants/me/payment-links', requireActivated, async 
   res.status(201).json(serializePayment(p));
 });
 
+// ---------------- Suivi des paiements (espace activé par l'équipe) ----------------
+const csvFile = (res, name, body) => {
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="${name}-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(body);
+};
+/** Sans filtre de période explicite, la liste reprend tout l'historique récent (400 jours). */
+const withDefaultPeriod = (query) => (query.from || query.to ? query : { ...query, from: new Date(Date.now() - 399 * 864e5).toISOString() });
+
+merchantAdminRouter.get('/merchants/me/monitoring/summary', async (req, res) => {
+  const m = await enabledMerchantOf(req.user);
+  res.json(await monitoringSummary(m.id, req.query));
+});
+
 merchantAdminRouter.get('/merchants/me/payments', async (req, res) => {
   const m = await enabledMerchantOf(req.user);
-  res.json({ data: (await q.all('SELECT * FROM payments WHERE merchant_id=? ORDER BY created_at DESC LIMIT 50', m.id)).map(serializePayment) });
+  const query = withDefaultPeriod(req.query);
+  if (req.query.format === 'csv') return csvFile(res, 'pay243-paiements', paymentsCsv((await searchPayments(m.id, { ...query, limit: 5000, offset: 0 }, { max: 5000 })).data));
+  res.json(await searchPayments(m.id, query));
+});
+
+merchantAdminRouter.get('/merchants/me/payments/:id', async (req, res) => {
+  const m = await enabledMerchantOf(req.user);
+  res.json(await paymentDetail(m.id, req.params.id));
+});
+
+/** Rattacher à la main des numéros de vente / de commande à un paiement (ou corriger la description). */
+merchantAdminRouter.patch('/merchants/me/payments/:id', async (req, res) => {
+  const m = await enabledMerchantOf(req.user);
+  const p = await getPayment(req.params.id);
+  if (!p || p.merchant_id !== m.id) throw new HttpError(404, 'payment_not_found', 'Paiement introuvable.');
+  const { order_refs, description } = req.body || {};
+  await updatePaymentInfo(p, { order_refs: order_refs ?? undefined, ...(description !== undefined ? { description } : {}) });
+  res.json(await paymentDetail(m.id, p.id));
+});
+
+merchantAdminRouter.get('/merchants/me/outflows', async (req, res) => {
+  const m = await enabledMerchantOf(req.user);
+  const query = withDefaultPeriod(req.query);
+  if (req.query.format === 'csv') return csvFile(res, 'pay243-sorties', outflowsCsv((await searchOutflows(m.id, { ...query, limit: 5000, offset: 0 }, { max: 5000 })).data));
+  res.json(await searchOutflows(m.id, query));
 });
 
 /**
@@ -217,6 +256,7 @@ merchantApiRouter.get('/payments', async (req, res) => {
   let where = 'merchant_id=?';
   if (req.query.status) { where += ' AND status=?'; params.push(String(req.query.status)); }
   if (req.query.reference) { where += ' AND reference=?'; params.push(String(req.query.reference)); }
+  if (req.query.order_ref) { where += ' AND order_refs IS NOT NULL AND order_refs::jsonb @> jsonb_build_array(?::text)'; params.push(String(req.query.order_ref)); }
   const rows = await q.all(`SELECT * FROM payments WHERE ${where} ORDER BY created_at DESC LIMIT ?`, ...params, limit);
   res.json({ object: 'list', data: rows.map(serializePayment) });
 });
@@ -229,6 +269,14 @@ merchantApiRouter.get('/payments/:id', async (req, res) => {
   }
   res.json(serializePayment(await getPayment(p.id)));
 });
+
+/** Mise à jour : order_refs (n° de vente rattachés au paiement), metadata (fusion), description. */
+const updateRoute = async (req, res) => {
+  const p = await ownPayment(req);
+  res.json(serializePayment(await updatePaymentInfo(p, req.body || {})));
+};
+merchantApiRouter.post('/payments/:id', updateRoute);
+merchantApiRouter.patch('/payments/:id', updateRoute);
 
 merchantApiRouter.post('/payments/:id/refunds', idem, async (req, res) => {
   const p = await ownPayment(req);

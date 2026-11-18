@@ -481,4 +481,15 @@ UPDATE merchants SET access_status = 'enabled', access_decided_at = created_at
 CREATE INDEX idx_merchants_access ON merchants (access_status);
 `,
   },
+  {
+    version: 11,
+    name: 'marchands : numéros de commande du marchand sur les paiements, suivi des sorties',
+    // order_refs : tableau JSON des références du marchand (n° de vente, de commande…) couvertes par le paiement.
+    // Un paiement de panier peut couvrir plusieurs ventes ; le marchand peut les rattacher après coup.
+    sql: `
+ALTER TABLE payments ADD COLUMN order_refs TEXT;
+CREATE INDEX idx_payments_merchant_status ON payments (merchant_id, status, created_at);
+CREATE INDEX idx_txn_merchant ON transactions (merchant_id, created_at);
+`,
+  },
 ];

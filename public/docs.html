@@ -63,6 +63,7 @@ Idempotency-Key: 6f1c…   (recommandé sur tous les POST)</pre>
   <tr><td><code>currency</code>*</td><td><code>CDF</code> ou <code>USD</code></td></tr>
   <tr><td><code>description</code></td><td>Affiché au client (200 car.)</td></tr>
   <tr><td><code>reference</code></td><td>Votre identifiant de commande (filtrable)</td></tr>
+  <tr><td><code>order_refs</code></td><td>Vos numéros de vente ou de commande couverts par ce paiement (tableau, 50 max., 1 à 64 caractères : lettres, chiffres, <code>- _ . / # :</code>). Affichés et recherchables dans le suivi des paiements. Souvent connus après le paiement : rattachez-les ensuite avec <code>POST /v1/payments/:id</code>.</td></tr>
   <tr><td><code>return_url</code> / <code>cancel_url</code></td><td>URLs de retour</td></tr>
   <tr><td><code>expires_in_minutes</code></td><td>Défaut 60, min 5, max 10080</td></tr>
   <tr><td><code>metadata</code></td><td>Objet libre (20 clés max.), renvoyé dans les webhooks</td></tr>
@@ -71,7 +72,8 @@ Idempotency-Key: 6f1c…   (recommandé sur tous les POST)</pre>
 <h2>4. Autres endpoints</h2>
 <table>
   <tr><td><span class="m">GET</span></td><td><code>/v1/payments/:id</code></td><td>Statut d'un paiement</td></tr>
-  <tr><td><span class="m">GET</span></td><td><code>/v1/payments?status=succeeded&amp;reference=CMD-1024&amp;limit=20</code></td><td>Liste</td></tr>
+  <tr><td><span class="m">GET</span></td><td><code>/v1/payments?status=succeeded&amp;reference=CMD-1024&amp;limit=20</code></td><td>Liste (aussi <code>order_ref=514687-MHM-681749</code>, correspondance exacte)</td></tr>
+  <tr><td><span class="m post">POST</span></td><td><code>/v1/payments/:id</code> <code>{ order_refs?, metadata?, description? }</code></td><td>Rattache vos numéros de vente (remplace la liste), fusionne les métadonnées (<code>null</code> supprime une clé). Montant et statut inchangés</td></tr>
   <tr><td><span class="m post">POST</span></td><td><code>/v1/payments/:id/cancel</code></td><td>Annule un paiement non payé</td></tr>
   <tr><td><span class="m post">POST</span></td><td><code>/v1/payments/:id/refunds</code> <code>{ amount?, reason? }</code></td><td>Remboursement total ou partiel (vers le wallet, la carte ou le numéro Mobile Money d'origine)</td></tr>
   <tr><td><span class="m">GET</span></td><td><code>/v1/balance</code></td><td>Solde disponible CDF / USD</td></tr>

@@ -463,7 +463,8 @@
         <label>Secret de signature des webhooks</label><div class="secret mono" id="m-whsec"></div>
         <p class="muted">Documentation : <a href="/docs">/docs</a> · SDK navigateur : <code>/sdk/pay243.js</code></p>
       </div>
-      <div class="card"><h2>Derniers paiements reçus</h2><ul class="list" id="m-payments"></ul></div>
+      <div class="card"><h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px">Derniers paiements reçus <a href="/marchand" style="font-size:14px;font-weight:700;text-decoration:none">Suivi complet des paiements →</a></h2><ul class="list" id="m-payments"></ul>
+        <a href="/marchand"><button class="ghost full" type="button">Ouvrir le suivi : paiements reçus, versements, remboursements, export</button></a></div>
     </div>
   </section>
 
@@ -560,7 +561,7 @@ $('#f-reset').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
 function setSession(t) {
   TOKEN = t; try { sessionStorage.setItem('pay243_token', t); } catch {}
   const next = new URLSearchParams(location.search).get('next');
-  if (next && (/^\/(settings|aide)(#[a-z]+)?$/.test(next) || /^\/messages(\?(t=[\w-]{1,64}|new=1[\w=&%.\-+]{0,300}))?$/.test(next))) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
+  if (next && (/^\/(settings|aide|marchand)(#[a-z]+)?$/.test(next) || /^\/messages(\?(t=[\w-]{1,64}|new=1[\w=&%.\-+]{0,300}))?$/.test(next))) return location.replace(next); // uniquement vers nos pages : pas de redirection ouverte
   boot();
 }
 function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'); } catch {} $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#who').textContent = ''; }
@@ -1159,8 +1160,8 @@ async function loadMerchant() {
   $('#m-keys').innerHTML = m.api_keys.map((k) => `<li><span class="mono">${k.preview}</span><span class="pill">${k.mode}</span></li>`).join('');
   $('#m-whsec').textContent = m.webhook_secret;
   $('#f-webhook').webhook_url.value = m.webhook_url || '';
-  const p = await api('GET', '/v1/merchants/me/payments');
-  $('#m-payments').innerHTML = p.data.length ? p.data.map((x) => `<li><div><b>${esc(x.description || x.id)}</b> <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span><div class="muted">${x.method ? (x.method === 'mobile_money' ? OPS[x.payer?.operator] : x.method === 'card' ? 'Carte' : 'Wallet Pay243') + ' · ' : ''}${when(x.created_at)}</div></div><div><b>${fmt(x.amount, x.currency)}</b>${x.net != null ? `<div class="muted">net ${fmt(x.net, x.currency)}</div>` : ''}</div></li>`).join('') : '<li class="muted">Aucun paiement.</li>';
+  const p = await api('GET', '/v1/merchants/me/payments?limit=10');
+  $('#m-payments').innerHTML = p.data.length ? p.data.map((x) => `<li><div><b>${esc(x.description || x.id)}</b>${x.order_refs?.length ? ` <span class="mono" style="font-weight:700;background:#fff4cc;color:#6b4e00;border-radius:6px;padding:1px 6px">${esc(x.order_refs.join(', '))}</span>` : ''} <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span><div class="muted">${x.method ? (x.method === 'mobile_money' ? OPS[x.payer?.operator] : x.method === 'card' ? 'Carte' : 'Wallet Pay243') + ' · ' : ''}${when(x.created_at)}</div></div><div><b>${fmt(x.amount, x.currency)}</b>${x.net != null ? `<div class="muted">net ${fmt(x.net, x.currency)}</div>` : ''}</div></li>`).join('') : '<li class="muted">Aucun paiement.</li>';
 }
 function showKey(k) { $('#m-key').textContent = k; $('#m-key-new').classList.remove('hidden'); }
 $('#m-newkey').onclick = (e) => busy(e.target, async () => { const r = await api('POST', '/v1/merchants/me/keys', { mode: 'test' }); showKey(r.secret_key); loadMerchant(); });

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivi des paiements — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a66">
+<link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/fonts.css">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  main.mon { max-width: 1240px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; }
+  header.top .logo-img { height: 28px; display: block; }
+  .hd-links { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+  .hd-links a, .hd-links button { color: rgba(255,255,255,.9); text-decoration: none; font-weight: 600; background: none; padding: 0; }
+  .hd-links a:hover, .hd-links button:hover { color: #fff; text-decoration: underline; filter: none; }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 6px 0 18px; }
+  .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .page-head .muted { margin: 4px 0 0; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: #e9eef6; border-radius: 10px; padding: 3px; }
+  .seg button { background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 8px; font-size: 14px; }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,27,45,.12); }
+  .controls select, .controls input[type=date] { width: auto; padding: 8px 10px; font-size: 14px; }
+  #custom-range { display: inline-flex; gap: 6px; align-items: center; }
+
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; min-width: 0; }
+  .kpi small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .kpi .v { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .s { color: var(--muted); font-size: 12.5px; }
+  .kpi.main { background: linear-gradient(135deg, #10284f, #24599f); color: #fff; border: 0; }
+  .kpi.main small, .kpi.main .s { color: rgba(255,255,255,.78); }
+
+  .chart-card h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .chart-card h2 span { font-size: 13px; color: var(--muted); font-weight: 600; }
+  #chart { position: relative; height: 170px; }
+  #chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  #chart .axis { fill: var(--muted); font-size: 11px; }
+  #chart .grid line { stroke: #edf1f6; }
+  #chart .bar { fill: #0070e0; }
+  #chart rect.hit { fill: transparent; cursor: default; }
+  #chart g.col:hover .bar { fill: #0b3d91; }
+  .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12.5px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px; z-index: 3; }
+  .chart-empty { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 14px; }
+
+  .tabs { margin: 4px 0 12px; }
+  .tabs .count { color: var(--muted); font-weight: 600; margin-left: 4px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filters input[type=search] { flex: 1 1 280px; }
+  .filters select { flex: 0 1 190px; }
+  .filters button { flex: 0 0 auto; }
+
+  .tbl-wrap { overflow-x: auto; }
+  table.tx { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.tx th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.tx td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.tx tbody tr { cursor: pointer; }
+  table.tx tbody tr:hover { background: #f7faff; }
+  table.tx tbody tr:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  table.tx .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.tx .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  table.tx .desc { max-width: 260px; }
+  .refs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ref { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; background: #fff4cc; color: #6b4e00; border-radius: 6px; padding: 1px 6px; }
+  .ref.none { background: #f1f3f7; color: var(--muted); font-family: inherit; font-weight: 600; }
+  .pid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--muted); }
+  .pill.refunded, .pill.partially_refunded { background: #efe9fb; color: #5b3aa8; }
+  .pill.requires_payment { background: #eef3fb; color: var(--blue-d); }
+  .neg { color: var(--err); }
+  .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+  .pager .row { flex: 0 0 auto; gap: 6px; }
+  .pager button { padding: 7px 12px; white-space: nowrap; }
+  .empty { text-align: center; color: var(--muted); padding: 34px 10px; }
+  .totals-line { color: var(--muted); font-size: 13px; }
+  .totals-line b { color: var(--ink); }
+
+  /* Panneau de détail */
+  .drawer-bg { position: fixed; inset: 0; background: rgba(15,27,45,.35); z-index: 30; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: #fff; z-index: 31; overflow-y: auto; box-shadow: -10px 0 40px rgba(15,27,45,.18); padding: 20px 22px 30px; }
+  .drawer .x { position: absolute; top: 12px; right: 12px; background: #f1f3f7; color: var(--ink); width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 18px; }
+  .drawer h3 { margin: 0 36px 2px 0; font-size: 17px; }
+  .drawer .big { font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin: 6px 0 2px; }
+  .drawer section { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 14px; }
+  .drawer section h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .kv code { font-size: 12.5px; }
+  .copy { background: none; color: var(--blue); padding: 0 4px; font-size: 12.5px; font-weight: 600; }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
+  .timeline li:last-child { border-bottom: 0; }
+  #refs-form { display: flex; gap: 8px; margin-top: 8px; }
+  #refs-form input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+
+  @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 760px) {
+    header.top { padding: 8px 14px; }
+    .hd-links .hide-sm { display: none; }
+    .page-head h1 { font-size: 21px; }
+    .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kpi { padding: 12px; }
+    .kpi .v { font-size: 19px; }
+    .kpi.main { grid-column: 1 / -1; }
+    .filters select { flex: 1 1 140px; }
+    /* Tableau -> fiches empilées */
+    table.tx thead { display: none; }
+    table.tx, table.tx tbody, table.tx tr, table.tx td { display: block; width: 100%; }
+    table.tx tr { border-bottom: 1px solid var(--line); padding: 10px 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+    table.tx td { border: 0; padding: 0; }
+    table.tx td[data-c=refs] { grid-column: 1; grid-row: 1; }
+    table.tx td[data-c=amount] { grid-column: 2; grid-row: 1 / span 2; }
+    table.tx td[data-c=desc] { grid-column: 1; }
+    table.tx td[data-c=meta] { grid-column: 1 / -1; }
+    table.tx td.opt { display: none; }
+    .kv { grid-template-columns: 120px 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <a href="/app" aria-label="Pay243, mon wallet"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+  <nav class="hd-links">
+    <a href="/app#merchant">Espace marchand</a>
+    <a href="/app" class="hide-sm">Mon wallet</a>
+    <button id="logout" type="button">Déconnexion</button>
+  </nav>
+</header>
+
+<main class="mon">
+  <div class="page-head">
+    <div>
+      <h1>Suivi des paiements</h1>
+      <p class="muted" id="m-name">Chargement…</p>
+    </div>
+    <div class="controls">
+      <div class="seg" id="cur" role="group" aria-label="Devise"><button data-c="USD" class="on">USD</button><button data-c="CDF">CDF</button></div>
+      <select id="period" aria-label="Période">
+        <option value="today">Aujourd'hui</option>
+        <option value="7">7 derniers jours</option>
+        <option value="30" selected>30 derniers jours</option>
+        <option value="month">Ce mois-ci</option>
+        <option value="prev">Mois dernier</option>
+        <option value="90">90 derniers jours</option>
+        <option value="365">12 derniers mois</option>
+        <option value="custom">Personnalisée…</option>
+      </select>
+      <span id="custom-range" class="hidden"><input type="date" id="d-from" aria-label="Du"><span class="muted">au</span><input type="date" id="d-to" aria-label="Au"></span>
+      <button class="ghost" id="refresh" type="button" title="Actualiser">Actualiser</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card chart-card">
+    <h2>Encaissements nets par jour <span id="chart-total"></span></h2>
+    <div id="chart"></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button class="on" data-view="in" role="tab">Paiements reçus<span class="count" id="cnt-in"></span></button>
+      <button data-view="out" role="tab">Sorties d'argent<span class="count" id="cnt-out"></span></button>
+    </div>
+    <form class="filters" id="filters" onsubmit="return false">
+      <input type="search" name="q" placeholder="N° de vente, référence, payeur, téléphone…" aria-label="Rechercher">
+      <select name="status" aria-label="Statut"></select>
+      <select name="extra" aria-label="Moyen ou type"></select>
+      <button class="ghost" type="button" id="export">Exporter (CSV)</button>
+    </form>
+    <p class="totals-line" id="totals-line"></p>
+    <div class="tbl-wrap"><table class="tx"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    <div class="pager"><span id="pg-info"></span><div class="row"><button class="ghost" id="pg-prev" type="button">← Précédent</button><button class="ghost" id="pg-next" type="button">Suivant →</button></div></div>
+  </div>
+</main>
+
+<div id="drawer-bg" class="drawer-bg hidden"></div>
+<aside id="drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="dr-title"></aside>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let TOKEN = null;
+try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+if (!TOKEN) location.replace('/app?next=' + encodeURIComponent('/marchand'));
+const DEVICE_ID = (() => { try { return localStorage.getItem('pay243_device'); } catch { return null; } })();
+function logout() { try { sessionStorage.removeItem('pay243_token'); } catch {} location.href = '/app'; }
+$('#logout').onclick = logout;
+
+function toast(msg, err) {
+  $$('.toast').forEach((t) => t.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+async function api(method, path, body, { raw = false } = {}) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN, ...(DEVICE_ID ? { 'X-Device-Id': DEVICE_ID } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  if (raw && r.ok) return r;
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401 && j.error?.code === 'unauthorized') logout();
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code });
+  }
+  return j;
+}
+
+const fmt = (minor, cur) => minor == null ? '—' : cur === 'USD'
+  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+const when = (iso) => iso ? new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
+const STATUS = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', requires_payment: 'À payer', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré' };
+const KIND = { refund: 'Remboursement client', payout_wallet: 'Versement sur le wallet', payout_mobile_money: 'Versement Mobile Money' };
+const TXN_TYPE = { payment: 'Encaissement', refund: 'Remboursement', payout: 'Versement' };
+const pill = (s) => `<span class="pill ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+const methodOf = (method, operator) => method === 'mobile_money' ? (OPS[operator] || 'Mobile Money') : method === 'card' ? 'Carte bancaire' : method === 'wallet' ? 'Wallet Pay243' : '—';
+const refsHtml = (refs) => refs?.length ? `<div class="refs">${refs.map((r) => `<span class="ref">${esc(r)}</span>`).join('')}</div>` : '<span class="ref none">N° de vente non rattaché</span>';
+
+// ---------------- État ----------------
+const S = { currency: 'USD', view: 'in', offset: 0, limit: 25, merchant: null };
+try { const c = localStorage.getItem('pay243_mon_cur'); if (c === 'CDF' || c === 'USD') S.currency = c; } catch {}
+
+function period() {
+  const v = $('#period').value; const now = new Date();
+  const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  let from; let to = new Date(now.getTime() + 60e3);
+  if (v === 'today') from = day(now);
+  else if (v === 'month') from = new Date(now.getFullYear(), now.getMonth(), 1);
+  else if (v === 'prev') { from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else if (v === 'custom') {
+    const f = $('#d-from').value; const t = $('#d-to').value;
+    from = f ? new Date(f + 'T00:00') : day(new Date(now - 30 * 864e5));
+    to = t ? new Date(new Date(t + 'T00:00').getTime() + 864e5) : to;
+  } else from = day(new Date(now - (Number(v) - 1) * 864e5));
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function filterParams() {
+  const f = $('#filters'); const p = new URLSearchParams({ ...period(), currency: S.currency });
+  if (f.q.value.trim()) p.set('q', f.q.value.trim());
+  if (f.status.value) p.set('status', f.status.value);
+  if (f.extra.value) p.set(S.view === 'in' ? 'method' : 'type', f.extra.value);
+  return p;
+}
+
+function setupFilters() {
+  const f = $('#filters');
+  f.status.innerHTML = S.view === 'in'
+    ? '<option value="">Tous les statuts</option><option value="paid">Payés (y c. remboursés)</option><option value="succeeded">Réussis</option><option value="partially_refunded">Remboursés en partie</option><option value="refunded">Remboursés</option><option value="open">En attente de paiement</option><option value="unpaid">Échoués, annulés, expirés</option>'
+    : '<option value="">Tous les statuts</option><option value="succeeded">Réussies</option><option value="pending">En attente</option><option value="failed">Échouées</option>';
+  f.extra.innerHTML = S.view === 'in'
+    ? '<option value="">Tous les moyens</option><option value="wallet">Wallet Pay243</option><option value="mobile_money">Mobile Money</option><option value="card">Carte bancaire</option>'
+    : '<option value="">Toutes les sorties</option><option value="refund">Remboursements clients</option><option value="payout">Versements des ventes</option>';
+  $('#thead').innerHTML = S.view === 'in'
+    ? '<tr><th>N° de vente · Référence</th><th>Description</th><th>Payeur</th><th>Moyen</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Commission</th><th class="num">Net</th></tr>'
+    : '<tr><th>Type · Référence</th><th>Paiement lié</th><th>Destination</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Frais</th><th class="num">Total débité</th></tr>';
+}
+
+// ---------------- Synthèse ----------------
+async function loadSummary() {
+  const p = period();
+  const s = await api('GET', '/v1/merchants/me/monitoring/summary?' + new URLSearchParams(p));
+  const c = s.currencies.find((x) => x.currency === S.currency);
+  const cur = c.currency;
+  const rate = c.attempts.success_rate == null ? '—' : Math.round(c.attempts.success_rate * 100) + ' %';
+  $('#kpis').innerHTML = `
+    <div class="kpi main"><small>Solde disponible</small><div class="v">${fmt(c.balance, cur)}</div><div class="s">Ventes non encore versées</div></div>
+    <div class="kpi"><small>Encaissé net</small><div class="v">${fmt(c.received.net, cur)}</div><div class="s">${fmt(c.received.gross, cur)} brut · ${fmt(c.received.fees, cur)} de commission</div></div>
+    <div class="kpi"><small>Paiements réussis</small><div class="v">${c.received.count.toLocaleString('fr-FR')}</div><div class="s">Taux de réussite ${rate} · ${c.attempts.failed} échoué${c.attempts.failed > 1 ? 's' : ''}, ${c.attempts.abandoned} abandonné${c.attempts.abandoned > 1 ? 's' : ''}</div></div>
+    <div class="kpi"><small>Sorties</small><div class="v">${fmt(c.outflows.total, cur)}</div><div class="s">${fmt(c.outflows.payouts_wallet.amount + c.outflows.payouts_mobile_money.amount, cur)} versés · ${fmt(c.outflows.refunds.amount, cur)} remboursés${c.outflows.pending ? ` · ${c.outflows.pending} en attente` : ''}</div></div>
+    <div class="kpi"><small>En attente de paiement</small><div class="v">${c.open.count.toLocaleString('fr-FR')}</div><div class="s">${fmt(c.open.amount, cur)} en liens ouverts</div></div>`;
+  drawChart(c.daily, p, cur);
+}
+
+function drawChart(daily, p, cur) {
+  const box = $('#chart');
+  const days = [];
+  const start = new Date(p.from); const end = new Date(p.to);
+  for (let d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())); d < end && days.length < 400; d = new Date(d.getTime() + 864e5)) days.push(d.toISOString().slice(0, 10));
+  const map = new Map(daily.map((d) => [d.day, d]));
+  const pts = days.map((day) => ({ day, net: map.get(day)?.net || 0, count: map.get(day)?.count || 0 }));
+  const total = pts.reduce((s, x) => s + x.net, 0);
+  $('#chart-total').textContent = `Total ${fmt(total, cur)}`;
+  if (!total) { box.innerHTML = '<div class="chart-empty">Aucun encaissement sur la période.</div>'; return; }
+  const W = box.clientWidth || 900; const H = 170; const L = 54; const B = 22; const T = 8;
+  const max = Math.max(...pts.map((x) => x.net));
+  const nice = (() => { const e = 10 ** Math.floor(Math.log10(max)); for (const m of [1, 2, 2.5, 5, 10]) if (m * e >= max) return m * e; return 10 * e; })();
+  const y = (v) => H - B - (v / nice) * (H - B - T);
+  const slot = (W - L) / pts.length; const bw = Math.max(1, Math.min(28, slot - 2));
+  const ticks = [0, nice / 2, nice];
+  const labelEvery = Math.ceil(pts.length / Math.max(1, Math.floor((W - L) / 70)));
+  const short = (day) => new Date(day + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  const axisAmt = (v) => cur === 'USD' ? (v / 100).toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' $' : (v / 100).toLocaleString('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }) + ' FC';
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Encaissements nets par jour">
+    <g class="grid">${ticks.map((t) => `<line x1="${L}" x2="${W}" y1="${y(t)}" y2="${y(t)}"/>`).join('')}</g>
+    ${ticks.map((t) => `<text class="axis" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${axisAmt(t)}</text>`).join('')}
+    ${pts.map((x, i) => {
+      const cx = L + i * slot + slot / 2; const h = Math.max(0, H - B - y(x.net));
+      const r = Math.min(4, bw / 2, h);
+      const top = y(x.net);
+      const path = h > 0 ? `M${cx - bw / 2},${H - B} V${top + r} Q${cx - bw / 2},${top} ${cx - bw / 2 + r},${top} H${cx + bw / 2 - r} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + r} V${H - B} Z` : '';
+      return `<g class="col" data-i="${i}">${path ? `<path class="bar" d="${path}"/>` : ''}<rect class="hit" x="${L + i * slot}" y="${T}" width="${slot}" height="${H - B - T}"/>
+        ${i % labelEvery === 0 ? `<text class="axis" x="${cx}" y="${H - 6}" text-anchor="middle">${short(x.day)}</text>` : ''}</g>`;
+    }).join('')}
+  </svg>`;
+  const tip = document.createElement('div'); tip.className = 'tip hidden'; box.appendChild(tip);
+  $$('g.col', box).forEach((g) => {
+    g.onmouseenter = () => {
+      const x = pts[g.dataset.i];
+      tip.innerHTML = `<b>${new Date(x.day + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}</b><br>${fmt(x.net, cur)} net · ${x.count} paiement${x.count > 1 ? 's' : ''}`;
+      const scale = box.clientWidth / W;
+      tip.style.left = ((L + g.dataset.i * slot + slot / 2) * scale) + 'px';
+      tip.style.top = (Math.min(y(x.net), H - B - 4) * (box.clientHeight / H)) + 'px';
+      tip.classList.remove('hidden');
+    };
+    g.onmouseleave = () => tip.classList.add('hidden');
+  });
+}
+
+// ---------------- Listes ----------------
+let LAST = [];
+async function loadList() {
+  const p = filterParams(); p.set('limit', S.limit); p.set('offset', S.offset);
+  const path = S.view === 'in' ? '/v1/merchants/me/payments?' : '/v1/merchants/me/outflows?';
+  const r = await api('GET', path + p);
+  LAST = r.data;
+  $(S.view === 'in' ? '#cnt-in' : '#cnt-out').textContent = `(${r.total.toLocaleString('fr-FR')})`;
+  const t = r.totals.find((x) => x.currency === S.currency);
+  $('#totals-line').innerHTML = !r.total ? '' : S.view === 'in'
+    ? `${r.total.toLocaleString('fr-FR')} paiement${r.total > 1 ? 's' : ''} · encaissé <b>${fmt(t?.gross || 0, S.currency)}</b> brut, <b>${fmt(t?.net || 0, S.currency)}</b> net`
+    : `${r.total.toLocaleString('fr-FR')} sortie${r.total > 1 ? 's' : ''} · <b>${fmt(t?.total || 0, S.currency)}</b> débités (hors échecs)`;
+  const cols = S.view === 'in' ? 9 : 8;
+  $('#tbody').innerHTML = r.data.length ? r.data.map(S.view === 'in' ? rowIn : rowOut).join('')
+    : `<tr><td colspan="${cols}" class="empty">${$('#filters').q.value ? 'Aucun résultat pour cette recherche.' : 'Aucune opération sur la période.'}</td></tr>`;
+  $$('#tbody tr[data-id]').forEach((tr) => {
+    tr.onclick = () => (S.view === 'in' ? openPayment(tr.dataset.id) : openOutflow(tr.dataset.id));
+    tr.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tr.click(); } };
+  });
+  const end = Math.min(S.offset + r.data.length, r.total);
+  $('#pg-info').textContent = r.total ? `${S.offset + 1}–${end} sur ${r.total.toLocaleString('fr-FR')}` : '';
+  $('#pg-prev').disabled = S.offset === 0;
+  $('#pg-next').disabled = end >= r.total;
+}
+
+function rowIn(x) {
+  const payer = x.payer?.name || x.payer?.phone || '—';
+  const sub = x.payer?.name && x.payer?.phone ? `<div class="sub">${esc(x.payer.phone)}</div>` : '';
+  return `<tr data-id="${esc(x.id)}" tabindex="0">
+    <td data-c="refs">${refsHtml(x.order_refs)}<div class="pid">${esc(x.id)}</div></td>
+    <td data-c="desc" class="desc">${esc(x.description || '—')}${x.reference && x.reference.length <= 24 ? `<div class="sub">Réf. ${esc(x.reference)}</div>` : ''}</td>
+    <td class="opt">${esc(payer)}${sub}</td>
+    <td class="opt">${esc(methodOf(x.method, x.payer?.operator))}</td>
+    <td data-c="meta" style="white-space:nowrap">${pill(x.status)}</td>
+    <td class="opt" style="white-space:nowrap">${when(x.paid_at || x.created_at)}</td>
+    <td data-c="amount" class="num"><b>${fmt(x.amount, x.currency)}</b>${x.refunded_amount ? `<div class="sub neg">−${fmt(x.refunded_amount, x.currency)} remb.</div>` : ''}</td>
+    <td class="num opt">${x.net == null ? '—' : fmt(x.fee, x.currency)}</td>
+    <td class="num opt"><b>${fmt(x.net, x.currency)}</b></td>
+  </tr>`;
+}
+
+/** Où l'argent est parti : wallet du titulaire (versement), ou moyen d'origine du client (remboursement). */
+function destOf(o) {
+  if (o.kind === 'payout_wallet') return 'Wallet du titulaire';
+  if (o.method === 'wallet') return 'Wallet Pay243 du client';
+  if (o.method === 'card') return 'Carte du client';
+  return `${OPS[o.operator] || 'Mobile Money'}${o.phone ? ' · ' + o.phone : ''}`;
+}
+
+function rowOut(o) {
+  const dest = destOf(o);
+  return `<tr data-id="${esc(o.id)}" tabindex="0">
+    <td data-c="refs"><b>${esc(KIND[o.kind] || o.type)}</b><div class="pid">${esc(o.id)}</div></td>
+    <td data-c="desc">${o.payment ? `${refsHtml(o.payment.order_refs)}<div class="sub">${esc(o.payment.description || o.payment.id)}</div>` : '<span class="muted">—</span>'}${o.reason ? `<div class="sub">Motif : ${esc(o.reason)}</div>` : ''}</td>
+    <td class="opt">${esc(dest)}</td>
+    <td data-c="meta">${pill(o.status)}</td>
+    <td class="opt" style="white-space:nowrap">${when(o.created_at)}</td>
+    <td data-c="amount" class="num"><b class="neg">−${fmt(o.amount, o.currency)}</b></td>
+    <td class="num opt">${o.fee ? fmt(o.fee, o.currency) : '—'}</td>
+    <td class="num opt"><b>${fmt(o.total, o.currency)}</b></td>
+  </tr>`;
+}
+
+// ---------------- Détail ----------------
+function openDrawer(html) {
+  $('#drawer').innerHTML = `<button class="x" type="button" aria-label="Fermer" data-close>×</button>${html}`;
+  $('#drawer').classList.remove('hidden'); $('#drawer-bg').classList.remove('hidden');
+  $$('[data-close]', $('#drawer')).forEach((b) => b.onclick = closeDrawer);
+  $$('.copy', $('#drawer')).forEach((b) => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copié'); } catch { toast('Copie impossible : sélectionnez le texte.', true); }
+  });
+  $('#drawer .x').focus();
+}
+function closeDrawer() { $('#drawer').classList.add('hidden'); $('#drawer-bg').classList.add('hidden'); }
+$('#drawer-bg').onclick = closeDrawer;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+const copyBtn = (v) => `<button class="copy" type="button" data-copy="${esc(v)}">Copier</button>`;
+const kv = (rows) => `<dl class="kv">${rows.filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+
+async function openPayment(id) {
+  let x;
+  try { x = await api('GET', '/v1/merchants/me/payments/' + encodeURIComponent(id)); } catch (e) { return toast(e.message, true); }
+  const c = x.currency;
+  const meta = Object.entries(x.metadata || {});
+  openDrawer(`
+    <h3 id="dr-title">${esc(x.description || 'Paiement')}</h3>
+    <div class="big">${fmt(x.amount, c)}</div>
+    <div>${pill(x.status)} ${x.livemode ? '' : '<span class="pill">test</span>'}</div>
+    <section><h4>N° de vente / commande</h4>
+      ${refsHtml(x.order_refs)}
+      ${S.merchant?.access?.enabled ? `<form id="refs-form"><input name="refs" value="${esc((x.order_refs || []).join(', '))}" placeholder="ex. 514687-MHM-681749, 994807-IQT-953743" aria-label="Numéros de vente, séparés par des virgules"><button class="ghost" type="submit">Enregistrer</button></form>
+      <p class="muted" style="margin:6px 0 0">Normalement envoyés par votre site via l'API ; vous pouvez les corriger ici.</p>` : ''}
+    </section>
+    <section><h4>Références</h4>${kv([
+      ['Référence Pay243', `<code>${esc(x.id)}</code> ${copyBtn(x.id)}`],
+      ['Référence marchand', x.reference ? `<code>${esc(x.reference)}</code> ${copyBtn(x.reference)}` : null],
+      ['Encaissement', x.operations.find((o) => o.type === 'payment' && o.status === 'succeeded') ? `<code>${esc(x.operations.find((o) => o.type === 'payment' && o.status === 'succeeded').id)}</code>` : null],
+      ['Réf. opérateur', x.operations.find((o) => o.provider_ref)?.provider_ref ? `<code>${esc(x.operations.find((o) => o.provider_ref).provider_ref)}</code>` : null],
+    ])}</section>
+    <section><h4>Montants</h4>${kv([
+      ['Montant payé', fmt(x.amount, c)],
+      ['Commission Pay243', x.net == null ? null : '−' + fmt(x.fee, c)],
+      ['Net encaissé', x.net == null ? null : `<b>${fmt(x.net, c)}</b>`],
+      ['Remboursé', x.refunded_amount ? `<span class="neg">−${fmt(x.refunded_amount, c)}</span>` : null],
+      ['Net après remb.', x.refunded_amount ? `<b>${fmt(x.net_after_refunds, c)}</b>` : null],
+    ])}</section>
+    <section><h4>Payeur</h4>${kv([
+      ['Moyen', esc(methodOf(x.method, x.payer?.operator))],
+      ['Nom', x.payer?.name ? esc(x.payer.name) : null],
+      ['Téléphone', x.payer?.phone ? esc(x.payer.phone) : null],
+    ])}</section>
+    <section><h4>Dates</h4>${kv([
+      ['Créé le', when(x.created_at)],
+      ['Payé le', x.paid_at ? when(x.paid_at) : null],
+      ['Expire le', x.status === 'requires_payment' ? when(x.expires_at) : null],
+      ['Dernière erreur', x.last_error ? `<span class="neg">${esc(x.last_error)}</span>` : null],
+    ])}</section>
+    <section><h4>Opérations</h4>${x.operations.length ? `<ul class="timeline">${x.operations.map((o) => `<li><div><b>${esc(TXN_TYPE[o.type] || o.type)}</b> ${pill(o.status)}<div class="sub muted">${when(o.created_at)} · ${esc(methodOf(o.method, o.operator))}${o.reason ? ' · ' + esc(o.reason) : ''}${o.failure_reason ? ` · <span class="neg">${esc(o.failure_reason)}</span>` : ''}</div><div class="pid">${esc(o.id)}</div></div><div class="num"><b class="${o.type === 'payment' ? 'credit' : 'neg'}">${o.type === 'payment' ? '+' : '−'}${fmt(o.amount, o.currency)}</b></div></li>`).join('')}</ul>` : '<p class="muted">Aucune tentative de paiement pour l\'instant.</p>'}</section>
+    ${x.webhooks.length ? `<section><h4>Notifications envoyées à votre site</h4><ul class="timeline">${x.webhooks.map((w) => `<li><div><code>${esc(w.type)}</code><div class="sub muted">${when(w.created_at)}${w.attempts > 1 ? ` · ${w.attempts} tentatives` : ''}</div></div><div>${w.delivered_at ? '<span class="pill succeeded">Reçue</span>' : `<span class="pill ${w.last_error ? 'failed' : 'pending'}" title="${esc(w.last_error || '')}">${w.last_error ? 'Échec' : 'En attente'}</span>`}</div></li>`).join('')}</ul></section>` : ''}
+    ${meta.length ? `<section><h4>Métadonnées</h4>${kv(meta.map(([k, v]) => [esc(k), `<code>${esc(typeof v === 'object' ? JSON.stringify(v) : v)}</code>`]))}</section>` : ''}
+  `);
+  const f = $('#refs-form');
+  if (f) f.onsubmit = async (e) => {
+    e.preventDefault(); const b = e.submitter; b.disabled = true;
+    try {
+      const refs = f.refs.value.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+      await api('PATCH', '/v1/merchants/me/payments/' + encodeURIComponent(x.id), { order_refs: refs });
+      toast('N° de vente enregistrés'); loadList(); openPayment(x.id);
+    } catch (err) { toast(err.message, true); } finally { b.disabled = false; }
+  };
+}
+
+function openOutflow(id) {
+  const o = LAST.find((x) => x.id === id); if (!o) return;
+  openDrawer(`
+    <h3 id="dr-title">${esc(KIND[o.kind] || o.type)}</h3>
+    <div class="big neg">−${fmt(o.amount, o.currency)}</div>
+    <div>${pill(o.status)}</div>
+    <section><h4>Références</h4>${kv([
+      ['Référence Pay243', `<code>${esc(o.id)}</code> ${copyBtn(o.id)}`],
+      ['Réf. opérateur', o.provider_ref ? `<code>${esc(o.provider_ref)}</code> ${copyBtn(o.provider_ref)}` : null],
+    ])}</section>
+    <section><h4>Montants</h4>${kv([
+      ['Montant', fmt(o.amount, o.currency)],
+      ['Frais', o.fee ? fmt(o.fee, o.currency) : null],
+      ['Total débité', `<b>${fmt(o.total, o.currency)}</b>`],
+    ])}</section>
+    <section><h4>Destination</h4>${kv([
+      ['Vers', esc(destOf(o))],
+      ['Téléphone', o.phone ? esc(o.phone) : null],
+      ['Motif', o.reason ? esc(o.reason) : esc(o.description)],
+      ['Échec', o.failure_reason ? `<span class="neg">${esc(o.failure_reason)}</span>` : null],
+      ['Date', when(o.created_at)],
+    ])}</section>
+    ${o.payment ? `<section><h4>Paiement remboursé</h4>${refsHtml(o.payment.order_refs)}${kv([
+      ['Paiement', `<code>${esc(o.payment.id)}</code> <button class="copy" type="button" id="open-pay">Ouvrir</button>`],
+      ['Référence marchand', o.payment.reference ? `<code>${esc(o.payment.reference)}</code>` : null],
+      ['Description', o.payment.description ? esc(o.payment.description) : null],
+    ])}</section>` : ''}
+  `);
+  const b = $('#open-pay'); if (b) b.onclick = () => openPayment(o.payment.id);
+}
+
+// ---------------- Export ----------------
+$('#export').onclick = async (e) => {
+  const b = e.currentTarget; b.disabled = true;
+  try {
+    const p = filterParams(); p.set('format', 'csv');
+    const r = await api('GET', (S.view === 'in' ? '/v1/merchants/me/payments?' : '/v1/merchants/me/outflows?') + p, null, { raw: true });
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement('a'); a.href = url;
+    a.download = (r.headers.get('content-disposition')?.match(/filename="([^"]+)"/) || [])[1] || 'pay243.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (err) { toast(err.message, true); } finally { b.disabled = false; }
+};
+
+// ---------------- Événements ----------------
+const reload = () => { S.offset = 0; Promise.all([loadSummary(), loadList()]).catch((e) => toast(e.message, true)); };
+$$('#cur button').forEach((b) => b.onclick = () => {
+  S.currency = b.dataset.c; try { localStorage.setItem('pay243_mon_cur', S.currency); } catch {}
+  $$('#cur button').forEach((x) => x.classList.toggle('on', x === b)); reload();
+});
+$('#period').onchange = () => {
+  const custom = $('#period').value === 'custom';
+  $('#custom-range').classList.toggle('hidden', !custom);
+  if (custom && !$('#d-from').value) { const n = new Date(); $('#d-to').value = n.toLocaleDateString('sv'); $('#d-from').value = new Date(n - 29 * 864e5).toLocaleDateString('sv'); }
+  reload();
+};
+$('#d-from').onchange = reload; $('#d-to').onchange = reload;
+$('#refresh').onclick = reload;
+$$('[data-view]').forEach((b) => b.onclick = () => {
+  S.view = b.dataset.view; S.offset = 0;
+  $$('[data-view]').forEach((x) => x.classList.toggle('on', x === b));
+  $('#filters').reset(); setupFilters(); loadList().catch((e) => toast(e.message, true));
+});
+let qTimer;
+$('#filters').q.oninput = () => { clearTimeout(qTimer); qTimer = setTimeout(() => { S.offset = 0; loadList().catch((e) => toast(e.message, true)); }, 300); };
+$('#filters').status.onchange = $('#filters').extra.onchange = () => { S.offset = 0; loadList().catch((e) => toast(e.message, true)); };
+$('#pg-prev').onclick = () => { S.offset = Math.max(0, S.offset - S.limit); loadList().catch((e) => toast(e.message, true)); };
+$('#pg-next').onclick = () => { S.offset += S.limit; loadList().catch((e) => toast(e.message, true)); };
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => loadSummary().catch(() => {}), 200); });
+
+async function boot() {
+  try { S.merchant = await api('GET', '/v1/merchants/me'); } catch (e) { S.merchant = null; }
+  if (!S.merchant?.access?.enabled) {
+    $('main').innerHTML = `<div class="card center" style="text-align:center"><h2>Espace marchand non activé</h2><p class="muted">Le suivi des paiements est disponible une fois votre espace marchand activé par l'équipe Pay243.</p><a href="/settings#vendeur"><button class="full">Voir ma demande</button></a></div>`;
+    return;
+  }
+  $('#m-name').textContent = `${S.merchant.name} · paiements reçus, versements et remboursements`;
+  $$('#cur button').forEach((x) => x.classList.toggle('on', x.dataset.c === S.currency));
+  // Recherche directe : /marchand?q=514687-MHM-681749
+  const q0 = new URLSearchParams(location.search).get('q');
+  if (q0) { $('#filters').q.value = q0; $('#period').value = '365'; }
+  setupFilters();
+  reload();
+}
+if (TOKEN) boot();
+</script>
+</body>
+</html>

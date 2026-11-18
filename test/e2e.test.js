@@ -535,6 +535,71 @@ test('marchand : versement des ventes sur le wallet personnel', async () => {
   assert.ok(hist.body.data.some((x) => x.id === t.body.id && x.description.startsWith('Versement des ventes')));
 });
 
+test('marchand : n° de vente rattachés aux paiements, suivi des entrées et sorties, export CSV', async () => {
+  // Panier de deux ventes : les numéros ne sont connus qu'après le paiement, le marchand les rattache ensuite
+  const pay = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 2000, currency: 'USD', description: 'Commande SOMBATEKA P243-1', reference: 'local-uuid-1' } });
+  assert.deepEqual(pay.body.order_refs, []);
+  assert.equal((await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: state.bob, body: { method: 'wallet', pin: '9137' } })).body.status, 'succeeded');
+  const bad = await api('POST', `/v1/payments/${pay.body.id}`, { token: state.sk, body: { order_refs: ['ok', 'pas valide !'] } });
+  assert.equal(bad.body.error.code, 'invalid_order_refs');
+  const upd = await api('POST', `/v1/payments/${pay.body.id}`, { token: state.sk, body: { order_refs: ['514687-MHM-681749', '994807-IQT-953743', '514687-MHM-681749'], metadata: { canal: 'web' } } });
+  assert.equal(upd.status, 200, JSON.stringify(upd.body));
+  assert.deepEqual(upd.body.order_refs, ['514687-MHM-681749', '994807-IQT-953743']);
+  assert.equal(upd.body.metadata.canal, 'web');
+  assert.equal(upd.body.amount, 2000); // montant et statut inchangés
+  assert.equal(upd.body.status, 'succeeded');
+  const byRef = await api('GET', '/v1/payments?order_ref=994807-IQT-953743', { token: state.sk });
+  assert.deepEqual(byRef.body.data.map((p) => p.id), [pay.body.id]);
+  assert.equal((await api('GET', '/v1/payments?order_ref=994807', { token: state.sk })).body.data.length, 0); // correspondance exacte
+  // Paiement créé directement avec ses références
+  const direct = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 500, currency: 'USD', order_refs: 'A-1, A-2' } });
+  assert.deepEqual(direct.body.order_refs, ['A-1', 'A-2']);
+
+  // Espace de suivi (session du titulaire) : recherche par n° de vente partiel
+  const found = await api('GET', '/v1/merchants/me/payments?q=MHM-681', { token: state.alice });
+  assert.equal(found.status, 200, JSON.stringify(found.body));
+  assert.deepEqual(found.body.data.map((p) => p.id), [pay.body.id]);
+  assert.equal(typeof found.body.data[0].payer.name, 'string'); // payeur wallet : nom affiché au marchand
+  assert.equal(found.body.data[0].net, 1950);
+  const paidOnly = await api('GET', '/v1/merchants/me/payments?status=paid&currency=USD', { token: state.alice });
+  assert.ok(paidOnly.body.data.every((p) => ['succeeded', 'partially_refunded', 'refunded'].includes(p.status)));
+  assert.ok(paidOnly.body.total >= 2);
+  assert.equal((await api('GET', '/v1/merchants/me/payments?from=pas-une-date', { token: state.alice })).body.error.code, 'invalid_date');
+
+  const detail = await api('GET', `/v1/merchants/me/payments/${pay.body.id}`, { token: state.alice });
+  assert.equal(detail.body.operations[0].type, 'payment');
+  assert.equal(detail.body.operations[0].status, 'succeeded');
+  assert.ok(detail.body.webhooks.some((w) => w.type === 'payment.succeeded'));
+  // Rattachement manuel depuis l'espace marchand
+  const manual = await api('PATCH', `/v1/merchants/me/payments/${direct.body.id}`, { token: state.alice, body: { order_refs: ['A-1', 'A-3'] } });
+  assert.deepEqual(manual.body.order_refs, ['A-1', 'A-3']);
+  assert.equal((await api('GET', `/v1/merchants/me/payments/${pay.body.id}`, { token: state.bob })).status, 404); // pas de marchand
+
+  // Sorties : remboursement (test précédent) et versement vers le wallet
+  const outs = await api('GET', '/v1/merchants/me/outflows?currency=USD', { token: state.alice });
+  assert.equal(outs.status, 200, JSON.stringify(outs.body));
+  const kinds = outs.body.data.map((o) => o.kind);
+  assert.ok(kinds.includes('refund') && kinds.includes('payout_wallet'), kinds.join(','));
+  const refund = outs.body.data.find((o) => o.kind === 'refund');
+  assert.equal(refund.payment.reference, 'CMD-1001');
+
+  const sum = await api('GET', '/v1/merchants/me/monitoring/summary', { token: state.alice });
+  const usd = sum.body.currencies.find((c) => c.currency === 'USD');
+  assert.ok(usd.received.count >= 2);
+  assert.equal(usd.received.net, usd.received.gross - usd.received.fees);
+  assert.ok(usd.outflows.refunds.amount >= 1500);
+  assert.ok(usd.outflows.payouts_wallet.amount >= 400);
+  assert.ok(usd.daily.length >= 1);
+  assert.equal(usd.balance, (await api('GET', '/v1/merchants/me', { token: state.alice })).body.balances.find((b) => b.currency === 'USD').balance);
+
+  const csv = await fetch(`${base}/v1/merchants/me/payments?format=csv&q=MHM`, { headers: { Authorization: `Bearer ${state.alice}` } });
+  assert.match(csv.headers.get('content-type'), /text\/csv/);
+  const text = await csv.text();
+  assert.match(text, /N° de vente \/ commande/);
+  assert.match(text, /514687-MHM-681749, 994807-IQT-953743/);
+  assert.match(text, /;20,00;0,50;19,50;/);
+});
+
 test('checkout invité : paiement Orange Money direct', async () => {
   const pay = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 2500000, currency: 'CDF', description: 'Sac' } });
   const r = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { body: { method: 'mobile_money', phone: '0841234567' } });

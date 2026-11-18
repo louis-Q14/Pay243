@@ -23,6 +23,7 @@ export function serializePayment(p) {
     currency: p.currency,
     description: p.description,
     reference: p.reference,
+    order_refs: parseJson(p.order_refs, []),
     status: p.status,
     fee: p.fee,
     net: p.status === 'requires_payment' ? null : p.amount - p.fee,
@@ -51,22 +52,63 @@ function validUrl(u, field) {
   }
 }
 
+const ORDER_REF_RE = /^[\w.\-/#:]{1,64}$/;
+/**
+ * Références du marchand couvertes par le paiement (n° de vente, de commande…) : tableau ou liste séparée
+ * par des virgules, 50 au plus, sans doublon. null si le champ est absent.
+ */
+export function parseOrderRefs(raw) {
+  if (raw == null) return null;
+  const list = (Array.isArray(raw) ? raw : String(raw).split(',')).map((r) => String(r ?? '').trim()).filter(Boolean);
+  const refs = [...new Set(list)];
+  if (refs.length > 50) throw new HttpError(400, 'invalid_order_refs', 'order_refs : 50 références au maximum.');
+  const bad = refs.find((r) => !ORDER_REF_RE.test(r));
+  if (bad) throw new HttpError(400, 'invalid_order_refs', `order_refs : « ${bad.slice(0, 80)} » invalide (1 à 64 caractères : lettres, chiffres, - _ . / # :).`);
+  return refs;
+}
+
+function assertMetadata(metadata) {
+  if (typeof metadata !== 'object' || metadata === null || Array.isArray(metadata) || Object.keys(metadata).length > 20) {
+    throw new HttpError(400, 'invalid_metadata', 'metadata doit être un objet de 20 clés maximum.');
+  }
+  return metadata;
+}
+
+/**
+ * Mise à jour d'un paiement par le marchand, à tout moment : rattacher ses numéros de vente (souvent connus
+ * seulement après le paiement), compléter les métadonnées (fusion ; null supprime une clé), la description.
+ * Le montant, la devise et le statut ne changent jamais.
+ */
+export async function updatePaymentInfo(p, body = {}) {
+  const fields = {};
+  const refs = parseOrderRefs(body.order_refs);
+  if (refs) fields.order_refs = JSON.stringify(refs);
+  if (body.metadata !== undefined) {
+    const merged = { ...parseJson(p.metadata, {}), ...assertMetadata(body.metadata) };
+    for (const k of Object.keys(merged)) if (merged[k] === null) delete merged[k];
+    fields.metadata = JSON.stringify(assertMetadata(merged));
+  }
+  if (body.description !== undefined) fields.description = String(body.description || '').slice(0, 200) || null;
+  if (!Object.keys(fields).length) throw new HttpError(400, 'nothing_to_update', 'Indiquez order_refs, metadata ou description.');
+  await setPayment(p.id, fields);
+  return getPayment(p.id);
+}
+
 export async function createPayment(merchant, livemode, body) {
   const amount = assertAmount(body.amount);
   const currency = assertCurrency(body.currency);
-  const metadata = body.metadata ?? {};
-  if (typeof metadata !== 'object' || Array.isArray(metadata) || Object.keys(metadata).length > 20) {
-    throw new HttpError(400, 'invalid_metadata', 'metadata doit être un objet de 20 clés maximum.');
-  }
+  const metadata = assertMetadata(body.metadata ?? {});
+  const orderRefs = parseOrderRefs(body.order_refs);
   const minutes = Math.min(Math.max(Number(body.expires_in_minutes) || config.paymentExpiryMinutes, 5), 7 * 24 * 60);
   const id = newId('pay');
   const ts = now();
   await q.run(
-    `INSERT INTO payments (id, merchant_id, livemode, amount, currency, description, reference, status, return_url, cancel_url, metadata, expires_at, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,'requires_payment',?,?,?,?,?,?)`,
+    `INSERT INTO payments (id, merchant_id, livemode, amount, currency, description, reference, order_refs, status, return_url, cancel_url, metadata, expires_at, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,'requires_payment',?,?,?,?,?,?)`,
     id, merchant.id, livemode ? 1 : 0, amount, currency,
     String(body.description || '').slice(0, 200) || null,
     body.reference ? String(body.reference).slice(0, 100) : null,
+    orderRefs?.length ? JSON.stringify(orderRefs) : null,
     validUrl(body.return_url, 'return_url'), validUrl(body.cancel_url, 'cancel_url'),
     JSON.stringify(metadata), new Date(Date.now() + minutes * 60e3).toISOString(), ts, ts,
   );
