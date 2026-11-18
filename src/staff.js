@@ -26,6 +26,7 @@ export const PERMISSIONS = {
   'users.suspend': ['admin'], // suspendre / réactiver un compte
   'users.kyc_override': ['admin'], // changer le niveau KYC sans demande
   'transactions.view': ['admin', 'finance', 'support', 'auditor', 'compliance'],
+  'commissions.view': ['admin', 'finance', 'auditor'], // revenus de Pay243 (frais encaissés)
   'merchants.view': ['admin', 'finance', 'support', 'auditor', 'compliance'],
   'merchants.manage': ['admin'], // suspendre un marchand, révoquer ses clés
   'kyc.view': ['admin', 'compliance', 'auditor'],

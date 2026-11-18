@@ -215,23 +215,166 @@ backofficeRouter.post('/admin/users/:id/kyc-level', can('users.kyc_override'), a
 // =====================================================================
 //  Transactions
 // =====================================================================
-backofficeRouter.get('/admin/transactions', can('transactions.view'), async (req, res) => {
-  const where = []; const args = [];
-  const term = String(req.query.q || '').trim();
-  if (term) { where.push('(t.id = ? OR t.provider_ref = ? OR t.phone LIKE ? OR t.payment_id = ?)'); args.push(term, term, `%${term.replace(/\D/g, '') || term}%`, term); }
-  if (req.query.status) { where.push('t.status = ?'); args.push(String(req.query.status)); }
-  if (req.query.type) { where.push('t.type = ?'); args.push(String(req.query.type)); }
-  if (req.query.currency) { where.push('t.currency = ?'); args.push(String(req.query.currency)); }
-  const limit = Math.min(Number(req.query.limit) || 50, 200);
-  const rows = await q.all(`
-    SELECT t.*,
-      COALESCE(fu.full_name, fm.name, fw.owner_type || ':' || fw.owner_id) AS from_name,
-      COALESCE(tu.full_name, tm.name, tw.owner_type || ':' || tw.owner_id) AS to_name
-    FROM transactions t
+const isoOr = (v, field) => {
+  if (v == null || v === '') return null;
+  const d = new Date(String(v));
+  if (Number.isNaN(d.getTime())) throw new HttpError(400, 'invalid_date', `${field} : date invalide.`);
+  return d.toISOString();
+};
+const likeOf = (s) => `%${String(s).replace(/[\\%_]/g, (c) => '\\' + c)}%`;
+// Nom lisible d'un wallet : client, marchand, ou compte interne de Pay243.
+const SYSTEM_NAMES = { fees: 'Pay243 (commissions)', fx_pool: 'Pay243 (change)', float_card: 'Pay243 (cartes)', payout_pending: 'Pay243 (versements en cours)', float_mpesa: 'M-Pesa', float_airtel: 'Airtel Money', float_orange: 'Orange Money' };
+const walletName = (alias) => `COALESCE(${alias}u.full_name, ${alias}m.name, ${alias}w.owner_type || ':' || ${alias}w.owner_id)`;
+const TXN_FROM = `FROM transactions t
     LEFT JOIN wallets fw ON fw.id = t.from_wallet LEFT JOIN users fu ON fw.owner_type='user' AND fu.id = fw.owner_id LEFT JOIN merchants fm ON fw.owner_type='merchant' AND fm.id = fw.owner_id
     LEFT JOIN wallets tw ON tw.id = t.to_wallet LEFT JOIN users tu ON tw.owner_type='user' AND tu.id = tw.owner_id LEFT JOIN merchants tm ON tw.owner_type='merchant' AND tm.id = tw.owner_id
-    ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY t.created_at DESC LIMIT ?`, ...args, limit);
-  res.json({ data: rows.map((t) => ({ ...serializeTxn(t), from_name: t.from_name, to_name: t.to_name, provider: t.provider, provider_ref: t.provider_ref })) });
+    LEFT JOIN merchants mm ON mm.id = t.merchant_id
+    LEFT JOIN payments p ON p.id = t.payment_id`;
+const prettyName = (n) => (n && n.startsWith('system:') ? SYSTEM_NAMES[n.slice(7)] || n.slice(7) : n);
+const csvCell = (v) => {
+  const s = v == null ? '' : String(v);
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  return /[";\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+const csvDec = (minor) => (minor == null ? '' : (Number(minor) / 100).toFixed(2).replace('.', ','));
+const sendCsv = (res, name, head, rows) => {
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="${name}-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send('﻿' + [head, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n') + '\r\n');
+};
+
+function txnFilters(query) {
+  const where = []; const args = [];
+  const term = String(query.q || '').trim().slice(0, 100);
+  if (term) {
+    where.push(`(t.id = ? OR t.provider_ref = ? OR t.phone LIKE ? OR t.payment_id = ? OR t.description ILIKE ?
+                 OR p.reference ILIKE ? OR p.order_refs ILIKE ? OR fu.full_name ILIKE ? OR tu.full_name ILIKE ? OR fm.name ILIKE ? OR tm.name ILIKE ? OR mm.name ILIKE ?)`);
+    const like = likeOf(term);
+    args.push(term, term, `%${term.replace(/\D/g, '') || term}%`, term, like, like, like, like, like, like, like, like);
+  }
+  if (req_in(query.status, ['succeeded', 'pending', 'failed', 'refunded'])) { where.push('t.status = ?'); args.push(String(query.status)); }
+  if (query.type) { where.push('t.type = ?'); args.push(String(query.type)); }
+  if (req_in(query.currency, config.currencies)) { where.push('t.currency = ?'); args.push(String(query.currency)); }
+  if (req_in(query.method, ['wallet', 'mobile_money', 'card'])) { where.push('t.method = ?'); args.push(String(query.method)); }
+  const from = isoOr(query.from, 'from'); const to = isoOr(query.to, 'to');
+  if (from) { where.push('t.created_at >= ?'); args.push(from); }
+  if (to) { where.push('t.created_at < ?'); args.push(to); }
+  return { sql: where.length ? `WHERE ${where.join(' AND ')}` : '', args };
+}
+function req_in(v, allowed) { return v && allowed.includes(String(v)); }
+
+backofficeRouter.get('/admin/transactions', can('transactions.view'), async (req, res) => {
+  const { sql, args } = txnFilters(req.query);
+  const csv = req.query.format === 'csv';
+  const limit = csv ? 10000 : Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  const offset = csv ? 0 : Math.max(Number(req.query.offset) || 0, 0);
+  const rows = await q.all(`
+    SELECT t.*, ${walletName('f')} AS from_name, ${walletName('t')} AS to_name, mm.name AS merchant_name,
+      p.reference AS p_reference, p.order_refs AS p_order_refs, p.description AS p_description
+    ${TXN_FROM} ${sql} ORDER BY t.created_at DESC, t.id DESC LIMIT ? OFFSET ?`, ...args, limit, offset);
+  const data = rows.map((t) => ({
+    ...serializeTxn(t), from_name: prettyName(t.from_name), to_name: prettyName(t.to_name), provider: t.provider, provider_ref: t.provider_ref,
+    merchant_name: t.merchant_name || null,
+    payment: t.payment_id ? { id: t.payment_id, reference: t.p_reference, order_refs: parseJson(t.p_order_refs, []), description: t.p_description } : null,
+  }));
+  if (csv) {
+    return sendCsv(res, 'pay243-transactions',
+      ['Date', 'Référence', 'Type', 'Statut', 'De', 'À', 'Marchand', 'Moyen', 'Opérateur', 'Téléphone', 'Réf. opérateur', 'Devise', 'Montant', 'Frais Pay243', 'Paiement', 'N° de vente', 'Description', 'Échec'],
+      data.map((t) => [t.created_at, t.id, t.type, t.status, t.from_name, t.to_name, t.merchant_name, t.method, t.operator, t.phone, t.provider_ref, t.currency,
+        csvDec(t.amount), csvDec(t.fee), t.payment?.id, (t.payment?.order_refs || []).join(', '), t.description, t.failure_reason]));
+  }
+  const totals = await q.all(`SELECT t.currency, COUNT(*)::int AS n,
+      COALESCE(SUM(CASE WHEN t.status = 'succeeded' THEN t.amount ELSE 0 END),0)::bigint AS volume,
+      COALESCE(SUM(CASE WHEN t.status = 'succeeded' THEN t.fee ELSE 0 END),0)::bigint AS fees
+    ${TXN_FROM} ${sql} GROUP BY t.currency ORDER BY t.currency`, ...args);
+  res.json({
+    data, limit, offset,
+    total: totals.reduce((s, r) => s + r.n, 0),
+    totals: totals.map((r) => ({ currency: r.currency, count: r.n, volume: Number(r.volume), fees: Number(r.fees) })),
+  });
+});
+
+// =====================================================================
+//  Commissions : tout ce que Pay243 encaisse (compte interne « fees »), ligne par ligne
+// =====================================================================
+const COMMISSION_KIND = { payment: 'Commission sur paiement', withdrawal: 'Frais de retrait', payout: 'Frais de versement marchand', refund: 'Frais de remboursement', transfer: 'Frais de transfert', conversion: 'Frais de conversion', topup: 'Frais de recharge' };
+backofficeRouter.get('/admin/commissions', can('commissions.view'), async (req, res) => {
+  const where = ["fw.owner_type = 'system'", "fw.owner_id = 'fees'"]; const args = [];
+  const from = isoOr(req.query.from, 'from'); const to = isoOr(req.query.to, 'to');
+  if (from) { where.push('le.created_at >= ?'); args.push(from); }
+  if (to) { where.push('le.created_at < ?'); args.push(to); }
+  if (req_in(req.query.currency, config.currencies)) { where.push('fw.currency = ?'); args.push(String(req.query.currency)); }
+  if (req.query.type) { where.push('t.type = ?'); args.push(String(req.query.type)); }
+  const term = String(req.query.q || '').trim().slice(0, 100);
+  if (term) {
+    const like = likeOf(term);
+    where.push('(t.id = ? OR t.payment_id = ? OR mm.name ILIKE ? OR pu.full_name ILIKE ? OR p.order_refs ILIKE ? OR p.reference ILIKE ? OR t.phone LIKE ?)');
+    args.push(term, term, like, like, like, like, `%${term.replace(/\D/g, '') || term}%`);
+  }
+  const sql = where.join(' AND ');
+  const FROM = `FROM ledger_entries le
+      JOIN wallets fw ON fw.id = le.wallet_id
+      JOIN transactions t ON t.id = le.txn_id
+      LEFT JOIN merchants mm ON mm.id = t.merchant_id
+      LEFT JOIN payments p ON p.id = t.payment_id
+      LEFT JOIN wallets pw ON pw.id = t.from_wallet
+      LEFT JOIN users pu ON pw.owner_type = 'user' AND pu.id = pw.owner_id
+      LEFT JOIN merchants pm ON pw.owner_type = 'merchant' AND pm.id = pw.owner_id`;
+  const csv = req.query.format === 'csv';
+  const limit = csv ? 20000 : Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  const offset = csv ? 0 : Math.max(Number(req.query.offset) || 0, 0);
+  const rows = await q.all(`SELECT le.id AS entry_id, le.amount AS commission, le.created_at AS booked_at, fw.currency AS fee_currency,
+        t.id, t.type, t.status, t.amount, t.fee, t.method, t.operator, t.phone, t.payment_id, t.description, t.created_at,
+        mm.name AS merchant_name, COALESCE(pu.full_name, pm.name) AS payer_name, p.reference AS p_reference, p.order_refs AS p_order_refs
+      ${FROM} WHERE ${sql} ORDER BY le.created_at DESC, le.id DESC LIMIT ? OFFSET ?`, ...args, limit, offset);
+  const data = rows.map((r) => {
+    const commission = Number(r.commission);
+    const base = Number(r.amount);
+    return {
+      id: r.entry_id, txn_id: r.id, type: r.type,
+      kind: commission < 0 ? 'restitution' : r.type,
+      label: commission < 0 ? 'Frais restitués (opération échouée)' : COMMISSION_KIND[r.type] || r.type,
+      commission, currency: r.fee_currency, base_amount: base, rate: base > 0 ? Math.abs(commission) / base : null,
+      method: r.method, operator: r.operator, phone: r.phone,
+      merchant_name: r.merchant_name || null, payer_name: r.payer_name || null,
+      payment: r.payment_id ? { id: r.payment_id, reference: r.p_reference, order_refs: parseJson(r.p_order_refs, []) } : null,
+      description: r.description, txn_status: r.status, booked_at: r.booked_at,
+    };
+  });
+  if (csv) {
+    return sendCsv(res, 'pay243-commissions',
+      ['Date', 'Nature', 'Transaction', 'Devise', 'Montant de l\'opération', 'Commission', 'Taux', 'Marchand', 'Payeur', 'Moyen', 'Opérateur', 'Paiement', 'N° de vente', 'Description'],
+      data.map((c) => [c.booked_at, c.label, c.txn_id, c.currency, csvDec(c.base_amount), csvDec(c.commission), c.rate == null ? '' : (c.rate * 100).toFixed(2).replace('.', ',') + ' %',
+        c.merchant_name, c.payer_name, c.method, c.operator, c.payment?.id, (c.payment?.order_refs || []).join(', '), c.description]));
+  }
+  // Totaux par devise et par nature, sur tout le filtre (pas seulement la page affichée).
+  const byType = await q.all(`SELECT fw.currency, t.type, COUNT(*)::int AS n,
+        COALESCE(SUM(CASE WHEN le.amount > 0 THEN le.amount ELSE 0 END),0)::bigint AS earned,
+        COALESCE(SUM(CASE WHEN le.amount < 0 THEN -le.amount ELSE 0 END),0)::bigint AS restituted,
+        COALESCE(SUM(CASE WHEN le.amount > 0 THEN t.amount ELSE 0 END),0)::bigint AS base
+      ${FROM} WHERE ${sql} GROUP BY fw.currency, t.type ORDER BY fw.currency, t.type`, ...args);
+  const byMerchant = await q.all(`SELECT fw.currency, COALESCE(mm.name, '—') AS merchant, COUNT(*)::int AS n, COALESCE(SUM(le.amount),0)::bigint AS net
+      ${FROM} WHERE ${sql} AND t.merchant_id IS NOT NULL GROUP BY fw.currency, mm.name ORDER BY net DESC LIMIT 20`, ...args);
+  const daily = await q.all(`SELECT fw.currency, substr(le.created_at,1,10) AS day, COALESCE(SUM(le.amount),0)::bigint AS net
+      ${FROM} WHERE ${sql} GROUP BY 1, 2 ORDER BY 2`, ...args);
+  const balances = await q.all("SELECT currency, balance FROM wallets WHERE owner_type='system' AND owner_id='fees'");
+  const currencies = config.currencies.map((c) => {
+    const types = byType.filter((r) => r.currency === c).map((r) => ({
+      type: r.type, label: COMMISSION_KIND[r.type] || r.type, count: r.n,
+      earned: Number(r.earned), restituted: Number(r.restituted), net: Number(r.earned) - Number(r.restituted), base: Number(r.base),
+    }));
+    const earned = types.reduce((s, x) => s + x.earned, 0);
+    const restituted = types.reduce((s, x) => s + x.restituted, 0);
+    return {
+      currency: c, count: types.reduce((s, x) => s + x.count, 0), earned, restituted, net: earned - restituted,
+      balance: Number(balances.find((b) => b.currency === c)?.balance || 0), // solde actuel du compte commissions
+      by_type: types,
+      by_merchant: byMerchant.filter((r) => r.currency === c).map((r) => ({ merchant: r.merchant, count: r.n, net: Number(r.net) })),
+      daily: daily.filter((r) => r.currency === c).map((r) => ({ day: r.day, net: Number(r.net) })),
+    };
+  });
+  const { n: total } = await q.get(`SELECT COUNT(*)::int AS n ${FROM} WHERE ${sql}`, ...args);
+  res.json({ data, total, limit, offset, currencies });
 });
 
 // =====================================================================

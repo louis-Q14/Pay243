@@ -1629,6 +1629,42 @@ test('compte non activé : aucune opération avant la validation de l\'identité
   assert.equal((await api('POST', '/v1/payments', { token: bizSk, body: { amount: 500, currency: 'USD' } })).body.error.code, 'account_not_verified');
 });
 
+test('back-office : transactions complètes et commissions Pay243 (somme exacte)', async () => {
+  const tx = await api('GET', '/v1/admin/transactions?currency=USD&limit=5', { token: ADMIN_KEY });
+  assert.equal(tx.status, 200, JSON.stringify(tx.body));
+  assert.ok(tx.body.total > 5 && tx.body.data.length === 5); // pagination : total sur tout le filtre
+  const usdTotals = tx.body.totals.find((t) => t.currency === 'USD');
+  assert.ok(usdTotals.fees > 0);
+  const page2 = await api('GET', '/v1/admin/transactions?currency=USD&limit=5&offset=5', { token: ADMIN_KEY });
+  assert.notEqual(page2.body.data[0].id, tx.body.data[0].id);
+  const pay = (await api('GET', '/v1/admin/transactions?type=payment&currency=USD&q=MHM-681749', { token: ADMIN_KEY })).body.data;
+  assert.equal(pay[0].payment.order_refs[0], '514687-MHM-681749'); // recherche par n° de vente
+  assert.equal((await api('GET', '/v1/admin/transactions?from=pas-une-date', { token: ADMIN_KEY })).body.error.code, 'invalid_date');
+
+  const cm = await api('GET', '/v1/admin/commissions', { token: ADMIN_KEY });
+  assert.equal(cm.status, 200, JSON.stringify(cm.body));
+  for (const c of cm.body.currencies) {
+    // Sans filtre : la somme des commissions nettes est exactement le solde du compte commissions
+    assert.equal(c.net, c.balance, `commissions ${c.currency}`);
+    assert.equal(c.net, c.by_type.reduce((s, t) => s + t.net, 0));
+  }
+  const usd = cm.body.currencies.find((c) => c.currency === 'USD');
+  assert.ok(usd.by_type.find((t) => t.type === 'payment').earned > 0);
+  assert.ok(usd.by_merchant.length >= 1);
+  const line = cm.body.data.find((c) => c.type === 'payment');
+  assert.ok(line.merchant_name && line.rate > 0);
+  // Un retrait Mobile Money échoué : ses frais apparaissent puis sont restitués
+  assert.ok(cm.body.currencies.some((c) => c.restituted > 0));
+
+  const csv = await fetch(`${base}/v1/admin/commissions?format=csv&currency=USD`, { headers: { Authorization: `Bearer ${ADMIN_KEY}` } });
+  assert.match(csv.headers.get('content-type'), /text\/csv/);
+  assert.match(await csv.text(), /Commission sur paiement/);
+  const txCsv = await fetch(`${base}/v1/admin/transactions?format=csv`, { headers: { Authorization: `Bearer ${ADMIN_KEY}` } });
+  assert.match(await txCsv.text(), /Frais Pay243/);
+  // Le support voit les transactions, pas les revenus de Pay243
+  assert.equal((await api('GET', '/v1/admin/commissions', { token: state.alice })).status, 401);
+});
+
 test('grand livre équilibré (partie double)', async () => {
   await sleep(100);
   for (const row of await auditLedger()) assert.equal(row.total, 0, `devise ${row.currency} déséquilibrée`);

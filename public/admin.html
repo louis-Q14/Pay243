@@ -78,6 +78,10 @@
   .m-tbl td { white-space: nowrap; }
   .m-tbl td.wrap { white-space: normal; min-width: 220px; }
   .m-tbl .actions { min-width: 230px; } /* sur une ligne quand la place le permet, sinon sur deux */
+  .ref { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; background: #fff4cc; color: #6b4e00; border-radius: 6px; padding: 1px 6px; margin: 0 2px 2px 0; }
+  .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 10px 4px; font-size: 13px; flex-wrap: wrap; }
+  .pager .actions { min-width: 0; }
+  .totals { margin: -4px 0 12px; font-size: 13.5px; } .totals b { color: var(--ink); }
   .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
   .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
   .mode { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--warn-bg); color: var(--warn); }
@@ -320,6 +324,7 @@ const IC = {
   dashboard: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5.5 6.5-5.5s5.7 2.1 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c1.9.8 3.1 2.6 3.5 5.4"/>',
   transactions: '<path d="M4 7h14l-3-3M20 17H6l3 3"/>',
+  commissions: '<circle cx="12" cy="12" r="9"/><path d="M15 9.2c-.5-1-1.6-1.6-3-1.6-1.8 0-3 .9-3 2.2 0 3.1 6 1.6 6 4.5 0 1.3-1.3 2.2-3 2.2-1.5 0-2.7-.7-3.1-1.8M12 6v1.6M12 16.5V18"/>',
   merchants: '<path d="M3 9l1.5-5h15L21 9M4 9v11h16V9M3 9h18M9 20v-6h6v6"/>',
   kyc: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.5 1.8-2.3 3.2-2.3s2.6.8 3.2 2.3M14.5 10h4M14.5 13.5h3"/>',
   recon: '<path d="M4 4h16v16H4zM4 9h16M9 9v11"/>',
@@ -331,7 +336,8 @@ const IC = {
 const SECTIONS = [
   { id: 'dashboard', label: 'Tableau de bord', perm: 'dashboard.view', render: renderDashboard },
   { id: 'users', label: 'Utilisateurs', perm: 'users.view', render: renderUsers },
-  { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions },
+  { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions, wide: true },
+  { id: 'commissions', label: 'Commissions', perm: 'commissions.view', render: renderCommissions, wide: true },
   { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants, wide: true },
   { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
   { id: 'support', label: 'Support', perm: 'support.view', render: renderSupport },
@@ -624,25 +630,128 @@ async function openUser(id) {
 // =====================================================================
 //  Transactions
 // =====================================================================
+// ---------- Période, pagination et export, communs aux listes financières ----------
+const PERIODS = [['30', '30 derniers jours'], ['today', "Aujourd'hui"], ['7', '7 derniers jours'], ['month', 'Ce mois-ci'], ['prev', 'Mois dernier'], ['90', '90 derniers jours'], ['365', '12 derniers mois'], ['all', 'Tout l’historique']];
+const periodSelect = (v = '30') => `<select name="period" aria-label="Période">${PERIODS.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+function periodRange(v) {
+  const now = new Date(); const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (v === 'all') return {};
+  let from; let to = null;
+  if (v === 'today') from = day(now);
+  else if (v === 'month') from = new Date(now.getFullYear(), now.getMonth(), 1);
+  else if (v === 'prev') { from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else from = day(new Date(now - (Number(v) - 1) * 864e5));
+  return { from: from.toISOString(), ...(to ? { to: to.toISOString() } : {}) };
+}
+function formQuery(form) {
+  const d = Object.fromEntries([...new FormData(form)].filter(([, v]) => v));
+  const { period, ...rest } = d;
+  return new URLSearchParams({ ...rest, ...periodRange(period || '30') });
+}
+async function downloadCsv(path, btn) {
+  await run(btn, async () => {
+    const r = await fetch('/v1/admin' + path, { headers: { Authorization: 'Bearer ' + TOKEN } });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || 'Export impossible');
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement('a'); a.href = url;
+    a.download = (r.headers.get('content-disposition')?.match(/filename="([^"]+)"/) || [])[1] || 'pay243.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+  });
+}
+const pager = (r, id) => {
+  const end = Math.min(r.offset + r.data.length, r.total);
+  return `<div class="pager"><span class="muted">${r.total ? `${r.offset + 1}–${end} sur ${r.total.toLocaleString('fr-FR')}` : ''}</span><div class="actions">
+    <button class="btn light sm" type="button" data-pg="${id}" data-dir="-1" ${r.offset === 0 ? 'disabled' : ''}>← Précédent</button>
+    <button class="btn light sm" type="button" data-pg="${id}" data-dir="1" ${end >= r.total ? 'disabled' : ''}>Suivant →</button></div></div>`;
+};
+const METHOD = { wallet: 'Wallet Pay243', mobile_money: 'Mobile Money', card: 'Carte bancaire' };
+const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
+const methodLabel = (t) => t.method === 'mobile_money' ? (OPS[t.operator] || 'Mobile Money') : METHOD[t.method] || '—';
+const refsHtml = (refs) => (refs || []).map((r) => `<span class="ref">${esc(r)}</span>`).join(' ');
+
 async function renderTransactions() {
   $('#view').innerHTML = `
     <form class="toolbar" id="f-tx">
-      <input name="q" placeholder="Référence txn_…, réf. opérateur, téléphone, paiement pay_…">
+      <input name="q" placeholder="Référence txn_…, paiement pay_…, n° de vente, nom, téléphone, réf. opérateur">
+      ${periodSelect()}
       <select name="type"><option value="">Tous types</option>${Object.entries(TYPE).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
       <select name="status"><option value="">Tous statuts</option>${['succeeded', 'pending', 'failed', 'refunded'].map((k) => `<option value="${k}">${STATUS[k]}</option>`).join('')}</select>
+      <select name="method"><option value="">Tous moyens</option>${Object.entries(METHOD).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
       <select name="currency"><option value="">CDF et USD</option><option>CDF</option><option>USD</option></select>
       <button class="btn">Filtrer</button>
-    </form><div class="card tbl" id="tx-list"></div>`;
+      <button class="btn light" type="button" id="tx-csv">Exporter (CSV)</button>
+    </form><div id="tx-totals"></div><div class="card tbl" id="tx-list"></div>`;
+  let offset = 0;
   const load = async () => {
-    const qs = new URLSearchParams([...new FormData($('#f-tx'))].filter(([, v]) => v)); qs.set('limit', '100');
+    const qs = formQuery($('#f-tx')); qs.set('limit', '50'); qs.set('offset', offset);
     const r = await api('GET', '/transactions?' + qs);
-    $('#tx-list').innerHTML = r.data.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>De → À</th><th>Statut</th><th class="num">Montant</th></tr></thead><tbody>${r.data.map((t) => `<tr>
-      <td class="muted" style="white-space:nowrap">${dt(t.created_at)}</td>
-      <td>${esc(TYPE[t.type] || t.type)}${t.operator ? `<div class="muted">${esc(t.operator)}${t.phone ? ' · ' + esc(t.phone) : ''}</div>` : ''}<div class="muted mono">${esc(t.id)}</div></td>
-      <td>${esc(t.from_name || '—')} → ${esc(t.to_name || '—')}${t.failure_reason ? `<div class="muted" style="color:var(--err)">${esc(t.failure_reason)}</div>` : ''}</td>
-      <td>${pill(t.status)}</td><td class="num"><b>${fmt(t.amount, t.currency)}</b>${t.fee ? `<div class="muted">frais ${fmt(t.fee, t.currency)}</div>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune transaction.</p>';
+    $('#tx-totals').innerHTML = r.total ? `<p class="muted totals">${r.total.toLocaleString('fr-FR')} transaction${r.total > 1 ? 's' : ''} · ${r.totals.map((t) => `<b>${fmt(t.volume, t.currency)}</b> réussis dont <b>${fmt(t.fees, t.currency)}</b> de frais Pay243`).join(' · ')}</p>` : '';
+    $('#tx-list').innerHTML = r.data.length ? `<table class="m-tbl"><thead><tr><th>Date</th><th>Type · Référence</th><th>De → À</th><th>Paiement · n° de vente</th><th>Moyen</th><th>Statut</th><th class="num">Montant</th><th class="num">Frais Pay243</th></tr></thead><tbody>${r.data.map((t) => `<tr>
+      <td class="muted">${dt(t.created_at)}</td>
+      <td><b>${esc(TYPE[t.type] || t.type)}</b>${t.metadata?.purpose ? ` <span class="pill">${t.metadata.purpose === 'seller_payout' ? 'reversement vendeur' : 'retrait des revenus'}</span>` : ''}<div class="muted mono">${esc(t.id)}</div></td>
+      <td class="wrap">${esc(t.from_name || '—')} → ${esc(t.to_name || '—')}${t.merchant_name && ![t.from_name, t.to_name].includes(t.merchant_name) ? `<div class="muted">Marchand : ${esc(t.merchant_name)}</div>` : ''}${t.description ? `<div class="muted">${esc(t.description)}</div>` : ''}${t.metadata?.reason ? `<div class="muted">Motif : ${esc(t.metadata.reason)}</div>` : ''}${t.failure_reason ? `<div class="muted" style="color:var(--err)">${esc(t.failure_reason)}</div>` : ''}</td>
+      <td class="wrap">${t.payment ? `${refsHtml(t.payment.order_refs)}<div class="muted mono">${esc(t.payment.id)}</div>` : '<span class="muted">—</span>'}</td>
+      <td>${esc(methodLabel(t))}${t.phone ? `<div class="muted">${esc(t.phone)}</div>` : ''}${t.provider_ref && !/^mock_/.test(t.provider_ref) ? `<div class="muted mono">${esc(t.provider_ref)}</div>` : ''}</td>
+      <td>${pill(t.status)}</td>
+      <td class="num"><b>${fmt(t.amount, t.currency)}</b></td>
+      <td class="num">${t.fee ? fmt(t.fee, t.currency) : '<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>${pager(r, 'tx')}` : '<p class="muted">Aucune transaction sur la période.</p>';
+    $$('[data-pg="tx"]').forEach((b) => b.onclick = () => { offset = Math.max(0, offset + Number(b.dataset.dir) * 50); load().catch((x) => toast(x.message, true)); });
   };
-  $('#f-tx').onsubmit = (e) => { e.preventDefault(); load().catch((x) => toast(x.message, true)); };
+  $('#f-tx').onsubmit = (e) => { e.preventDefault(); offset = 0; load().catch((x) => toast(x.message, true)); };
+  $('#f-tx').period.onchange = () => { offset = 0; load().catch((x) => toast(x.message, true)); };
+  $('#tx-csv').onclick = (e) => { const qs = formQuery($('#f-tx')); qs.set('format', 'csv'); downloadCsv('/transactions?' + qs, e.currentTarget); };
+  await load();
+}
+
+// =====================================================================
+//  Commissions Pay243
+// =====================================================================
+const COMM_TYPES = { payment: 'Commissions sur paiements', withdrawal: 'Frais de retrait', payout: 'Frais de versement marchand', refund: 'Frais de remboursement', transfer: 'Frais de transfert', conversion: 'Frais de conversion', topup: 'Frais de recharge' };
+async function renderCommissions() {
+  $('#view').innerHTML = `
+    <p class="muted" style="margin:-6px 0 14px">Tout ce que Pay243 encaisse : chaque commission prélevée sur un paiement marchand et chaque frais de retrait ou de versement, ligne par ligne. Les frais restitués quand une opération échoue sont déduits.</p>
+    <form class="toolbar" id="f-cm">
+      <input name="q" placeholder="Marchand, payeur, transaction txn_…, paiement pay_…, n° de vente">
+      ${periodSelect()}
+      <select name="type"><option value="">Toutes natures</option>${Object.entries(COMM_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      <select name="currency"><option value="">CDF et USD</option><option>CDF</option><option>USD</option></select>
+      <button class="btn">Filtrer</button>
+      <button class="btn light" type="button" id="cm-csv">Exporter (CSV)</button>
+    </form>
+    <div id="cm-sum"></div>
+    <div class="card tbl" id="cm-list"></div>`;
+  let offset = 0;
+  const load = async () => {
+    const qs = formQuery($('#f-cm')); qs.set('limit', '50'); qs.set('offset', offset);
+    const r = await api('GET', '/commissions?' + qs);
+    const cur = $('#f-cm').currency.value;
+    const shown = r.currencies.filter((c) => (cur ? c.currency === cur : c.count || c.balance));
+    $('#cm-sum').innerHTML = (shown.length ? shown : r.currencies.slice(0, 1)).map((c) => `
+      <div class="kpis">
+        <div class="kpi"><small>Commissions nettes · ${c.currency}</small><b style="color:var(--ok)">${fmt(c.net, c.currency)}</b><span>${c.count.toLocaleString('fr-FR')} opération${c.count > 1 ? 's' : ''} sur la période</span></div>
+        <div class="kpi"><small>Encaissées</small><b>${fmt(c.earned, c.currency)}</b><span>avant restitutions</span></div>
+        <div class="kpi"><small>Restituées</small><b>${c.restituted ? '−' + fmt(c.restituted, c.currency) : fmt(0, c.currency)}</b><span>frais rendus (opérations échouées)</span></div>
+        <div class="kpi"><small>Solde du compte commissions</small><b>${fmt(c.balance, c.currency)}</b><span>depuis le début</span></div>
+      </div>
+      <div class="grid2" style="margin-bottom:16px">
+        <div class="card"><h3 style="margin-top:0">Par nature · ${c.currency}</h3>${c.by_type.length ? `<table><thead><tr><th>Nature</th><th class="num">Opérations</th><th class="num">Volume concerné</th><th class="num">Taux moyen</th><th class="num">Commission nette</th></tr></thead><tbody>${c.by_type.map((t) => `<tr><td>${esc(COMM_TYPES[t.type] || t.label)}</td><td class="num">${t.count}</td><td class="num">${fmt(t.base, c.currency)}</td><td class="num">${t.base ? ((t.earned / t.base) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' %' : '—'}</td><td class="num"><b>${fmt(t.net, c.currency)}</b>${t.restituted ? `<div class="muted">−${fmt(t.restituted, c.currency)} restitués</div>` : ''}</td></tr>`).join('')}
+          <tr><td><b>Total</b></td><td class="num"><b>${c.count}</b></td><td></td><td></td><td class="num"><b>${fmt(c.net, c.currency)}</b></td></tr></tbody></table>` : '<p class="muted">Aucune commission sur la période.</p>'}</div>
+        <div class="card"><h3 style="margin-top:0">Par marchand · ${c.currency}</h3>${c.by_merchant.length ? `<table><thead><tr><th>Marchand</th><th class="num">Opérations</th><th class="num">Commission nette</th></tr></thead><tbody>${c.by_merchant.map((m) => `<tr><td>${esc(m.merchant)}</td><td class="num">${m.count}</td><td class="num"><b>${fmt(m.net, c.currency)}</b></td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune commission marchand sur la période.</p>'}</div>
+      </div>`).join('');
+    $('#cm-list').innerHTML = r.data.length ? `<table class="m-tbl"><thead><tr><th>Date</th><th>Nature · Transaction</th><th>Marchand · Payeur</th><th>Paiement · n° de vente</th><th>Moyen</th><th class="num">Montant de l'opération</th><th class="num">Taux</th><th class="num">Commission</th></tr></thead><tbody>${r.data.map((c) => `<tr>
+      <td class="muted">${dt(c.booked_at)}</td>
+      <td><b>${esc(c.label)}</b><div class="muted mono">${esc(c.txn_id)}</div></td>
+      <td class="wrap">${esc(c.merchant_name || '—')}${c.payer_name ? `<div class="muted">payé par ${esc(c.payer_name)}</div>` : c.phone ? `<div class="muted">${esc(c.phone)}</div>` : ''}</td>
+      <td class="wrap">${c.payment ? `${refsHtml(c.payment.order_refs)}<div class="muted mono">${esc(c.payment.id)}</div>` : '<span class="muted">—</span>'}</td>
+      <td>${esc(methodLabel(c))}</td>
+      <td class="num">${fmt(c.base_amount, c.currency)}</td>
+      <td class="num muted">${c.rate == null ? '—' : (c.rate * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' %'}</td>
+      <td class="num"><b style="color:${c.commission < 0 ? 'var(--err)' : 'var(--ok)'}">${c.commission < 0 ? '−' : '+'}${fmt(Math.abs(c.commission), c.currency)}</b></td></tr>`).join('')}</tbody></table>${pager(r, 'cm')}` : '<p class="muted">Aucune commission sur la période.</p>';
+    $$('[data-pg="cm"]').forEach((b) => b.onclick = () => { offset = Math.max(0, offset + Number(b.dataset.dir) * 50); load().catch((x) => toast(x.message, true)); });
+  };
+  $('#f-cm').onsubmit = (e) => { e.preventDefault(); offset = 0; load().catch((x) => toast(x.message, true)); };
+  $('#f-cm').period.onchange = $('#f-cm').currency.onchange = $('#f-cm').type.onchange = () => { offset = 0; load().catch((x) => toast(x.message, true)); };
+  $('#cm-csv').onclick = (e) => { const qs = formQuery($('#f-cm')); qs.set('format', 'csv'); downloadCsv('/commissions?' + qs, e.currentTarget); };
   await load();
 }
 
