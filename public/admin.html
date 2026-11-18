@@ -73,6 +73,11 @@
   aside .me b { color: #fff; display: block; }
   aside .me button { border: 0; background: none; color: #9fb0c8; padding: 6px 0 0; font-weight: 600; }
   main { padding: 26px max(30px, calc((100% - 1360px) / 2)) 60px; min-width: 0; }
+  /* Pages à grands tableaux : toute la largeur utile (plafonnée pour rester lisible sur très grand écran) */
+  main.wide { padding-left: max(30px, calc((100% - 2200px) / 2)); padding-right: max(30px, calc((100% - 2200px) / 2)); }
+  .m-tbl td { white-space: nowrap; }
+  .m-tbl td.wrap { white-space: normal; min-width: 220px; }
+  .m-tbl .actions { min-width: 230px; } /* sur une ligne quand la place le permet, sinon sur deux */
   .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
   .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
   .mode { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--warn-bg); color: var(--warn); }
@@ -327,7 +332,7 @@ const SECTIONS = [
   { id: 'dashboard', label: 'Tableau de bord', perm: 'dashboard.view', render: renderDashboard },
   { id: 'users', label: 'Utilisateurs', perm: 'users.view', render: renderUsers },
   { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions },
-  { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants },
+  { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants, wide: true },
   { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
   { id: 'support', label: 'Support', perm: 'support.view', render: renderSupport },
   { id: 'recon', label: 'Rapprochement', perm: 'recon.view', render: renderRecon },
@@ -341,6 +346,7 @@ function go(id) {
   CURRENT = s.id; freeBlobs();
   $$('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.go === s.id));
   $('#page-title').textContent = s.label;
+  document.querySelector('main').classList.toggle('wide', !!s.wide);
   $('#view').innerHTML = '<p class="muted">Chargement…</p>';
   history.replaceState(null, '', '#' + s.id);
   $('#side').classList.remove('open');
@@ -656,10 +662,10 @@ async function renderMerchants() {
     const r = await api('GET', '/merchants?' + new URLSearchParams(Object.entries(M_FILTER).filter(([, v]) => v)));
     badge('merchants', r.summary.requested);
     const manage = can('merchants.manage');
-    $('#m-list').innerHTML = r.data.length ? `<table><thead><tr><th>Marchand</th><th>Titulaire</th><th>Accès</th><th class="num">Soldes</th><th>Clés · paiements</th><th></th></tr></thead><tbody>${r.data.map((m) => `<tr>
+    $('#m-list').innerHTML = r.data.length ? `<table class="m-tbl"><thead><tr><th>Marchand</th><th>Titulaire</th><th>Accès</th><th class="num">Soldes</th><th>Clés · paiements</th><th></th></tr></thead><tbody>${r.data.map((m) => `<tr>
       <td><b>${esc(m.name)}</b> ${m.suspended_at ? '<span class="pill err">suspendu</span>' : ''}<div class="muted mono">${esc(m.id)}</div><div class="muted">créé le ${dt(m.created_at)}</div></td>
       <td>${esc(m.owner_name)}<div class="muted">${esc(m.owner_email || '')}</div><div class="muted">${m.owner_account_type === 'business' ? 'Compte entreprise' : '<b style="color:var(--err)">Compte particulier</b>'} · ${m.owner_activated ? 'identité vérifiée' : '<span style="color:var(--warn)">identité non vérifiée</span>'}</div></td>
-      <td>${accessPill(m.access_status)}${m.access_status === 'requested' ? `<div class="muted">demandé le ${dt(m.access_requested_at)}</div>` : m.access_decided_at ? `<div class="muted">le ${dt(m.access_decided_at)}</div>` : ''}${m.access_request ? `<div style="margin-top:4px;font-size:13px;max-width:280px;white-space:pre-wrap;overflow-wrap:anywhere">« ${esc(m.access_request)} »</div>` : ''}${m.access_note && m.access_status !== 'enabled' ? `<div class="muted">Motif : ${esc(m.access_note)}</div>` : ''}</td>
+      <td class="wrap">${accessPill(m.access_status)}${m.access_status === 'requested' ? `<div class="muted">demandé le ${dt(m.access_requested_at)}</div>` : m.access_decided_at ? `<div class="muted">le ${dt(m.access_decided_at)}</div>` : ''}${m.access_request ? `<div style="margin-top:4px;font-size:13px;max-width:280px;white-space:pre-wrap;overflow-wrap:anywhere">« ${esc(m.access_request)} »</div>` : ''}${m.access_note && m.access_status !== 'enabled' ? `<div class="muted">Motif : ${esc(m.access_note)}</div>` : ''}</td>
       <td class="num">${m.balances.map((b) => fmt(b.balance, b.currency)).join('<br>') || '—'}</td>
       <td>${m.active_keys} clé(s) active(s)<div class="muted">${m.paid_payments} paiement(s) reçu(s)</div>${m.webhook_url ? `<div class="muted">${esc(m.webhook_url)}</div>` : ''}</td>
       <td>${manage ? `<div class="actions">${m.access_status === 'enabled'
