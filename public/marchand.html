@@ -30,7 +30,6 @@
   #custom-range { display: inline-flex; gap: 6px; align-items: center; }
 
   .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
-  .kpis.four { grid-template-columns: repeat(4, 1fr); }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; min-width: 0; }
   .kpi small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
   .kpi .v { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -128,12 +127,12 @@
   #wd-form label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
   #wd-form .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
 
-  @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, 1fr); } .kpis.four { grid-template-columns: repeat(2, 1fr); } .rev { grid-template-columns: 1fr; } .rev-main { border-right: 0; border-bottom: 1px solid var(--line); } }
+  @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, 1fr); } .rev { grid-template-columns: 1fr; } .rev-main { border-right: 0; border-bottom: 1px solid var(--line); } }
   @media (max-width: 760px) {
     header.top { padding: 8px 14px; }
     .hd-links .hide-sm { display: none; }
     .page-head h1 { font-size: 21px; }
-    .kpis, .kpis.four { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
     .kpi { padding: 12px; }
     .kpi .v { font-size: 19px; }
     .kpi.main { grid-column: 1 / -1; }
@@ -307,11 +306,8 @@ async function loadSummary() {
   const c = s.currencies.find((x) => x.currency === S.currency);
   const cur = c.currency;
   const rate = c.attempts.success_rate == null ? '—' : Math.round(c.attempts.success_rate * 100) + ' %';
-  // Place de marché : le bloc « Revenus » remplace le solde (revenus retirables + argent des vendeurs réservé).
-  const split = !!c.revenue?.has_split;
-  $('#kpis').classList.toggle('four', split);
   $('#kpis').innerHTML = `
-    ${split ? '' : `<div class="kpi main"><small>Solde disponible</small><div class="v">${fmt(c.balance, cur)}</div><div class="s">Ventes non encore versées</div></div>`}
+    <div class="kpi main"><small>Solde disponible</small><div class="v">${fmt(c.balance, cur)}</div><div class="s">Ventes non encore versées</div></div>
     <div class="kpi"><small>Encaissé net</small><div class="v">${fmt(c.received.net, cur)}</div><div class="s">${fmt(c.received.gross, cur)} brut · ${fmt(c.received.fees, cur)} de commission</div></div>
     <div class="kpi"><small>Paiements réussis</small><div class="v">${c.received.count.toLocaleString('fr-FR')}</div><div class="s">Taux de réussite ${rate} · ${c.attempts.failed} échoué${c.attempts.failed > 1 ? 's' : ''}, ${c.attempts.abandoned} abandonné${c.attempts.abandoned > 1 ? 's' : ''}</div></div>
     <div class="kpi"><small>Sorties</small><div class="v">${fmt(c.outflows.total, cur)}</div><div class="s">${fmt(c.outflows.payouts_wallet.amount + c.outflows.payouts_mobile_money.amount, cur)} versés · ${fmt(c.outflows.refunds.amount, cur)} remboursés${c.outflows.pending ? ` · ${c.outflows.pending} en attente` : ''}</div></div>
