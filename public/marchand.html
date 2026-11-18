@@ -344,7 +344,6 @@ function renderRevenue(c) {
         <span>Part vendeurs <b>−${fmt(pd.seller_total, cur)}</b></span>
         ${fees}
         ${pd.extra ? `<span>Frais payés par l'acheteur <b>${fmt(pd.extra, cur)}</b></span>` : ''}
-        <span>Commission Pay243 <b>−${fmt(pd.pay243_fees, cur)}</b></span>
       </div>
     </div>`;
   $('#wd-platform').onclick = () => openWithdraw('platform_revenue');
