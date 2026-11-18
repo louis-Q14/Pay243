@@ -600,6 +600,60 @@ test('marchand : n° de vente rattachés aux paiements, suivi des entrées et so
   assert.match(text, /;20,00;0,50;19,50;/);
 });
 
+test('place de marché : répartition des paiements, argent des vendeurs réservé, retrait des seuls revenus', async () => {
+  const lines = [
+    { ref: 'V-1', label: 'Chemise', seller: 'Boutique A', amount: 60000, platform_amount: 6000, seller_amount: 54000, fees: { commission: 4000, protection: 1000, fixed: 1000 } },
+    { ref: 'V-2', label: 'Pantalon', amount: 40000, platform_amount: 4000, seller_amount: 36000 },
+  ];
+  const tooBig = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 90000, currency: 'CDF', breakdown: lines } });
+  assert.equal(tooBig.body.error.code, 'invalid_breakdown'); // lignes > montant du paiement
+  const incoherent = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 102000, currency: 'CDF', breakdown: [{ ref: 'X', amount: 100, platform_amount: 60, seller_amount: 60 }] } });
+  assert.equal(incoherent.body.error.code, 'invalid_breakdown');
+
+  const pay = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 102000, currency: 'CDF', order_refs: ['V-1', 'V-2'], breakdown: lines } });
+  assert.equal(pay.status, 201, JSON.stringify(pay.body));
+  assert.equal(pay.body.breakdown.length, 2);
+  await api('POST', `/v1/checkout/${pay.body.id}/pay`, { body: { method: 'mobile_money', phone: '0841234567' } });
+  const done = await waitFor(async () => { const v = await api('GET', `/v1/payments/${pay.body.id}`, { token: state.sk }); return v.body.status === 'succeeded' && v.body; });
+  assert.equal(done.split.seller_due, 90000);
+  assert.equal(done.split.extra, 2000); // frais refacturés à l'acheteur
+  assert.equal(done.split.fees.commission, 4000);
+  assert.equal(done.split.platform_net, 102000 - done.fee - 90000);
+
+  const summary = async () => (await api('GET', '/v1/merchants/me/monitoring/summary', { token: state.alice })).body.currencies.find((c) => c.currency === 'CDF');
+  let cdf = await summary();
+  assert.equal(cdf.revenue.has_split, true);
+  assert.equal(cdf.revenue.seller_due, 90000);
+  assert.ok(cdf.revenue.period.platform_net >= done.split.platform_net);
+  assert.ok(cdf.revenue.available <= cdf.balance - 90000);
+
+  // Retrait des revenus : jamais au-delà, l'argent des vendeurs reste dans le solde
+  const over = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', amount: cdf.revenue.available + 1, pin: '2580' } });
+  assert.equal(over.status, 402);
+  assert.equal(over.body.error.code, 'seller_funds_reserved');
+  const all = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', pin: '2580' } });
+  assert.equal(all.status, 201, JSON.stringify(all.body));
+  assert.equal(all.body.amount, cdf.revenue.available);
+  cdf = await summary();
+  assert.equal(cdf.revenue.available, 0);
+  assert.ok(cdf.balance >= 90000);
+  const apiPayout = await api('POST', '/v1/payouts', { token: state.sk, body: { amount: 1000, currency: 'CDF', phone: '0812345678' } });
+  assert.equal(apiPayout.body.error.code, 'seller_funds_reserved'); // même règle par l'API
+
+  // Vente V-1 libérée par la plateforme : sa part vendeur peut être reversée
+  await api('POST', `/v1/payments/${pay.body.id}`, { token: state.sk, body: { breakdown: lines.map((l) => (l.ref === 'V-1' ? { ...l, released: true } : l)) } });
+  cdf = await summary();
+  assert.equal(cdf.revenue.seller_due, 36000);
+  const sellerOver = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', amount: cdf.balance - 36000 + 1, purpose: 'seller_payout', pin: '2580' } });
+  assert.equal(sellerOver.status, 402);
+  const seller = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', amount: 54000, purpose: 'seller_payout', note: 'V-1 Boutique A', pin: '2580' } });
+  assert.equal(seller.status, 201, JSON.stringify(seller.body));
+  const outs = await api('GET', '/v1/merchants/me/outflows?currency=CDF', { token: state.alice });
+  assert.deepEqual(outs.body.data.slice(0, 2).map((o) => o.purpose), ['seller_payout', 'platform_revenue']);
+  const det = await api('GET', `/v1/merchants/me/payments/${pay.body.id}`, { token: state.alice });
+  assert.equal(det.body.split.seller_released, 54000);
+});
+
 test('checkout invité : paiement Orange Money direct', async () => {
   const pay = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 2500000, currency: 'CDF', description: 'Sac' } });
   const r = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { body: { method: 'mobile_money', phone: '0841234567' } });

@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { q } from '../db.js';
 import { HttpError, parseJson } from '../util.js';
 import { serializePayment } from './payments.js';
+import { revenueState, splitOf } from './paymentSplit.js';
 
 const PAID = ['succeeded', 'partially_refunded', 'refunded'];
 const PAYMENT_STATUSES = ['requires_payment', 'processing', ...PAID, 'failed', 'canceled', 'expired'];
@@ -156,6 +157,7 @@ function serializeOutflow(t) {
     provider_ref: t.provider_ref && !/^mock_/.test(t.provider_ref) ? t.provider_ref : null,
     description: t.description,
     reason: meta.reason || null,
+    purpose: meta.purpose || null, // platform_revenue : retrait des revenus · seller_payout : reversement vendeurs
     failure_reason: t.failure_reason,
     payment: t.payment_id ? { id: t.payment_id, reference: t.p_reference, order_refs: parseJson(t.p_order_refs, []), description: t.p_description } : null,
     created_at: t.created_at,
@@ -198,6 +200,11 @@ export async function monitoringSummary(merchantId, query) {
                              WHERE merchant_id = ? AND (status = 'processing' OR (status = 'requires_payment' AND expires_at >= ?))
                              GROUP BY currency`, merchantId, new Date().toISOString());
   const wallets = await q.all("SELECT currency, balance FROM wallets WHERE owner_type = 'merchant' AND owner_id = ?", merchantId);
+  const splitRows = await q.all(`SELECT currency, amount, fee, refunded_amount, status, breakdown FROM payments
+                                  WHERE merchant_id = ? AND breakdown IS NOT NULL AND status IN ('succeeded','partially_refunded','refunded')
+                                    AND paid_at >= ? AND paid_at < ?`, merchantId, from, to);
+  const revenue = {};
+  for (const c of config.currencies) revenue[c] = await revenueState(merchantId, c);
 
   const currencies = config.currencies.map((currency) => {
     const pd = paid.find((r) => r.currency === currency) || { n: 0, gross: 0, fees: 0 };
@@ -212,9 +219,19 @@ export async function monitoringSummary(merchantId, query) {
     const payWallet = ok.filter((r) => r.type === 'payout' && r.method === 'wallet');
     const payMm = ok.filter((r) => r.type === 'payout' && r.method !== 'wallet');
     const op = open.find((r) => r.currency === currency) || { n: 0, amount: 0 };
+    // Revenus de la période (paiements portant une répartition) + état actuel des fonds.
+    const period = { payments: 0, gross: 0, pay243_fees: 0, extra: 0, platform_gross: 0, platform_net: 0, seller_total: 0, fees: {} };
+    for (const p of splitRows.filter((r) => r.currency === currency)) {
+      const sp = splitOf(p);
+      if (!sp) continue;
+      period.payments++; period.gross += Number(p.amount); period.pay243_fees += sp.pay243_fee; period.extra += sp.extra;
+      period.platform_gross += sp.platform_gross; period.platform_net += sp.platform_net ?? 0; period.seller_total += sp.seller_total;
+      for (const [k, v] of Object.entries(sp.fees)) period.fees[k] = (period.fees[k] || 0) + v;
+    }
     return {
       currency,
       balance: Number(wallets.find((w) => w.currency === currency)?.balance || 0),
+      revenue: { ...revenue[currency], period },
       received: { count: pd.n, gross: Number(pd.gross), fees: Number(pd.fees), net: Number(pd.gross) - Number(pd.fees) },
       attempts: { total: at.reduce((s, r) => s + r.n, 0), succeeded, failed, abandoned, success_rate: succeeded + failed + abandoned ? succeeded / (succeeded + failed + abandoned) : null },
       open: { count: op.n, amount: Number(op.amount) },
@@ -242,10 +259,11 @@ const toCsv = (head, rows) => '﻿' + [head, ...rows].map((r) => r.map(cell).joi
 
 export function paymentsCsv(list) {
   return toCsv(
-    ['Date', 'Référence Pay243', 'Référence marchand', 'N° de vente / commande', 'Description', 'Statut', 'Moyen', 'Opérateur', 'Payeur', 'Téléphone', 'Devise', 'Montant', 'Frais', 'Net', 'Remboursé', 'Payé le', 'Créé le'],
+    ['Date', 'Référence Pay243', 'Référence marchand', 'N° de vente / commande', 'Description', 'Statut', 'Moyen', 'Opérateur', 'Payeur', 'Téléphone', 'Devise', 'Montant', 'Frais', 'Net', 'Remboursé', 'Part vendeurs', 'Dont réservé', 'Revenu plateforme', 'Payé le', 'Créé le'],
     list.map((p) => [
       p.paid_at || p.created_at, p.id, p.reference, (p.order_refs || []).join(', '), p.description, p.status, p.method,
-      p.payer?.operator, p.payer?.name, p.payer?.phone, p.currency, dec(p.amount), dec(p.fee), dec(p.net), dec(p.refunded_amount), p.paid_at, p.created_at,
+      p.payer?.operator, p.payer?.name, p.payer?.phone, p.currency, dec(p.amount), dec(p.fee), dec(p.net), dec(p.refunded_amount),
+      dec(p.split?.seller_total), dec(p.split?.seller_due), dec(p.split?.platform_net), p.paid_at, p.created_at,
     ]),
   );
 }

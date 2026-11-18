@@ -8,6 +8,7 @@ import { cardProcessor } from '../providers/cards/index.js';
 import { listOperators } from '../providers/mobileMoney/index.js';
 import { HttpError, assertAmount, assertCurrency, newId, now, parseJson, percentFee } from '../util.js';
 import { resolveOperator, startCollection, startPayout } from './mobileMoney.js';
+import { parseBreakdown, splitOf } from './paymentSplit.js';
 import { enqueueEvent } from './webhooks.js';
 
 export const getPayment = (id) => q.get('SELECT * FROM payments WHERE id=?', id);
@@ -24,6 +25,8 @@ export function serializePayment(p) {
     description: p.description,
     reference: p.reference,
     order_refs: parseJson(p.order_refs, []),
+    breakdown: parseJson(p.breakdown, null),
+    split: splitOf(p),
     status: p.status,
     fee: p.fee,
     net: p.status === 'requires_payment' ? null : p.amount - p.fee,
@@ -83,13 +86,15 @@ export async function updatePaymentInfo(p, body = {}) {
   const fields = {};
   const refs = parseOrderRefs(body.order_refs);
   if (refs) fields.order_refs = JSON.stringify(refs);
+  const lines = parseBreakdown(body.breakdown, p.amount);
+  if (lines) fields.breakdown = lines.length ? JSON.stringify(lines) : null;
   if (body.metadata !== undefined) {
     const merged = { ...parseJson(p.metadata, {}), ...assertMetadata(body.metadata) };
     for (const k of Object.keys(merged)) if (merged[k] === null) delete merged[k];
     fields.metadata = JSON.stringify(assertMetadata(merged));
   }
   if (body.description !== undefined) fields.description = String(body.description || '').slice(0, 200) || null;
-  if (!Object.keys(fields).length) throw new HttpError(400, 'nothing_to_update', 'Indiquez order_refs, metadata ou description.');
+  if (!Object.keys(fields).length) throw new HttpError(400, 'nothing_to_update', 'Indiquez order_refs, breakdown, metadata ou description.');
   await setPayment(p.id, fields);
   return getPayment(p.id);
 }
@@ -99,16 +104,18 @@ export async function createPayment(merchant, livemode, body) {
   const currency = assertCurrency(body.currency);
   const metadata = assertMetadata(body.metadata ?? {});
   const orderRefs = parseOrderRefs(body.order_refs);
+  const lines = parseBreakdown(body.breakdown, amount);
   const minutes = Math.min(Math.max(Number(body.expires_in_minutes) || config.paymentExpiryMinutes, 5), 7 * 24 * 60);
   const id = newId('pay');
   const ts = now();
   await q.run(
-    `INSERT INTO payments (id, merchant_id, livemode, amount, currency, description, reference, order_refs, status, return_url, cancel_url, metadata, expires_at, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,'requires_payment',?,?,?,?,?,?)`,
+    `INSERT INTO payments (id, merchant_id, livemode, amount, currency, description, reference, order_refs, breakdown, status, return_url, cancel_url, metadata, expires_at, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,'requires_payment',?,?,?,?,?,?)`,
     id, merchant.id, livemode ? 1 : 0, amount, currency,
     String(body.description || '').slice(0, 200) || null,
     body.reference ? String(body.reference).slice(0, 100) : null,
     orderRefs?.length ? JSON.stringify(orderRefs) : null,
+    lines?.length ? JSON.stringify(lines) : null,
     validUrl(body.return_url, 'return_url'), validUrl(body.cancel_url, 'cancel_url'),
     JSON.stringify(metadata), new Date(Date.now() + minutes * 60e3).toISOString(), ts, ts,
   );

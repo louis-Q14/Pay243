@@ -10,6 +10,7 @@ import { assertPublicUrl } from '../netguard.js';
 import { refreshPending, startPayout } from '../services/mobileMoney.js';
 import { cancelPayment, createPayment, getPayment, refundPayment, serializePayment, updatePaymentInfo } from '../services/payments.js';
 import { monitoringSummary, outflowsCsv, paymentDetail, paymentsCsv, searchOutflows, searchPayments } from '../services/merchantMonitoring.js';
+import { assertWithdrawal, purposeOf } from '../services/paymentSplit.js';
 import { listEvents } from '../services/webhooks.js';
 import { accessOf, assertMerchantEnabled, businessProfileOf, createMerchantAccount, issueKey } from '../services/merchants.js';
 import { appUrl, notifyUser } from '../services/notify.js';
@@ -209,20 +210,24 @@ merchantAdminRouter.post('/merchants/me/transfer-to-wallet', requireActivated, a
   const currency = assertCurrency(req.body?.currency);
   const raw = req.body?.amount;
   const wanted = raw == null || raw === '' ? null : assertAmount(raw);
+  const purpose = purposeOf(req.body?.purpose);
   await verifyPin(req.user, req.body?.pin);
   const txn = await tx(async () => {
     await lockUsers(req.user.id);
     const from = await lockWallet((await getWallet('merchant', m.id, currency)).id);
     const balance = Number(from.balance);
-    const amount = wanted ?? balance;
-    if (amount <= 0) throw new HttpError(400, 'nothing_to_transfer', 'Aucune vente disponible dans cette devise.');
+    // Place de marché : seuls les revenus de la plateforme sortent ; l'argent des vendeurs reste réservé.
+    const st = await assertWithdrawal(m.id, currency, wanted ?? 0, purpose, balance);
+    const amount = wanted ?? (st.has_split ? (purpose === 'seller_payout' ? st.seller_payable : st.available) : balance);
+    if (amount <= 0) throw new HttpError(400, 'nothing_to_transfer', st.has_split && st.seller_due ? 'Aucun revenu disponible : le solde est réservé aux vendeurs.' : 'Aucune vente disponible dans cette devise.');
     if (balance < amount) throw new HttpError(402, 'insufficient_funds', `Solde marchand ${currency} insuffisant.`);
     await checkIncoming(req.user, currency, amount);
     const to = await getWallet('user', req.user.id, currency);
     const t = await createTxn({
       type: 'payout', status: 'succeeded', amount, currency, method: 'wallet',
       from_wallet: from.id, to_wallet: to.id, merchant_id: m.id,
-      description: `Versement des ventes ${m.name}`, metadata: { counterparty: m.name },
+      description: purpose === 'seller_payout' ? `Reversement vendeurs ${m.name}` : `Versement des ventes ${m.name}`,
+      metadata: { counterparty: m.name, ...(st.has_split ? { purpose } : {}), ...(req.body?.note ? { reason: String(req.body.note).slice(0, 140) } : {}) },
     });
     await move(t.id, from.id, to.id, amount);
     return t;
@@ -303,10 +308,17 @@ merchantApiRouter.post('/payouts', idem, async (req, res) => {
   const w = await getWallet('merchant', req.merchant.id, currency);
   const insufficient = () => new HttpError(402, 'insufficient_funds', `Solde insuffisant : ${amount + fee} requis (dont ${fee} de frais).`);
   if (w.balance < amount + fee) throw insufficient();
+  const purpose = purposeOf(req.body?.purpose);
+  const st = await assertWithdrawal(req.merchant.id, currency, amount + fee, purpose, Number(w.balance));
   const t = await startPayout({
     type: 'payout', fromWalletId: w.id, phone: req.body?.phone, operator: req.body?.operator,
     amount, fee, currency, merchantId: req.merchant.id, description: `Versement ${req.merchant.name}`,
-    guard: async () => { if ((await lockWallet(w.id)).balance < amount + fee) throw insufficient(); },
+    metadata: st.has_split ? { purpose, ...(req.body?.note ? { reason: String(req.body.note).slice(0, 140) } : {}) } : undefined,
+    guard: async () => {
+      const locked = await lockWallet(w.id);
+      if (locked.balance < amount + fee) throw insufficient();
+      await assertWithdrawal(req.merchant.id, currency, amount + fee, purpose, Number(locked.balance));
+    },
   });
   res.status(202).json({ id: t.id, object: 'payout', status: t.status, amount: t.amount, fee: t.fee, currency: t.currency, phone: t.phone, operator: t.operator, created_at: t.created_at });
 });

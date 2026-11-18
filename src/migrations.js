@@ -492,4 +492,13 @@ CREATE INDEX idx_payments_merchant_status ON payments (merchant_id, status, crea
 CREATE INDEX idx_txn_merchant ON transactions (merchant_id, created_at);
 `,
   },
+  {
+    version: 12,
+    name: 'marchands : répartition des paiements (part plateforme / part vendeurs)',
+    // breakdown : tableau JSON des lignes de vente du paiement (montant, part plateforme, part vendeur, frais,
+    // libérée ou non). Sert à réserver l'argent des vendeurs et à calculer les revenus retirables.
+    sql: `
+ALTER TABLE payments ADD COLUMN breakdown TEXT;
+`,
+  },
 ];

@@ -98,7 +98,35 @@
   #refs-form { display: flex; gap: 8px; margin-top: 8px; }
   #refs-form input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 
-  @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+  /* Revenus de la plateforme (place de marché) */
+  .rev { display: grid; grid-template-columns: 300px 1fr; gap: 0; padding: 0; overflow: hidden; margin-bottom: 16px; }
+  .rev-main { background: #f2f8f4; border-right: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .rev-main small, .rev-grid small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .rev-main .v { font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: #146c43; white-space: nowrap; }
+  .rev-main .s { color: var(--muted); font-size: 12.5px; }
+  .rev-main .row { gap: 8px; margin-top: auto; padding-top: 8px; flex-wrap: wrap; }
+  .rev-main button { padding: 9px 14px; font-size: 14px; }
+  .rev-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 18px; padding: 16px 18px; }
+  .rev-grid .v { font-size: 19px; font-weight: 800; letter-spacing: -.01em; margin: 3px 0 1px; white-space: nowrap; }
+  .rev-grid .s { color: var(--muted); font-size: 12.5px; }
+  .rev-fees { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 10px; }
+  .rev-fees b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .warn { background: #fff4e5; color: #8a4b00; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-top: 4px; }
+  ul.split { list-style: none; margin: 0 0 12px; padding: 0; }
+  ul.split li { padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .sl-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .sl-amt { margin-left: auto; font-size: 14px; font-variant-numeric: tabular-nums; }
+  ul.split .sub { font-size: 12px; margin-top: 3px; }
+  .sl-fees, .sl-parts { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 4px; color: var(--muted); }
+  .sl-fees b, .sl-parts b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .sl-parts b.credit { color: #146c43; }
+  .pill.reserved { background: #fff4e5; color: #8a4b00; }
+  .pill.released { background: #e7f6ec; color: #146c43; }
+  .credit { color: #146c43; }
+  #wd-form label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  #wd-form .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, 1fr); } .rev { grid-template-columns: 1fr; } .rev-main { border-right: 0; border-bottom: 1px solid var(--line); } }
   @media (max-width: 760px) {
     header.top { padding: 8px 14px; }
     .hd-links .hide-sm { display: none; }
@@ -119,6 +147,7 @@
     table.tx td[data-c=meta] { grid-column: 1 / -1; }
     table.tx td.opt { display: none; }
     .kv { grid-template-columns: 120px 1fr; }
+    .rev-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -156,6 +185,7 @@
   </div>
 
   <div class="kpis" id="kpis"></div>
+  <section class="card rev hidden" id="rev" aria-label="Revenus de la plateforme"></section>
 
   <div class="card chart-card">
     <h2>Encaissements nets par jour <span id="chart-total"></span></h2>
@@ -217,6 +247,12 @@ const when = (iso) => iso ? new Date(iso).toLocaleString('fr-FR', { day: '2-digi
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
 const STATUS = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', requires_payment: 'À payer', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré' };
 const KIND = { refund: 'Remboursement client', payout_wallet: 'Versement sur le wallet', payout_mobile_money: 'Versement Mobile Money' };
+const PURPOSE = { platform_revenue: 'Retrait des revenus', seller_payout: 'Reversement vendeur' };
+const kindOf = (o) => (o.purpose && o.type === 'payout' ? PURPOSE[o.purpose] + (o.kind === 'payout_wallet' ? ' (wallet)' : ' (Mobile Money)') : KIND[o.kind] || o.type);
+const FEE = { commission: 'Commission', protection: 'Frais de protection', fixed: 'Frais fixes' };
+const feeLabel = (k) => FEE[k] || k.replace(/_/g, ' ');
+const toMinor = (v) => Math.round(parseFloat(String(v).replace(/[\s  ]/g, '').replace(',', '.')) * 100);
+const decStr = (minor) => (minor / 100).toFixed(2).replace('.', ',').replace(/,00$/, '');
 const TXN_TYPE = { payment: 'Encaissement', refund: 'Remboursement', payout: 'Versement' };
 const pill = (s) => `<span class="pill ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
 const methodOf = (method, operator) => method === 'mobile_money' ? (OPS[operator] || 'Mobile Money') : method === 'card' ? 'Carte bancaire' : method === 'wallet' ? 'Wallet Pay243' : '—';
@@ -258,7 +294,7 @@ function setupFilters() {
     ? '<option value="">Tous les moyens</option><option value="wallet">Wallet Pay243</option><option value="mobile_money">Mobile Money</option><option value="card">Carte bancaire</option>'
     : '<option value="">Toutes les sorties</option><option value="refund">Remboursements clients</option><option value="payout">Versements des ventes</option>';
   $('#thead').innerHTML = S.view === 'in'
-    ? '<tr><th>N° de vente · Référence</th><th>Description</th><th>Payeur</th><th>Moyen</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Commission</th><th class="num">Net</th></tr>'
+    ? '<tr><th>N° de vente · Référence</th><th>Description</th><th>Payeur</th><th>Moyen</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Commission</th><th class="num">Net</th><th class="num" title="Net encaissé moins la part des vendeurs">Revenu</th></tr>'
     : '<tr><th>Type · Référence</th><th>Paiement lié</th><th>Destination</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Frais</th><th class="num">Total débité</th></tr>';
 }
 
@@ -275,7 +311,77 @@ async function loadSummary() {
     <div class="kpi"><small>Paiements réussis</small><div class="v">${c.received.count.toLocaleString('fr-FR')}</div><div class="s">Taux de réussite ${rate} · ${c.attempts.failed} échoué${c.attempts.failed > 1 ? 's' : ''}, ${c.attempts.abandoned} abandonné${c.attempts.abandoned > 1 ? 's' : ''}</div></div>
     <div class="kpi"><small>Sorties</small><div class="v">${fmt(c.outflows.total, cur)}</div><div class="s">${fmt(c.outflows.payouts_wallet.amount + c.outflows.payouts_mobile_money.amount, cur)} versés · ${fmt(c.outflows.refunds.amount, cur)} remboursés${c.outflows.pending ? ` · ${c.outflows.pending} en attente` : ''}</div></div>
     <div class="kpi"><small>En attente de paiement</small><div class="v">${c.open.count.toLocaleString('fr-FR')}</div><div class="s">${fmt(c.open.amount, cur)} en liens ouverts</div></div>`;
+  renderRevenue(c);
   drawChart(c.daily, p, cur);
+}
+
+let REV = null;
+function renderRevenue(c) {
+  const r = c.revenue; const cur = c.currency; const box = $('#rev');
+  REV = r?.has_split ? { ...r, currency: cur } : null;
+  box.classList.toggle('hidden', !REV);
+  if (!REV) { box.innerHTML = ''; return; }
+  const pd = r.period;
+  const fees = Object.entries(pd.fees).map(([k, v]) => `<span>${esc(feeLabel(k))} <b>${fmt(v, cur)}</b></span>`).join('');
+  box.innerHTML = `
+    <div class="rev-main">
+      <small>Revenus disponibles au retrait</small>
+      <div class="v">${fmt(r.available, cur)}</div>
+      <div class="s">Vos revenus de plateforme. L'argent des vendeurs n'est jamais inclus.</div>
+      ${r.shortfall ? `<div class="warn">Il manque <b>${fmt(r.shortfall, cur)}</b> dans le solde pour couvrir l'argent dû aux vendeurs.</div>` : ''}
+      <div class="row">
+        <button type="button" id="wd-platform" ${r.available > 0 ? '' : 'disabled'}>Retirer mes revenus</button>
+        <button type="button" class="ghost" id="wd-seller" ${r.seller_payable > 0 ? '' : 'disabled'} title="Ventes libérées : reverser leur part aux vendeurs">Reverser à un vendeur</button>
+      </div>
+    </div>
+    <div class="rev-grid">
+      <div><small>Argent des vendeurs réservé</small><div class="v">${fmt(r.seller_due, cur)}</div><div class="s">Ventes non encore libérées · bloqué dans le solde</div></div>
+      <div><small>Revenus de la période</small><div class="v">${fmt(pd.platform_net, cur)}</div><div class="s">${pd.payments} paiement${pd.payments > 1 ? 's' : ''} · net de la commission Pay243</div></div>
+      <div><small>Revenus déjà retirés</small><div class="v">${fmt(r.platform_withdrawn, cur)}</div><div class="s">Depuis le début · ${fmt(Math.max(0, r.platform_earned), cur)} gagnés au total</div></div>
+      <div class="rev-fees" title="Détail des revenus de la période">
+        <span>Encaissé <b>${fmt(pd.gross, cur)}</b></span>
+        <span>Part vendeurs <b>−${fmt(pd.seller_total, cur)}</b></span>
+        ${fees}
+        ${pd.extra ? `<span>Frais payés par l'acheteur <b>${fmt(pd.extra, cur)}</b></span>` : ''}
+        <span>Commission Pay243 <b>−${fmt(pd.pay243_fees, cur)}</b></span>
+      </div>
+    </div>`;
+  $('#wd-platform').onclick = () => openWithdraw('platform_revenue');
+  $('#wd-seller').onclick = () => openWithdraw('seller_payout');
+}
+
+function openWithdraw(purpose) {
+  if (!REV) return;
+  const cur = REV.currency;
+  const seller = purpose === 'seller_payout';
+  const max = seller ? REV.seller_payable : REV.available;
+  openDrawer(`
+    <h3 id="dr-title">${seller ? 'Reverser à un vendeur' : 'Retirer mes revenus'}</h3>
+    <p class="muted" style="margin:4px 0 0">${seller
+      ? `Pour une vente <b>libérée</b> : l'argent part sur votre wallet Pay243, d'où vous payez le vendeur. ${fmt(REV.seller_due, cur)} restent réservés aux ventes non libérées.`
+      : `Vos revenus de plateforme vont sur votre wallet Pay243 personnel, instantanément et sans frais. L'argent des vendeurs (${fmt(REV.seller_due, cur)}) reste dans le solde.`}</p>
+    <form id="wd-form">
+      <label for="wd-amount">Montant (${cur === 'USD' ? '$' : 'FC'})</label>
+      <input id="wd-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" required pattern="\s*\d[\d\s]*([.,]\d{1,2})?\s*" value="${decStr(max)}">
+      <div class="hint">Maximum : ${fmt(max, cur)}</div>
+      ${seller ? '<label for="wd-note">N° de vente ou vendeur</label><input id="wd-note" name="note" maxlength="140" required placeholder="ex. 514687-MHM-681749 · Boutique A">' : ''}
+      <label for="wd-pin">Code PIN</label>
+      <input id="wd-pin" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required>
+      <button class="full" type="submit" style="margin-top:16px">${seller ? 'Reverser' : 'Retirer'}</button>
+    </form>`);
+  const f = $('#wd-form');
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const amount = toMinor(f.amount.value);
+    if (!(amount > 0)) return toast('Montant invalide.', true);
+    if (amount > max) return toast(`Maximum : ${fmt(max, cur)}`, true);
+    const b = f.querySelector('button[type=submit]'); b.disabled = true;
+    try {
+      await api('POST', '/v1/merchants/me/transfer-to-wallet', { currency: cur, amount, purpose, pin: f.pin.value, ...(f.note ? { note: f.note.value } : {}) });
+      toast(seller ? 'Reversement envoyé sur votre wallet' : 'Revenus versés sur votre wallet');
+      closeDrawer(); reload();
+    } catch (err) { toast(err.message, true); } finally { b.disabled = false; }
+  };
 }
 
 function drawChart(daily, p, cur) {
@@ -335,7 +441,7 @@ async function loadList() {
   $('#totals-line').innerHTML = !r.total ? '' : S.view === 'in'
     ? `${r.total.toLocaleString('fr-FR')} paiement${r.total > 1 ? 's' : ''} · encaissé <b>${fmt(t?.gross || 0, S.currency)}</b> brut, <b>${fmt(t?.net || 0, S.currency)}</b> net`
     : `${r.total.toLocaleString('fr-FR')} sortie${r.total > 1 ? 's' : ''} · <b>${fmt(t?.total || 0, S.currency)}</b> débités (hors échecs)`;
-  const cols = S.view === 'in' ? 9 : 8;
+  const cols = S.view === 'in' ? 10 : 8;
   $('#tbody').innerHTML = r.data.length ? r.data.map(S.view === 'in' ? rowIn : rowOut).join('')
     : `<tr><td colspan="${cols}" class="empty">${$('#filters').q.value ? 'Aucun résultat pour cette recherche.' : 'Aucune opération sur la période.'}</td></tr>`;
   $$('#tbody tr[data-id]').forEach((tr) => {
@@ -361,6 +467,7 @@ function rowIn(x) {
     <td data-c="amount" class="num"><b>${fmt(x.amount, x.currency)}</b>${x.refunded_amount ? `<div class="sub neg">−${fmt(x.refunded_amount, x.currency)} remb.</div>` : ''}</td>
     <td class="num opt">${x.net == null ? '—' : fmt(x.fee, x.currency)}</td>
     <td class="num opt"><b>${fmt(x.net, x.currency)}</b></td>
+    <td class="num opt">${x.split ? `<b class="credit">${fmt(x.split.platform_net, x.currency)}</b>${x.split.seller_due ? `<div class="sub">${fmt(x.split.seller_due, x.currency)} réservés</div>` : ''}` : '<span class="muted">—</span>'}</td>
   </tr>`;
 }
 
@@ -375,7 +482,7 @@ function destOf(o) {
 function rowOut(o) {
   const dest = destOf(o);
   return `<tr data-id="${esc(o.id)}" tabindex="0">
-    <td data-c="refs"><b>${esc(KIND[o.kind] || o.type)}</b><div class="pid">${esc(o.id)}</div></td>
+    <td data-c="refs"><b>${esc(kindOf(o))}</b><div class="pid">${esc(o.id)}</div></td>
     <td data-c="desc">${o.payment ? `${refsHtml(o.payment.order_refs)}<div class="sub">${esc(o.payment.description || o.payment.id)}</div>` : '<span class="muted">—</span>'}${o.reason ? `<div class="sub">Motif : ${esc(o.reason)}</div>` : ''}</td>
     <td class="opt">${esc(dest)}</td>
     <td data-c="meta">${pill(o.status)}</td>
@@ -429,6 +536,7 @@ async function openPayment(id) {
       ['Remboursé', x.refunded_amount ? `<span class="neg">−${fmt(x.refunded_amount, c)}</span>` : null],
       ['Net après remb.', x.refunded_amount ? `<b>${fmt(x.net_after_refunds, c)}</b>` : null],
     ])}</section>
+    ${splitHtml(x)}
     <section><h4>Payeur</h4>${kv([
       ['Moyen', esc(methodOf(x.method, x.payer?.operator))],
       ['Nom', x.payer?.name ? esc(x.payer.name) : null],
@@ -455,10 +563,34 @@ async function openPayment(id) {
   };
 }
 
+/** Répartition d'un paiement de place de marché : lignes de vente, frais, part vendeur, revenu net. */
+function splitHtml(x) {
+  const sp = x.split; if (!sp) return '';
+  const c = x.currency;
+  const keys = [...new Set(sp.lines.flatMap((l) => Object.keys(l.fees || {})))];
+  const st = (l) => l.refunded ? '<span class="pill refunded">Remboursée</span>' : l.released ? '<span class="pill released">Libérée</span>' : '<span class="pill reserved">Réservée</span>';
+  return `<section><h4>Répartition</h4>
+    <ul class="split">${sp.lines.map((l) => `<li>
+      <div class="sl-head"><span class="ref">${esc(l.ref)}</span> ${st(l)}<b class="sl-amt">${fmt(l.amount, c)}</b></div>
+      ${l.label || l.seller ? `<div class="sub muted">${esc([l.label, l.seller].filter(Boolean).join(' · '))}</div>` : ''}
+      <div class="sl-fees">${keys.filter((k) => l.fees?.[k] != null).map((k) => `<span>${esc(feeLabel(k))} <b>${fmt(l.fees[k], c)}</b></span>`).join('')}</div>
+      <div class="sl-parts"><span>Plateforme <b class="credit">${fmt(l.platform_amount, c)}</b></span><span>Vendeur <b>${fmt(l.seller_amount, c)}</b></span></div>
+    </li>`).join('')}</ul>
+    ${kv([
+      ['Payé par l\'acheteur', fmt(x.amount, c)],
+      ['Frais ajoutés', sp.extra ? `${fmt(sp.extra, c)} <span class="muted">(payés par l'acheteur)</span>` : null],
+      ['Commission Pay243', '−' + fmt(sp.pay243_fee, c)],
+      ['Remboursé', x.refunded_amount ? `<span class="neg">−${fmt(x.refunded_amount, c)}</span>` : null],
+      ['Part des vendeurs', `−${fmt(sp.seller_total, c)}${sp.seller_due ? ` <span class="pill reserved">${fmt(sp.seller_due, c)} réservés</span>` : ''}`],
+      ['Revenu plateforme', sp.platform_net == null ? null : `<b class="credit">${fmt(sp.platform_net, c)}</b>`],
+    ])}
+  </section>`;
+}
+
 function openOutflow(id) {
   const o = LAST.find((x) => x.id === id); if (!o) return;
   openDrawer(`
-    <h3 id="dr-title">${esc(KIND[o.kind] || o.type)}</h3>
+    <h3 id="dr-title">${esc(kindOf(o))}</h3>
     <div class="big neg">−${fmt(o.amount, o.currency)}</div>
     <div>${pill(o.status)}</div>
     <section><h4>Références</h4>${kv([
