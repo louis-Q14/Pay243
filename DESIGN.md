@@ -27,16 +27,16 @@ colors:
   rdc-red: "#ce1021"
 typography:
   display:
-    fontFamily: "Plus Jakarta Sans, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
-    fontSize: "34px"
+    fontFamily: "Bricolage Grotesque, Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "50px"
     fontWeight: 700
-    lineHeight: 1.15
-    letterSpacing: "-0.02em"
+    lineHeight: 1.02
+    letterSpacing: "-0.035em"
     fontFeature: "tnum"
   headline:
-    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontFamily: "Bricolage Grotesque, Plus Jakarta Sans, system-ui, sans-serif"
     fontSize: "28px"
-    fontWeight: 800
+    fontWeight: 700
     letterSpacing: "-0.02em"
     fontFeature: "tnum"
   title:
@@ -204,16 +204,16 @@ A warm, low-chroma black-and-ivory scale carried by one brushed gold, with vivid
 
 ## Typography
 
-**Display Font:** Plus Jakarta Sans (variable 200-800, self-hosted; fallback system-ui, Segoe UI, Roboto, Arial)
-**Body Font:** Plus Jakarta Sans
-**Label/Mono Font:** ui-monospace, SFMono-Regular, Menlo for codes and references (13px, in gold light)
+**Display Font:** Bricolage Grotesque (variable 400-800, self-hosted in `public/assets/fonts`, SIL OFL; token `--font-display`), for money and headings
+**Body Font:** Plus Jakarta Sans (variable 200-800, self-hosted; token `--font-sans`), for everything you read or tap
+**Label/Mono Font:** ui-monospace, SFMono-Regular, Menlo for codes, keys and references only (13px, in gold light)
 
-**Character:** One geometric sans, tightened for figures and opened slightly between words (`word-spacing: .08em`, `.14em` on h1/h2) because its native space is narrow.
+**Character:** Two clearly distinct voices. Bricolage Grotesque carries the amounts and titles: compact, slightly irregular, set tight (-0.02 to -0.035em) and always with tabular figures for money. Plus Jakarta Sans stays the quiet interface voice, opened slightly between words (`word-spacing: .08em`) because its native space is narrow.
 
 ### Hierarchy
-- **Display** (700, 34px, 32px on phones, line-height 1.15, -0.02em, tabular): balance figures only. The currency unit follows at .5em, 700, in gold.
-- **Headline** (800, 28px, 24px on phones, -0.02em, tabular): the amount at the head of a transaction detail.
-- **Title** (700, 16px, -0.01em): card headings such as "Historique".
+- **Display** (Bricolage 700, 50px; 40px on phones; line-height 1.02, -0.035em, tabular): the CDF figure on the plaque and the hero plaque. USD below it at 30px (26px on phones). The currency unit follows at .4em in Plus Jakarta 700, gold, raised.
+- **Headline** (Bricolage 700, 22-32px, -0.02em): page titles, card titles ("Historique"), modal titles, transaction-detail amount, converter figures (38px, 32px on phones).
+- **Title** (Bricolage 700, 16-24px, -0.02em): section and panel headings.
 - **Body** (400, 15px, line-height 1.5): running text and list rows.
 - **Label** (600, 13px, no tracking, sentence case): field labels, balance captions, action tile names, tabs (tabs at 600, body size).
 - **Status** (700, 12px): pills.
@@ -225,7 +225,9 @@ A warm, low-chroma black-and-ivory scale carried by one brushed gold, with vivid
 
 ## Layout
 
-A single centred column (max 980px, 20px gutter; 10-14px on phones under 560px). The header is a full-width black bar, sticky. Tabs sit on a hairline baseline. On the home tab the two balance panels share a row on wide screens (auto-fit grid, minimum 260px) and stack one per line on phones so figures keep their size. Below them, four action tiles in a single row of four at every width, then the history card. Spacing follows a small rhythm of 4, 8, 10, 12, 14, 16 and 20px; gaps between panels are 10-16px. Touch targets in the action row stay at least as tall as the icon plus label (about 64px).
+**The wallet is "the plaque and the carnet".** On desktop (max 1120px) the home tab is two columns: a sticky left column (400px) holding the plaque, the action bar and the limits line, and a right column holding the activation and sales cards and the carnet. Under 900px it becomes one column. Under 560px the tabs leave the top and become a fixed bottom dock (thumb reach), and operation windows open as bottom sheets. The header is a full-width raffia-deep bar, sticky.
+
+The homepage hero mirrors it: two columns, copy left-aligned on the left (huge Bricolage title, lead, actions), the hero plaque on the right tilted -2.5deg; under 900px the plaque drops below the copy. Spacing follows a small rhythm of 4, 8, 10, 12, 14, 16 and 20px; gaps between panels are 10-16px. Touch targets in the action row stay at least as tall as the icon plus label (about 64px).
 
 ## Elevation & Depth
 
@@ -256,8 +258,11 @@ Solid, quiet, confident.
 - **Link:** no fill, gold text, gold light on hover.
 - **Destructive:** err on err-ground with its border; when armed, solid red with white text.
 
-### Action Tiles
-The four money verbs (Recharger, Envoyer, Retirer, Convertir) as square-ish tiles: woven panel, strong hairline, 14px corners, a 22px stroke icon in gold above a 13px label. The first tile is always solid gold with on-gold icon and text; it is the one-tap default. Hover: raised fill and gold-deep border.
+### Action Bar
+The four money verbs. Recharger is a full-width solid gold button (58px, 16px corners, on-gold text and icon): the one-tap default. Envoyer, Retirer and Convertir follow as one segmented bar of three (50px, outer corners 14px, inner corners square, shared hairlines), icon beside label. Hover on a segment: raised fill and gold-deep border.
+
+### Bottom Sheet (phones)
+Under 560px, every operation window rises from the bottom: full width, 24px top corners, a 40x4 grab handle, 320ms rise, above the dock (z-index 60). Titles in Bricolage 22px; the primary button is 52px.
 
 ### Cards / Containers
 - **Corner Style:** 16px (12px on phones).
@@ -279,13 +284,14 @@ Pill-shaped, 12px 700, each led by a 6px marker: filled dot (succeeded, green), 
 
 ### Navigation
 - **Header:** raffia-deep bar with a hairline bottom; logo framed by a gold hair ring; avatar ringed in gold; secondary links in mute, gold light on hover.
-- **Tabs:** text-only, 600, faint when inactive, ivory when active or hovered; no pill or box. The active tab is underlined by the stepped Kuba indicator, which slides and resizes between tabs (380ms, `cubic-bezier(.2,.8,.2,1)`), static under reduced motion.
+- **Tabs (desktop):** text with a 17px stroke icon, 600, faint when inactive, ivory when active; the active tab is underlined by the stepped Kuba indicator, which slides between tabs (380ms), static under reduced motion.
+- **Dock (phones):** the same tabs fixed at the bottom, icon (22px) over an 11px label, gold with a dark-gold fill when active, safe-area padding.
 
-### Balance Panel (signature)
-Woven panel, 16px corners, a mute caption, then the display figure with its gold unit. Its foot carries the Kuba band (22px, 18px on phones, hairline above) and under it the 3px DRC thread. On load the band weaves in left to right (900ms, `cubic-bezier(.2,.8,.2,1)`, clip-path); when the amount changes it re-weaves. Reduced motion removes the animation and shows the band whole.
+### The Plaque (signature)
+One object holding both balances. A deep gradient (#211b12 to #0b0a08), 24px corners (20px on phones), a gold-tinted hairline, a faint Kuba cloth engraved in the top-right corner. CDF first in display size, then the seam, then USD smaller. The seam is the Kuba band running edge to edge with the 3px DRC thread under it; it weaves in on load (900ms), static under reduced motion. The same plaque, with operator chips below and an "Exemple de soldes" caption, is the homepage hero.
 
-### History Row
-Full-bleed hairline dividers; a 38px (34px on phones) rounded-square icon (10px) per row: gold on raised for neutral operations, green for credits, amber with a dashed border for pending, red for failed. Amount right-aligned and tabular; a pending amount stays mute.
+### The Carnet (history)
+The history grouped by day: a day heading in Bricolage 15px gold ("Aujourd'hui", "Hier", then the full date), then rows showing only the time. A 1px vertical thread links the rounded-square icons of one day (38px, 10px corners): gold on panel for neutral operations, green for credits, amber dashed for pending, red for failed. Amounts in Bricolage 17px, right-aligned and tabular; a pending amount stays mute.
 
 ## Do's and Don'ts
 
