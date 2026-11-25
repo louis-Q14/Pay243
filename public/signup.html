@@ -7,308 +7,217 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="description" content="Ouvrez gratuitement votre compte Pay243, particulier ou entreprise, avec votre adresse email.">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#0d0c0a">
+<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/fonts.css">
+<link rel="stylesheet" href="/assets/home.css">
 <style>
-  :root {
-    /* univers « Raphia Kuba » (voir DESIGN.md) : noir de raphia, or brossé, fil tricolore RDC */
-    --y: #d4ad5a; --y-soft: rgba(212, 173, 90, .16); --bg: #0d0c0a; --panel: #090806; --tile: #15130f; --tile-2: #1d1a14; --line: #2a2620;
-    --txt: #f2ead8; --txt-2: #cfc5b0; --muted: #a79c86; --ok: #86d6a4; --err: #ff948a;
-    --rdc-thread: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%);
-    --kuba-cloth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E");
-    color-scheme: dark;
-    --display: var(--font-sans);
-    --text: var(--font-sans);
+  /* Inscription : la pochette à gauche (le type de compte sur l'étiquette, votre nom dans les crédits),
+     le formulaire à droite. Le monde visuel et ses composants viennent de home.css. */
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+  .nav .wrap { gap: 20px; }
+  .nav-side { margin-left: auto; display: flex; align-items: center; gap: 18px; font-size: 15px; color: var(--mute); }
+  .nav-side a { color: var(--gold-light); font-weight: 700; text-decoration: none; }
+  .nav-side a:hover { text-decoration: underline; }
+  .nav-side .home { color: var(--mute); font-weight: 600; }
+
+  .signup { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); }
+  .rec-side {
+    position: relative; overflow: hidden; background: var(--deep); border-right: 1px solid var(--hair);
+    --sl: min(380px, 26vw);
+    display: grid; align-content: center; justify-content: center; padding: 48px var(--gutter);
   }
-  * { box-sizing: border-box; }
-  ::selection { background: var(--y); color: #16120a; }
-  body { margin: 0; min-height: 100vh; display: grid; align-content: center; color: var(--txt); font: 16px/1.55 var(--text); -webkit-font-smoothing: antialiased;
-    background: var(--bg); caret-color: var(--y); }
-  a { color: inherit; }
+  .rec-wrap { width: calc(var(--sl) * 1.5); display: grid; gap: 28px; } /* la pochette et le disque qui en sort, centrés ensemble */
+  .rec .disc { animation-duration: 1.4s; }
+  .rec .label-face { transition: opacity .3s .35s; }
+  .rec[data-view="business"] .flip { transform: rotate(180deg); }
+  .rec[data-view="personal"] .label-face.b, .rec[data-view="business"] .label-face.a { opacity: 0; transition-delay: 0s; }
+  .credit { max-width: 100%; }
+  .credit p { margin: 0; }
+  .credit .kind { font-size: 14px; font-weight: 600; color: var(--gold-light); }
+  .credit .by { margin-top: 6px; font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 32px); letter-spacing: -.02em; line-height: 1.1; color: var(--ivory); overflow-wrap: anywhere; }
+  .credit .by span { color: var(--mute); font-family: var(--font-sans); font-weight: 500; font-size: 15px; letter-spacing: 0; display: block; margin-bottom: 4px; }
 
-  .shell { width: min(1120px, calc(100% - 40px)); margin: 24px auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; align-items: stretch;
-    background: var(--panel); border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0, 0, 0, .6), 0 0 0 1px var(--line); }
+  .form-side { padding: 44px clamp(20px, 4vw, 56px) 32px; display: flex; flex-direction: column; }
+  .form-in { width: 100%; max-width: 440px; }
 
-  /* ================= Panneau visuel : raphia tissé d'or, fil du drapeau en pied ================= */
-  .art { position: relative; min-height: min(680px, calc(100vh - 68px)); border-radius: 30px; overflow: hidden; isolation: isolate;
-    display: flex; flex-direction: column; justify-content: space-between; padding: 36px 40px 40px; background: var(--tile); perspective: 1200px; }
-  .art::before { content: ""; position: absolute; inset: 0; z-index: -2; opacity: .45; background: var(--kuba-cloth) 0 0 / 96px 96px;
-    -webkit-mask: linear-gradient(165deg, #000 5%, transparent 70%); mask: linear-gradient(165deg, #000 5%, transparent 70%); }
-  .art::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: -1; background: var(--rdc-thread); }
+  /* La progression : une liste de titres, la plage en cours en or */
+  .progress { list-style: none; margin: 0 0 28px; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 1px solid var(--hair-strong); }
+  .progress li { display: flex; align-items: baseline; gap: 8px; padding: 10px 0 0; font-size: 14px; font-weight: 600; color: var(--faint); border-top: 2px solid transparent; margin-top: -1px; }
+  .progress li i { font-style: normal; font-family: var(--font-display); font-weight: 700; font-size: 13px; }
+  .progress li.done { color: var(--mute); }
+  .progress li.now { color: var(--ivory); border-top-color: var(--gold); }
+  .progress li.now i { color: var(--gold); }
 
-  .art-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; flex: none; }
-  .mark img { height: 36px; width: auto; display: block; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
-  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(13, 12, 10, .8); border: 1px solid var(--line);
-    font-size: 13px; font-weight: 600; color: var(--txt); }
-  .pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
-
-  /* Scène interactive : carte + orbite + notifications */
-  .stage { position: relative; flex: 1; display: grid; place-items: center; transform-style: preserve-3d;
-    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .25s ease-out; }
-  .orbit { position: absolute; width: min(430px, 84%); aspect-ratio: 1; border-radius: 50%; border: 1px dashed rgba(212, 173, 90, .22); animation: spin 38s linear infinite; }
-  .orbit span { position: absolute; left: 50%; top: 50%; margin: -17px 0 0 -54px; width: 108px; height: 34px; display: grid; place-items: center;
-    transform: rotate(var(--a)) translateY(calc(min(215px, 42vw) * -1)) rotate(calc(var(--a) * -1)); }
-  .orbit span b { animation: spin 38s linear infinite reverse; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; height: 34px; white-space: nowrap;
-    border-radius: 999px; font: 800 12px/1 var(--display); letter-spacing: .01em; color: #16120a;
-    /* logos officiels sur pastille ivoire (le noir d'Orange Money disparaîtrait sur le fond sombre) */
-    background: var(--txt); border: 1px solid var(--txt); box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
-  .orbit span b img { display: block; width: auto; height: 22px; }
-  .orbit span b img.mpesa { height: 17px; } .orbit span b img.airtel { height: 27px; } .orbit span b img.orange { height: 22px; }
-  .orbit span b img.visa { height: 15px; } .orbit span b img.mastercard { height: 26px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* carte d'aperçu : noir laqué et or, comme les cartes du wallet ; le reflet suit la souris */
-  .pcard { position: relative; width: min(340px, 78%); aspect-ratio: 1.586; border-radius: 22px; padding: 22px 24px; color: var(--txt); transform: translateZ(60px);
-    background: linear-gradient(135deg, #2e271b 0%, #14110b 60%, #070605 100%); border: 1px solid rgba(212, 173, 90, .35);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(235, 203, 132, .25);
-    display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
-  .pcard::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(260px circle at var(--mx, 30%) var(--my, 20%), rgba(235, 203, 132, .14), transparent 60%); }
-  .pcard .row { display: flex; justify-content: space-between; align-items: center; }
-  .pcard .brand { font: 800 18px/1 var(--display); letter-spacing: -.02em; }
-  .pcard .brand em { font-style: normal; color: var(--y); }
-  .pcard .kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
-  .pcard small { display: block; font-size: 12px; opacity: .75; }
-  .pcard .amt { font: 800 clamp(24px, 2.6vw, 32px)/1.1 var(--display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-  .pcard .name { font: 600 14px/1.2 var(--text); letter-spacing: .04em; text-transform: uppercase; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .2s; }
-  .pcard .chipm { width: 38px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #ebcb84, #9c7a35); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2); }
-  .bars { display: none; align-items: flex-end; gap: 5px; height: 34px; }
-  .bars i { width: 9px; border-radius: 2px 2px 0 0; background: linear-gradient(var(--y), rgba(212, 173, 90, .35)); height: 0; transition: height .9s cubic-bezier(.2,.8,.2,1); }
-  .art.biz .bars { display: flex; }
-
-  .feed { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
-  .note { position: absolute; display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 12px; border-radius: 16px; max-width: 290px;
-    background: rgba(21, 19, 15, .92); border: 1px solid var(--line); box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
-    opacity: 0; transform: translateY(14px) translateZ(70px) scale(.96); transition: opacity .5s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
-  .note.on { opacity: 1; transform: translateY(0) translateZ(70px) scale(1); }
-  .note .ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; flex: none; color: #16120a; background: var(--c, var(--y)); }
-  .note b { display: block; font: 700 14px/1.25 var(--display); color: var(--txt); }
-  .note span { font-size: 12.5px; color: var(--txt-2); }
-  .note.n0 { top: 10%; left: 0; } .note.n1 { bottom: 20%; right: 0; } .note.n2 { bottom: 7%; left: 2%; }
-
-  .tagline { color: var(--txt); font-weight: 300; font-size: clamp(30px, 3.6vw, 50px); line-height: 1.15; letter-spacing: -.015em; margin: 0; }
-  .tagline b { font-weight: 800; color: var(--y); }
-  .rot { display: inline-grid; vertical-align: bottom; overflow: hidden; height: 1.12em; }
-  .rot b { grid-area: 1 / 1; color: var(--y); transform: translateY(105%); opacity: 0; transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .4s; }
-  .rot b.on { transform: none; opacity: 1; }
-  .rot b.out { transform: translateY(-105%); opacity: 0; }
-  .caption { margin: 14px 0 0; color: var(--txt-2); font-size: 15px; max-width: 46ch; min-height: 3.1em; transition: opacity .3s; }
-
-  /* ================= Panneau formulaire ================= */
-  .form-side { padding: 28px 40px 28px; display: flex; flex-direction: column; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 26px; font-size: 14px; color: var(--txt-2); }
-  .topbar a { color: var(--y); font-weight: 800; text-decoration: none; }
-  .topbar a:hover { text-decoration: underline; }
-  .back-home { color: var(--txt-2) !important; font-weight: 600 !important; }
-  .progress { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
-  .progress li { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .progress li::before { content: ""; display: block; height: 4px; border-radius: 99px; margin-bottom: 9px;
-    background: linear-gradient(90deg, var(--y) var(--p, 0%), var(--line) var(--p, 0%)); transition: --p .5s; }
-  .progress li.done { color: var(--txt-2); } .progress li.done::before { --p: 100%; }
-  .progress li.now { color: var(--txt); } .progress li.now::before { --p: 100%; background: var(--y); }
-
-  .kicker { color: var(--y); font-weight: 800; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 10px; }
-  h1#headline { font: 700 clamp(26px, 2.6vw, 36px)/1.15 var(--display); letter-spacing: -.025em; margin: 0 0 20px; color: var(--txt); text-wrap: balance; }
-  .lead { color: var(--txt-2); margin: -10px 0 20px; }
+  h1#headline { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 2.8vw, 40px); line-height: 1.05; letter-spacing: -.03em; margin: 0 0 22px; text-wrap: balance; }
+  .step-lead { color: var(--mute); margin: -10px 0 20px; }
   [data-step] { display: none; }
-  [data-step].on { display: block; animation: rise .45s cubic-bezier(.2,.8,.2,1); }
-  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  [data-step].on { display: block; }
 
-  .choices { display: grid; gap: 12px; }
-  .choice { position: relative; display: block; background: var(--tile); border: 1.5px solid var(--line); border-radius: 16px; padding: 16px 18px; cursor: pointer;
-    transition: border-color .2s, background .2s, transform .2s, box-shadow .2s; }
-  .choice:hover { border-color: #3d362b; transform: translateY(-2px); }
+  /* Choix du compte : les deux faces du disque */
+  .choices { display: grid; gap: 10px; }
+  .choice { position: relative; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 16px; align-items: start; padding: 16px 18px; border: 1px solid var(--hair-strong); border-radius: 2px; background: var(--board); cursor: pointer; transition: border-color .2s, background-color .2s; }
+  .choice:hover { border-color: var(--gold-deep); }
   .choice input { position: absolute; opacity: 0; pointer-events: none; }
-  .choice:has(input:checked) { border-color: var(--y); background: linear-gradient(180deg, rgba(212, 173, 90, .08), var(--tile)); box-shadow: 0 14px 34px rgba(0, 0, 0, .35); }
-  .choice:has(input:focus-visible) { outline: 3px solid rgba(212, 173, 90, .5); outline-offset: 3px; }
-  .choice .top { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-  .radio { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #5a5040; flex: none; display: grid; place-items: center; transition: border-color .2s; }
-  .choice:has(input:checked) .radio { border-color: var(--y); }
-  .choice:has(input:checked) .radio::after { content: ""; width: 11px; height: 11px; border-radius: 50%; background: var(--y); animation: pop .25s ease; }
-  @keyframes pop { from { transform: scale(0); } }
-  .choice h2 { font: 700 20px/1.15 var(--display); letter-spacing: -.02em; margin: 0; color: var(--txt); }
-  .choice .ico { margin-left: auto; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--tile-2); color: var(--txt-2); transition: background .2s, color .2s; }
-  .choice:has(input:checked) .ico { background: var(--y); color: #16120a; }
-  .choice p { color: var(--txt-2); margin: 0 0 0 38px; font-size: 14.5px; }
-  .choice ul { list-style: none; padding: 0; margin: 0 0 0 38px; display: grid; gap: 8px; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .4s ease, opacity .3s, margin .3s; }
-  .choice:has(input:checked) ul { max-height: 120px; opacity: 1; margin-top: 10px; }
-  .choice li { display: flex; gap: 10px; font-size: 14.5px; color: var(--txt-2); }
-  /* coche dessinée (pas de caractère « ✓ ») */
-  .choice li::before { content: ""; flex: none; width: 20px; height: 20px; border-radius: 50%; margin-top: 1px;
-    background: var(--y) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316120a' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 12px no-repeat; }
+  .choice:has(input:checked) { border-color: var(--gold); background: var(--raised); }
+  .choice:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .choice .side-mark { width: 52px; }
+  .choice .side-mark span { font-size: 15px; background: var(--hair-strong); color: var(--ivory); transition: background-color .2s, color .2s; }
+  .choice:has(input:checked) .side-mark span { background: var(--gold); color: var(--on-gold); }
+  .c-title { display: block; font-family: var(--font-display); font-weight: 700; font-size: 21px; letter-spacing: -.02em; line-height: 1.15; }
+  .c-text { display: block; color: var(--mute); font-size: 15px; margin-top: 4px; }
+  .choice ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+  .choice li { display: grid; grid-template-columns: 16px 1fr; gap: 8px; font-size: 14px; color: var(--ivory); }
+  .choice li svg { margin-top: 4px; color: var(--gold); }
 
-  .field { margin-bottom: 14px; }
-  .field label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--txt); }
-  .field label small { font-weight: 500; color: var(--muted); }
-  .field input { width: 100%; font: 16px var(--text); padding: 13px 16px; border-radius: 10px; border: 1.5px solid var(--tile-2); background: var(--tile-2); color: var(--txt); transition: border-color .15s, outline-color .15s, background .15s; }
-  .field input::placeholder { color: #8d8576; }
-  .field input:focus { outline: 2px solid rgba(212, 173, 90, .35); outline-offset: 0; border-color: var(--y); background: #221d16; }
-  .field .hint { font-size: 13px; color: var(--muted); margin-top: 7px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 7px; }
+  .field label small { font-weight: 500; color: var(--faint); }
+  .field input { width: 100%; height: 52px; padding: 0 16px; font-size: 16px; color: var(--ivory); background: var(--board); border: 1px solid var(--hair-strong); border-radius: 2px; transition: border-color .15s; }
+  .field input::placeholder { color: var(--faint); }
+  .field input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .hint { font-size: 13px; color: var(--faint); margin-top: 7px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .group { margin: 22px 0 12px; padding-top: 14px; border-top: 1px solid var(--hair); font-size: 14px; font-weight: 700; color: var(--gold-light); }
   .pw { position: relative; }
-  .pw button { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--y); font: 700 14px var(--text); cursor: pointer; padding: 8px; }
-  .meter { height: 5px; border-radius: 99px; background: var(--line); margin-top: 9px; overflow: hidden; }
-  .meter i { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .25s, background .25s; }
-  .code-input { letter-spacing: 14px; text-align: center; font: 800 30px var(--display) !important; padding: 14px !important; }
-  .who { display: inline-flex; align-items: center; gap: 8px; background: var(--tile-2); border-radius: 999px; padding: 6px 6px 6px 16px; font-weight: 600; font-size: 14px; margin-bottom: 22px; max-width: 100%; }
+  .pw input { padding-right: 92px; }
+  .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); min-height: 40px; padding: 0 12px; border: 0; background: none; color: var(--gold-light); font-weight: 700; font-size: 14px; cursor: pointer; }
+  .meter { height: 4px; background: var(--hair); margin-top: 8px; }
+  .meter i { display: block; height: 100%; width: 0; transition: width .25s, background-color .25s; }
+  .code-input { height: 64px !important; text-align: center; letter-spacing: .5em; padding-left: .5em !important; font-family: var(--font-display) !important; font-weight: 700; font-size: 28px !important; font-variant-numeric: tabular-nums; }
+  .who { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 18px; border: 1px solid var(--hair-strong); border-radius: 2px; font-weight: 600; }
   .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .who button { border: 0; background: var(--panel); border-radius: 999px; padding: 6px 12px; font: 700 13px var(--text); cursor: pointer; color: var(--y); flex: none; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 10px; padding: 15px 24px; font: 800 16px/1 var(--text);
-    cursor: pointer; background: var(--y); color: #16120a; transition: transform .15s, box-shadow .2s, filter .15s; }
-  .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(0, 0, 0, .4); filter: brightness(1.08); }
-  .btn:disabled { opacity: .6; cursor: wait; transform: none; box-shadow: none; }
-  .btn .arr { transition: transform .2s; } .btn:hover .arr { transform: translateX(4px); }
+  .linkbtn { background: none; border: 0; padding: 6px 0; color: var(--gold-light); font-weight: 700; font-size: 14px; cursor: pointer; flex: none; }
+  .linkbtn:hover:not(:disabled) { text-decoration: underline; text-underline-offset: .2em; }
+  .linkbtn:disabled { color: var(--faint); cursor: default; }
   .full { width: 100%; }
   .actions { margin-top: 20px; }
-  .err { display: none; background: #2e1514; border: 1px solid #5c2622; color: #ffd9d4; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
-  .err.on { display: block; animation: shake .35s; }
-  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-  .sandbox { background: #2d2310; border: 1px solid #5a4515; color: #f3e3b0; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
-  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--txt-2); margin: 6px 0 20px; cursor: pointer; }
-  .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--y); flex: none; }
-  .resend { background: none; border: 0; color: var(--y); font: 700 14px var(--text); cursor: pointer; padding: 0; }
-  .resend:disabled { color: var(--muted); cursor: default; }
-  .hint-mail { font-size: 14px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: -8px 0 18px; }
-  .alt { text-align: center; margin-top: 20px; font-size: 15px; color: var(--txt-2); }
-  .alt a { color: var(--y); font-weight: 800; text-decoration: none; }
-  .group { margin: 8px 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--y); }
-  .divider { height: 1px; background: var(--line); margin: 6px 0 22px; }
-  .perks { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 0; padding: 0; list-style: none; }
-  .perks li { font-size: 13px; color: var(--txt-2); background: var(--tile); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; }
-  .perks li b { color: var(--txt); }
-  .legal { margin-top: auto; padding-top: 20px; text-align: center; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .err { display: none; margin-bottom: 16px; padding: 12px 14px; border: 1px solid #5c2622; border-radius: 2px; background: #2e1514; color: #ffd9d4; font-size: 14px; }
+  .err.on { display: block; }
+  .note-box { margin-bottom: 16px; padding: 12px 14px; border: 1px solid #5a4515; border-radius: 2px; background: var(--warn-ground); color: #f3e3b0; font-size: 14px; }
+  .note-box.plain { border-color: var(--hair-strong); background: var(--board); color: var(--mute); }
+  .consent { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0 20px; font-size: 14px; color: var(--mute); cursor: pointer; }
+  .consent input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--gold); flex: none; }
+  .back { margin-top: 18px; }
+  .rule { height: 1px; background: var(--hair); margin: 8px 0 22px; }
+  .legal-line { margin-top: auto; padding-top: 28px; font-size: 13px; color: var(--faint); }
 
-  @media (prefers-reduced-motion: reduce) {
-    .art::before, .art::after, .orbit, .orbit span b, .pill i { animation: none !important; }
-    .stage { transform: none !important; }
-    *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  @media (max-width: 900px) {
+    .signup { grid-template-columns: minmax(0, 1fr); }
+    .rec-side { --sl: 112px; border-right: 0; border-bottom: 1px solid var(--hair); padding: 20px var(--gutter); justify-content: stretch; }
+    .rec-wrap { width: auto; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 18px; }
+    .rec .disc, .rec .sheen { display: none; } /* trop petit pour lire l'étiquette : la pochette seule */
+    .rec .sl-top, .rec .sl-ops { display: none; }
+    .rec .sleeve { padding: 12px; }
+    .rec .sl-title { font-size: 40px; }
+    .credit .by { font-size: 22px; }
+    .form-side { padding: 24px var(--gutter) 24px; }
+    .form-in { max-width: none; }
   }
-  @media (max-width: 960px) {
-    body { align-content: start; background-attachment: scroll; }
-    .shell { grid-template-columns: 1fr; width: min(600px, calc(100% - 24px)); margin: 12px auto; border-radius: 28px; }
-    .art { position: relative; top: 0; height: auto; min-height: 0; max-height: none; padding: 18px 20px 20px; border-radius: 20px; }
-    .stage { min-height: 260px; margin: 0 0 6px; }
-    .orbit { width: 240px; }
-    .orbit span { transform: rotate(var(--a)) translateY(-120px) rotate(calc(var(--a) * -1)); }
-    .orbit span b { height: 26px; padding: 0 9px; font-size: 11px; }
-    .orbit span b img { transform: scale(.85); }
-    .pcard { width: min(230px, 70%); padding: 12px 14px; border-radius: 14px; transform: translateY(-8px); }
-    .pcard .amt { font-size: 20px; } .pcard .brand { font-size: 15px; } .pcard .chipm { width: 30px; height: 22px; }
-    .note.n0, .note.n2 { display: none; }
-    .note { max-width: 250px; padding: 9px 12px 9px 9px; } .note .ic { width: 30px; height: 30px; }
-    .note.n1 { bottom: 0; right: 0; }
-    .tagline { font-size: 24px; }
-    .tagline br { display: none; }
-    .caption { display: none; }
-    .progress li { font-size: 11px; letter-spacing: .04em; } /* plancher de lisibilité : 11 px */
-    .form-side { padding: 20px 14px 18px; }
-    .topbar { margin-bottom: 18px; }
+  @media (max-width: 560px) {
+    .nav-side .home { display: none; }
+    .progress li { font-size: 13px; }
+    .row2 { grid-template-columns: 1fr; gap: 0; }
+    .choice { grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 14px; }
+    .choice .side-mark { width: 44px; }
   }
-  @media (max-width: 520px) {
-    .shell { width: calc(100% - 16px); margin: 8px auto; padding: 6px; border-radius: 24px; gap: 6px; }
-    .art { padding: 14px 16px 16px; border-radius: 18px; }
-    .mark img { height: 26px; }
-    .stage { min-height: 200px; }
-    .orbit { width: 190px; }
-    .orbit span { transform: rotate(var(--a)) translateY(-95px) rotate(calc(var(--a) * -1)); }
-    .orbit span b { height: 22px; padding: 0 7px; font-size: 9.5px; }
-    .pcard { width: 190px; padding: 10px 12px; }
-    .pcard .amt { font-size: 17px; } .pcard .kind { font-size: 9px; } .pcard .name { font-size: 11px; }
-    .note.n1 { display: none; }
-    .tagline { font-size: 21px; }
-    .row2 { gap: 10px; }
-    #f-biz .row2 { grid-template-columns: 1fr; gap: 0; }
-    .art.biz .bars { display: none; }
-    .pcard .amt { white-space: nowrap; }
-    .pcard small { white-space: nowrap; }
-    .choice p, .choice ul { margin-left: 0; }
-    .progress { margin-bottom: 18px; }
-  }
+  @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
 </style>
 </head>
 <body>
-<div class="shell">
 
-  <!-- ================= Visuel vivant ================= -->
-  <aside class="art" id="art" aria-hidden="true">
-    <div class="art-top">
-      <a class="mark" href="/" tabindex="-1"><img src="/assets/logo.png" alt="Pay243"></a>
-      <span class="pill"><i></i> Gratuit · 3 min</span>
-    </div>
-
-    <div class="stage" id="stage">
-      <div class="orbit">
-        <span style="--a:0deg"><b><img class="mpesa" src="/assets/brands/mpesa-wordmark.png" alt="M-Pesa"></b></span>
-        <span style="--a:72deg"><b><img class="airtel" src="/assets/brands/airtel-money.png" alt="Airtel Money"></b></span>
-        <span style="--a:144deg"><b><img class="orange" src="/assets/brands/orange-money.png" alt="Orange Money"></b></span>
-        <span style="--a:216deg"><b><img class="visa" src="/assets/brands/visa.png" alt="Visa"></b></span>
-        <span style="--a:288deg"><b><img class="mastercard" src="/assets/brands/mastercard.png" alt="Mastercard"></b></span>
-      </div>
-
-      <div class="pcard" id="pcard">
-        <div class="row"><span class="brand">Pay<em>243</em></span><span class="kind" id="card-kind">Compte personnel</span></div>
-        <div class="row" style="align-items:flex-end">
-          <div><small id="card-label">Solde disponible</small><div class="amt" id="card-amt">0 FC</div></div>
-          <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        </div>
-        <div class="row"><span class="name" id="card-name">Votre nom</span><span class="chipm"></span></div>
-      </div>
-
-      <div class="feed" id="feed"></div>
-    </div>
-
-    <div>
-      <h2 class="tagline">Un compte pour <br><span class="rot" id="rot"></span></h2>
-    </div>
-  </aside>
-
-  <!-- ================= Formulaire ================= -->
-  <main class="form-side">
-    <div class="topbar">
-      <a href="/" class="back-home">← Accueil</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <div class="nav-side">
+      <a href="/" class="home">← Accueil</a>
       <span>Déjà membre ? <a href="/app">Se connecter</a></span>
     </div>
+  </div>
+</header>
 
-    <ol class="progress" id="progress" aria-label="Progression">
-      <li class="now">Compte</li><li>Email</li><li>Sécurité</li>
-    </ol>
+<div class="signup">
+
+  <!-- La pochette : le type de compte sur l'étiquette, votre nom dans les crédits -->
+  <aside class="rec-side" aria-hidden="true">
+   <div class="rec-wrap">
+    <div class="record rec" id="rec" data-view="personal">
+      <div class="disc">
+        <div class="flip"><div class="spin">
+          <div class="vinyl"></div>
+          <div class="label">
+            <div class="label-face a"><span>Pay243<b>Face A</b></span><span>Particulier</span></div>
+            <div class="label-face b"><span>Pay243<b>Face B</b></span><span>Entreprise</span></div>
+          </div>
+        </div></div>
+        <div class="sheen"></div>
+      </div>
+      <div class="sleeve">
+        <div class="sl-top"><span>Kinshasa · Lubumbashi · Goma</span><span>CDF · USD</span></div>
+        <div class="sl-title"><span>Pay</span><span>243</span></div>
+        <div class="sl-foot">
+          <ul class="sl-ops">
+            <li><img src="/assets/brands/mpesa.png" alt=""></li>
+            <li><img src="/assets/brands/airtel-money.png" alt=""></li>
+            <li><img src="/assets/brands/orange-money.png" alt=""></li>
+            <li><img src="/assets/brands/visa.png" alt=""></li>
+            <li><img src="/assets/brands/mastercard.png" alt=""></li>
+          </ul>
+          <div class="thread"></div>
+        </div>
+      </div>
+    </div>
+    <div class="credit">
+      <p class="kind" id="card-kind">Compte personnel · gratuit</p>
+      <p class="by"><span>Présenté par</span><b id="card-name">Votre nom</b></p>
+    </div>
+   </div>
+  </aside>
+
+  <main class="form-side">
+   <div class="form-in">
+    <ol class="progress" id="progress" aria-label="Progression"></ol>
 
     <h1 id="headline">Ouvrez votre compte</h1>
 
     <!-- Étape 1 : type de compte -->
-    <section class="on" data-step="1" aria-labelledby="headline">
+    <div class="on" data-step="1">
       <form id="f-type">
         <div class="choices" role="radiogroup" aria-label="Type de compte">
           <label class="choice">
             <input type="radio" name="account_type" value="personal" checked>
-            <div class="top"><span class="radio"></span><h2>Particulier</h2>
-              <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span></div>
-            <p>Payer, envoyer, recharger.</p>
-            <ul>
-              <li>Mobile Money et cartes</li>
-              <li>Envois gratuits, CDF et USD</li>
-            </ul>
+            <span class="side-mark" aria-hidden="true"><span>A</span></span>
+            <span>
+              <span class="c-title">Particulier</span>
+              <span class="c-text">Payer, envoyer, recharger.</span>
+              <ul>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Mobile Money et cartes</li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Envois gratuits, CDF et USD</li>
+              </ul>
+            </span>
           </label>
           <label class="choice">
             <input type="radio" name="account_type" value="business">
-            <div class="top"><span class="radio"></span><h2>Entreprise</h2>
-              <span class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M10 20v-6h4v6"/></svg></span></div>
-            <p>Encaisser en ligne et sur WhatsApp.</p>
-            <ul>
-              <li>Wallet, Mobile Money et cartes</li>
-              <li>2,5 % par vente, sans abonnement</li>
-            </ul>
+            <span class="side-mark" aria-hidden="true"><span>B</span></span>
+            <span>
+              <span class="c-title">Entreprise</span>
+              <span class="c-text">Encaisser en ligne et sur WhatsApp.</span>
+              <ul>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Wallet, Mobile Money et cartes</li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>2,5 % par vente, sans abonnement</li>
+              </ul>
+            </span>
           </label>
         </div>
-        <div class="actions"><button class="btn full">Commencer <span class="arr">→</span></button></div>
+        <div class="actions"><button class="btn btn-gold btn-lg full">Commencer</button></div>
       </form>
-    </section>
+    </div>
 
     <!-- Étape entreprise (comptes entreprise uniquement) -->
-    <section data-step="biz">
-      <p class="lead">Informations légales et contact de votre entreprise.</p>
+    <div data-step="biz">
+      <p class="step-lead">Informations légales et contact de votre entreprise.</p>
       <div class="err" id="errb" role="alert"></div>
       <form id="f-biz" novalidate>
         <div class="field"><label for="business_name">Raison sociale</label><input id="business_name" name="name" autocomplete="organization" required placeholder="Ex : Boutique Kin Mode SARL"></div>
@@ -324,36 +233,35 @@
           <div class="field"><label for="b-fax">Fax <small>(facultatif)</small></label><input id="b-fax" name="fax" type="tel" inputmode="tel"></div>
           <div class="field"><label for="b-web">Site web <small>(facultatif)</small></label><input id="b-web" name="website" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="www.entreprise.cd"></div>
         </div>
-        <button class="btn full">Continuer <span class="arr">→</span></button>
+        <button class="btn btn-gold btn-lg full">Continuer</button>
       </form>
-      <p class="alt"><button type="button" class="resend" data-back="1">← Retour</button></p>
-    </section>
+      <p class="back"><button type="button" class="linkbtn" data-back="1">← Retour</button></p>
+    </div>
 
     <!-- Étape 2 : adresse email -->
-    <section data-step="2">
-      <p class="lead">Nous y envoyons un code de vérification.</p>
+    <div data-step="2">
+      <p class="step-lead">Nous y envoyons un code de vérification.</p>
       <div class="err" id="err2" role="alert"></div>
       <form id="f-email" novalidate>
         <div class="field"><label for="email">Adresse email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="vous@exemple.com"></div>
-        <button class="btn full">Continuer <span class="arr">→</span></button>
+        <button class="btn btn-gold btn-lg full">Continuer</button>
       </form>
-      <p class="alt"><button type="button" class="resend" data-back="before-email">← Retour</button></p>
-    </section>
+      <p class="back"><button type="button" class="linkbtn" data-back="before-email">← Retour</button></p>
+    </div>
 
     <!-- Étape 3 : vérification + informations -->
-    <section data-step="3">
-      <p class="lead" style="margin-bottom:10px">Code envoyé à :</p>
-      <div class="who"><span id="who-email"></span><button type="button" data-back="2">Modifier</button></div>
-      <div class="sandbox" id="sandbox-note" hidden></div>
-      <p class="hint-mail" id="mail-hint" hidden>Rien reçu ? Vérifiez vos <b>courriers indésirables</b> (expéditeur : no-reply@pay243.com).</p>
+    <div data-step="3">
+      <div class="who"><span>Code envoyé à <b id="who-email"></b></span><button type="button" class="linkbtn" data-back="2">Modifier</button></div>
+      <div class="note-box" id="sandbox-note" hidden></div>
+      <p class="note-box plain" id="mail-hint" hidden>Rien reçu ? Vérifiez vos courriers indésirables (expéditeur : no-reply@pay243.com).</p>
       <div class="err" id="err3" role="alert"></div>
       <form id="f-account" novalidate>
         <div class="field">
           <label for="otp">Code à 6 chiffres</label>
           <input id="otp" name="otp_code" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" required>
-          <div class="hint"><button type="button" class="resend" id="resend" disabled>Renvoyer le code</button> <span id="resend-timer"></span></div>
+          <div class="hint"><button type="button" class="linkbtn" id="resend" disabled>Renvoyer le code</button> <span id="resend-timer"></span></div>
         </div>
-        <div class="divider"></div>
+        <div class="rule"></div>
         <div class="field"><label for="full_name" id="name-label">Nom complet</label><input id="full_name" name="full_name" autocomplete="name" required placeholder="Ex : Grace Mbuyi"></div>
         <div class="field"><label for="phone">Mobile Money <small>(facultatif)</small></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678"></div>
         <div class="field"><label for="password">Mot de passe</label>
@@ -361,15 +269,16 @@
           <div class="meter"><i id="meter"></i></div><div class="hint" id="pw-hint">8 caractères minimum.</div></div>
         <div class="row2">
           <div class="field"><label for="pin">PIN</label><input id="pin" name="pin" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required placeholder="4 à 6 chiffres"></div>
-          <div class="field"><label for="pin2">Confirmer</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
+          <div class="field"><label for="pin2">Confirmer le PIN</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
         </div>
         <label class="consent"><input type="checkbox" id="consent" required>
           <span>J'accepte les conditions et j'ai 18 ans ou plus.</span></label>
-        <button class="btn full" id="create">Créer mon compte</button>
+        <button class="btn btn-gold btn-lg full" id="create">Créer mon compte</button>
       </form>
-    </section>
+    </div>
 
-    <p class="legal">© <span id="year"></span> Pay243 · Kinshasa, RDC</p>
+    <p class="legal-line">© <span id="year"></span> Pay243 · Kinshasa, RDC</p>
+   </div>
   </main>
 </div>
 
@@ -382,6 +291,8 @@ try {
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const state = { type: new URLSearchParams(location.search).get('type') === 'business' ? 'business' : 'personal', email: '', business: null };
+// Email saisi sur la page d'accueil (formulaire « Créer mon wallet ») : repris dans le champ, toujours modifiable.
+{ const pre = (new URLSearchParams(location.search).get('email') || '').trim().slice(0, 254); if (pre && $('#email')) $('#email').value = pre; }
 const DEVICE_ID = (() => {
   try { let d = localStorage.getItem('pay243_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('pay243_device', d); } return d; }
   catch { return null; }
@@ -394,94 +305,19 @@ async function api(path, body) {
   if (!r.ok) throw Object.assign(new Error(j.error?.message || 'Erreur réseau. Réessayez.'), { code: j.error?.code, details: j.error?.details });
   return j;
 }
-const showErr = (id, msg) => { const e = $(id); e.classList.remove('on'); void e.offsetWidth; e.textContent = msg || ''; e.classList.toggle('on', !!msg); };
+const showErr = (id, msg) => { const e = $(id); e.textContent = msg || ''; e.classList.toggle('on', !!msg); };
 async function busy(btn, label, fn) {
   const old = btn.innerHTML; btn.disabled = true; btn.textContent = label;
   try { await fn(); } finally { btn.disabled = false; btn.innerHTML = old; }
 }
 
 // =====================================================================
-//  Scène vivante (panneau de gauche) — purement décorative
+//  La pochette (panneau de gauche) — décorative : face du disque et crédits
 // =====================================================================
-const SCENES = {
-  personal: {
-    kind: 'Compte personnel', label: 'Solde disponible', amount: 250000, currency: 'CDF',
-    words: ['payer', 'envoyer', 'recharger', 'épargner'],
-    notes: [
-      // couleurs : palette Kuba (succès vert, or) ; rouge M-Pesa et orange Orange Money = couleurs des opérateurs
-      { ic: '↘', c: '#86d6a4', t: '+25 000 FC', s: 'Reçu de Grace' },
-      { ic: 'M', c: '#ff4d4d', t: 'Recharge M-Pesa', s: '+50 000 FC' },
-      { ic: '↗', c: '#d4ad5a', t: 'Envoyé · 40 $', s: 'Gratuit' },
-      { ic: '✓', c: '#86d6a4', t: 'Paiement réussi', s: 'En ligne' },
-      { ic: 'O', c: '#ff8a1f', t: 'Retrait Orange', s: '20 000 FC' },
-    ],
-  },
-  business: {
-    kind: 'Compte entreprise', label: 'Ventes du jour', amount: 124580, currency: 'USD',
-    words: ['vendre', 'encaisser', 'être payé', 'grandir'],
-    notes: [
-      { ic: '$', c: '#86d6a4', t: 'Vente · 45,00 $', s: 'Wallet Pay243' },
-      { ic: '🔗', c: '#d4ad5a', t: 'Lien payé', s: 'Commande n°1024' },
-      { ic: 'M', c: '#ff4d4d', t: 'M-Pesa reçu', s: '+85 000 FC' },
-      { ic: '↘', c: '#ebcb84', t: 'Ventes versées', s: '312,40 $' },
-      { ic: '★', c: '#ff8a1f', t: 'Client fidèle', s: '3ᵉ achat' },
-    ],
-  },
-};
-const fmtMoney = (minor, cur) => cur === 'USD'
-  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
-  : Math.round(minor).toLocaleString('fr-FR').replace(/ /g, ' ') + ' FC'; // espace fine presque invisible dans la police : espace insécable normale
-
-let countRaf;
-function countTo(target, cur) {
-  cancelAnimationFrame(countRaf);
-  const el = $('#card-amt'); const value = cur === 'USD' ? target : target;
-  if (REDUCED) { el.textContent = fmtMoney(value, cur); return; }
-  const t0 = performance.now(); const dur = 1400;
-  const step = (t) => { const k = Math.min(1, (t - t0) / dur); const e = 1 - Math.pow(1 - k, 3); el.textContent = fmtMoney(value * e, cur); if (k < 1) countRaf = requestAnimationFrame(step); };
-  countRaf = requestAnimationFrame(step);
-}
-
-// Mots qui défilent dans l'accroche
-let wordTimer; let wordIdx = 0;
-function setWords(words) {
-  const rot = $('#rot'); rot.innerHTML = words.map((w) => `<b>${w}</b>`).join('');
-  const items = [...rot.children]; wordIdx = 0; items[0].classList.add('on');
-  clearInterval(wordTimer);
-  if (REDUCED) return;
-  wordTimer = setInterval(() => {
-    const cur = items[wordIdx]; cur.classList.remove('on'); cur.classList.add('out');
-    setTimeout(() => cur.classList.remove('out'), 600);
-    wordIdx = (wordIdx + 1) % items.length; items[wordIdx].classList.add('on');
-  }, 2600);
-}
-
-// Notifications qui apparaissent tour à tour
-let feedTimer; let feedIdx = 0;
-function setFeed(notes) {
-  const feed = $('#feed');
-  feed.innerHTML = [0, 1, 2].map((i) => `<div class="note n${i}"></div>`).join('');
-  const slots = [...feed.children]; feedIdx = 0;
-  const fill = (slot, n) => { slot.style.setProperty('--c', n.c); slot.innerHTML = `<span class="ic">${n.ic}</span><div><b>${n.t}</b><span>${n.s}</span></div>`; };
-  slots.forEach((s, i) => { fill(s, notes[i % notes.length]); setTimeout(() => s.classList.add('on'), 300 + i * 450); });
-  feedIdx = slots.length;
-  clearInterval(feedTimer);
-  if (REDUCED) return;
-  let slotIdx = 0;
-  feedTimer = setInterval(() => {
-    const s = slots[slotIdx]; s.classList.remove('on');
-    setTimeout(() => { fill(s, notes[feedIdx++ % notes.length]); s.classList.add('on'); }, 450);
-    slotIdx = (slotIdx + 1) % slots.length;
-  }, 2300);
-}
-
+const KINDS = { personal: 'Compte personnel · gratuit', business: 'Compte entreprise · 2,5 % par vente' };
 function renderScene(type) {
-  const sc = SCENES[type];
-  $('#art').classList.toggle('biz', type === 'business');
-  $('#card-kind').textContent = sc.kind; $('#card-label').textContent = sc.label;
-  countTo(sc.amount, sc.currency);
-  setWords(sc.words); setFeed(sc.notes);
-  $$('#bars i').forEach((b, i) => { b.style.height = '0'; setTimeout(() => { b.style.height = `${[38, 55, 46, 70, 62, 84, 100][i]}%`; }, 120 + i * 70); });
+  $('#rec').dataset.view = type;
+  $('#card-kind').textContent = KINDS[type];
   updateCardName();
 }
 function updateCardName() {
@@ -490,19 +326,6 @@ function updateCardName() {
   $('#card-name').textContent = n;
 }
 ['#full_name', '#business_name'].forEach((s) => $(s).addEventListener('input', updateCardName));
-
-// Carte qui s'incline sous la souris
-if (!REDUCED) {
-  const art = $('#art'); const stage = $('#stage'); const card = $('#pcard');
-  art.addEventListener('pointermove', (e) => {
-    const r = art.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - .5; const y = (e.clientY - r.top) / r.height - .5;
-    stage.style.setProperty('--ry', `${x * 16}deg`); stage.style.setProperty('--rx', `${-y * 12}deg`);
-    const c = card.getBoundingClientRect();
-    card.style.setProperty('--mx', `${e.clientX - c.left}px`); card.style.setProperty('--my', `${e.clientY - c.top}px`);
-  });
-  art.addEventListener('pointerleave', () => { stage.style.setProperty('--ry', '0deg'); stage.style.setProperty('--rx', '0deg'); });
-}
 
 // =====================================================================
 //  Parcours d'inscription
@@ -517,7 +340,7 @@ const STEP_LABELS = { 1: 'Compte', biz: 'Entreprise', 2: 'Email', 3: 'Sécurité
 const stepOrder = () => (state.type === 'business' ? ['1', 'biz', '2', '3'] : ['1', '2', '3']);
 function renderProgress(step) {
   const order = stepOrder(); const at = order.indexOf(String(step));
-  $('#progress').innerHTML = order.map((s, i) => `<li class="${i < at ? 'done' : i === at ? 'now' : ''}">${STEP_LABELS[s]}</li>`).join('');
+  $('#progress').innerHTML = order.map((s, i) => `<li class="${i < at ? 'done' : i === at ? 'now' : ''}"${i === at ? ' aria-current="step"' : ''}><i>${i + 1}</i>${STEP_LABELS[s]}</li>`).join('');
 }
 function go(step) {
   $$('[data-step]').forEach((s) => s.classList.toggle('on', s.dataset.step === String(step)));
@@ -606,7 +429,7 @@ $('#password').addEventListener('input', (e) => {
   const score = [v.length >= 8, v.length >= 12, /[a-z]/.test(v) && /[A-Z]/.test(v), /\d/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
   const m = $('#meter');
   m.style.width = `${(score / 5) * 100}%`;
-  m.style.background = score <= 2 ? '#ff6b6b' : score === 3 ? '#fdb813' : '#2fd27a';
+  m.style.background = score <= 2 ? '#ff948a' : score === 3 ? '#ecc46f' : '#86d6a4';
   $('#pw-hint').textContent = !v ? '8 caractères minimum.' : score <= 2 ? 'Mot de passe faible.' : score === 3 ? 'Mot de passe correct.' : 'Mot de passe solide.';
 });
 $('#otp').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
