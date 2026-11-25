@@ -67,6 +67,13 @@ header.top #who .av, .av { background-color: var(--k-panel); color: var(--k-gold
 .tabs a.tab-link { color: var(--k-mute); }
 .tabs a.tab-link:hover { color: var(--k-ivory); background: var(--k-raise); }
 
+/* ---------- Titres et chiffres : la police d'affichage (voir DESIGN.md) ---------- */
+h1, h2, h3, .page-head h1 { font-family: var(--font-display); letter-spacing: -.02em; }
+.page-head h1 { font-size: 32px; font-weight: 700; }
+.kpi .v, .rev-main .v, .rev-grid .v, .drawer .big, .sum .amt { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.kpi.main .v { font-size: 30px; }
+table.tx .num { font-family: var(--font-display); font-weight: 600; }
+
 /* ---------- Cartes de contenu ---------- */
 .card { background: var(--k-panel); border: 1px solid var(--k-line); border-radius: 16px; }
 .card h2 { color: var(--k-ivory); font-size: 16px; font-weight: 700; letter-spacing: -.01em; }

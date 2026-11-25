@@ -227,7 +227,7 @@
   .panel { background: #15130f; border: 1px solid #2a2620; box-shadow: none; }
   .add { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
   .profile .cover { position: relative; background: linear-gradient(160deg, #2a2214 0%, #15130f 70%); color: #f2ead8; }
-  .profile .cover::after { right: 0; left: 0; bottom: 0; width: auto; height: 3px; border-radius: 0; background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); }
+  .profile .cover::after { right: 0; left: 0; top: 0; bottom: auto; width: auto; height: 3px; border-radius: 0; /* fil RDC en haut de la bannière, pas derrière l'avatar */ background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); }
   .avatar { border-color: #15130f; background-color: #1d1a14; color: #d4ad5a; box-shadow: 0 0 0 1.5px #d4ad5a; }
   .avatar-edit { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
   .lk.danger { color: #ff948a; }

@@ -26,7 +26,7 @@
   --red: #ce1021;
   --green: var(--k-ok);
   --radius: 28px;
-  --display: var(--font-sans);
+  --display: var(--font-display); /* Bricolage Grotesque : titres et chiffres */
   --text: var(--font-sans);
   color-scheme: dark;
 }
