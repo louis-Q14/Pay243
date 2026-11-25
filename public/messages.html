@@ -103,7 +103,7 @@
   .pane-body { flex: 1; padding: 22px 28px; }
   .empty { flex: 1; display: grid; place-items: center; text-align: center; padding: 40px 24px; color: var(--muted); }
   .empty svg { width: 54px; height: 54px; color: var(--navy); }
-  .empty h3 { color: var(--ink); margin: 12px 0 4px; font-size: 18px; }
+  .empty h2 { color: var(--ink); margin: 12px 0 4px; font-size: 18px; }
   .empty p { margin: 0 auto 16px; max-width: 42ch; font-size: 14px; }
 
   .thread { display: flex; flex-direction: column; gap: 10px; max-height: 56vh; overflow-y: auto; padding: 2px; }
@@ -168,6 +168,55 @@
     .reply .bar .btn { flex: 1; }
     .sa-files img { width: 104px; height: 78px; }
   }
+
+  /* ================= Monde « pochette de rumba » (voir DESIGN.md), comme l'accueil et le wallet =================
+     Angles de 2 px et filets ; seul le point « non lu » reste rond. Titres en police d'affichage. */
+  .top { background: rgba(13, 12, 10, .96); border-bottom: 1px solid var(--line); }
+  .top::after { display: none; }
+  .top .in, main { max-width: 1520px; padding-left: clamp(16px, 4vw, 56px); padding-right: clamp(16px, 4vw, 56px); }
+  .top .in { height: 68px; }
+  .top .brand img { box-shadow: none; border-radius: 0; }
+  .top .brand span { color: var(--ink-2); font-weight: 600; }
+  .top nav a { border-radius: 0; padding: 8px 4px; margin-left: 18px; }
+  .top nav a:hover { background: none; color: #ebcb84; }
+  main { padding-top: 40px; }
+  .page-head { margin-bottom: 28px; }
+  .page-head h1 { font-size: clamp(32px, 3vw, 44px); letter-spacing: -.03em; }
+  .count { border-radius: 2px; font-family: var(--font-sans); font-size: 13px; }
+  .need a { color: #ebcb84; }
+  .btn { border-radius: 2px; min-height: 44px; padding: 0 18px; }
+  .btn:hover { filter: none; background: #ebcb84; }
+  .btn.light { background: transparent; border: 1px solid var(--line-2); }
+  .btn.light:hover { background: var(--soft); border-color: var(--navy); }
+  input, select, textarea { border: 1px solid var(--line-2); border-radius: 2px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .pill, .toast, .safety { border-radius: 2px; }
+
+  /* la liste des conversations : des lignes filetées, comme une liste de titres */
+  .inbox { gap: 0; border-top: 1px solid var(--line-2); }
+  .conv { border: 1px solid transparent; border-bottom-color: var(--line); border-radius: 0; padding: 16px 14px; }
+  .conv:hover { background: var(--soft); }
+  .conv.sel { background: var(--soft); border-color: var(--gold); }
+  .conv .ic, .pane-head .ic, .closed-box .ic { border-radius: 2px; }
+  .conv b { font-size: 16px; }
+  .legal { text-align: left; margin: 18px 0 0; color: var(--muted); }
+
+  /* la conversation */
+  .pane { border-radius: 2px; }
+  .pane-head h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .empty h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .empty svg { color: var(--gold); }
+  .bubble { border-radius: 2px; }
+  .bubble.them { background: var(--soft); border: 1px solid var(--line-2); }
+  .bubble.me { background: #1d180e; border: 1px solid var(--navy); }
+  .closed-box { border-radius: 2px; border: 1px solid var(--line-2); background: transparent; }
+  .sa-btn, .sa-chip, .sa-doc, .sa-doc b, .sa-files img, .sa-zoom img { border-radius: 2px; }
+  @media (max-width: 860px) {
+    .top .in { height: 60px; }
+    .top nav a { margin-left: 12px; }
+    main { padding-top: 20px; }
+    .conv { background: transparent; border-radius: 0; }
+  }
 </style>
 </head>
 <body>
@@ -204,7 +253,7 @@
       <!-- Visiteur -->
       <div class="empty" id="v-guest" hidden><div>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-        <h3>Connectez-vous pour voir vos messages</h3>
+        <h2>Connectez-vous pour voir vos messages</h2>
         <p>Écrivez au support, joignez une capture ou un reçu, et suivez les réponses de nos conseillers.</p>
         <a class="btn" id="login-link" href="/app?next=%2Fmessages">Se connecter</a>
       </div></div>
@@ -212,7 +261,7 @@
       <!-- Aucune conversation ouverte -->
       <div class="empty" id="v-empty" hidden><div>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/></svg>
-        <h3 id="empty-title">Sélectionnez une conversation</h3>
+        <h2 id="empty-title">Sélectionnez une conversation</h2>
         <p id="empty-text">Les réponses du support s'affichent ici. Vous êtes aussi prévenu par email.</p>
         <button class="btn" type="button" data-new>Nouvelle demande</button>
       </div></div>
