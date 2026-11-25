@@ -374,3 +374,69 @@ footer { border-top: 1px solid var(--hair); padding: 48px 0 28px; background: va
   .spin { animation: none; }
   .flip, .btn, .faq summary::after { transition: none; }
 }
+
+/* ---------- Téléphone compact : tout un cran plus petit, moins de défilement ---------- */
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .nav .wrap { min-height: 58px; gap: 10px; }
+  .logo-img { height: 24px; }
+  .nav-cta .btn { min-height: 38px; padding: 0 12px; font-size: 13px; }
+  .burger { width: 40px; height: 40px; }
+  .burger span { left: 10px; top: 18px; }
+  .mobile-menu > a { min-height: 46px; font-size: 16px; }
+
+  .btn { min-height: 44px; font-size: 14px; padding: 0 16px; }
+  .btn-lg { min-height: 48px; font-size: 15px; padding: 0 20px; }
+
+  /* la pochette et la face */
+  .hero { padding: 20px 0 36px; }
+  .hero-grid { --sl: min(56vw, 230px); row-gap: 22px; }
+  .side-switch { margin-bottom: 18px; }
+  .side-switch button { padding: 8px 12px 9px; font-size: 14px; }
+  .side-switch button b { font-size: 12px; }
+  .hero h1 { font-size: 32px; }
+  .lead { margin-top: 12px; font-size: 15px; }
+  .tracks { margin-top: 20px; }
+  .tracks .head { font-size: 12px; padding-bottom: 6px; }
+  .tracks li:not(.head) { padding: 9px 0; font-size: 15px; }
+  .tracks i { font-size: 12px; }
+  .tracks b { font-size: 17px; }
+  .tracks b.word { font-size: 13px; }
+  .join { margin-top: 18px; gap: 8px; }
+  .join input { height: 48px; font-size: 15px; }
+  .ctas { margin-top: 18px; }
+  .fine { margin-top: 10px; font-size: 12px; }
+
+  /* les sections */
+  section { padding: 44px 0; }
+  .side-head { gap: 12px; margin-bottom: 24px; }
+  .side-mark { width: 52px; }
+  .side-mark span { font-size: 16px; }
+  h2.big { font-size: 26px; }
+  .sub { margin-top: 10px; font-size: 15px; }
+  .plage { padding: 20px 0; gap: 10px; }
+  .plage .num { font-size: 20px; }
+  .plage h3 { font-size: 19px; }
+  .plage p { margin-top: 6px; font-size: 15px; }
+  .receipt { padding: 2px 14px; font-size: 14px; }
+  .receipt .line { padding: 8px 0; }
+  .receipt .line b.gold { font-size: 15px; }
+  .receipt .fx { font-size: 20px; padding: 10px 0 8px; }
+  .checks li { font-size: 15px; }
+  .bubble { font-size: 14px; }
+  .code pre { font-size: 12px; padding: 12px 14px; }
+  .tarifs { gap: 18px; }
+  .tracks.price li:not(.head) { padding: 11px 0; font-size: 15px; }
+  .tracks.price b { font-size: 19px; }
+  .liner { gap: 18px; }
+  .credits { font-size: 14px; padding-top: 16px; }
+  .credits p { margin-bottom: 12px; }
+  .faq summary { padding: 15px 0; font-size: 15px; }
+  .faq details p { font-size: 14px; padding-bottom: 16px; }
+  .fin h2.big { font-size: 28px; }
+  .fin .ctas { margin-top: 20px; }
+  footer { padding: 32px 0 22px; }
+  .foot { gap: 22px; }
+  .foot .about, .foot a { font-size: 13px; }
+  .legal { margin-top: 24px; font-size: 12px; }
+}

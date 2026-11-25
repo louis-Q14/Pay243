@@ -124,3 +124,33 @@ main.mon .rev-main .v, main.mon .rev-grid .v { font-family: var(--font-display);
   main.mon table.tx tr { padding: 14px 0; gap: 4px 12px; }
   .card { padding: 18px 16px; }
 }
+
+/* ---------- Téléphone compact : tout un cran plus petit ---------- */
+@media (max-width: 560px) {
+  header.top { min-height: 54px; }
+  header.top .logo-img { height: 22px; }
+  header.top .hd-links { gap: 14px; font-size: 14px; }
+  .card { padding: 14px 12px; margin-bottom: 12px; }
+  .card h2 { font-size: 18px; }
+  button.full { min-height: 46px; font-size: 15px; }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]), select { min-height: 42px; }
+  .modal h3 { font-size: 20px; }
+  main.mon { padding: 0 12px 32px; }
+  main.mon .page-head { margin: 16px 0 14px; gap: 10px; }
+  main.mon .page-head h1 { font-size: 26px; }
+  main.mon .page-head .muted { font-size: 13px; }
+  main.mon .seg button, main.mon .controls select, main.mon .controls .ghost { min-height: 38px; font-size: 13px; }
+  main.mon .kpis { margin-bottom: 18px; }
+  main.mon .kpi { padding: 10px 4px; }
+  main.mon .kpi small { font-size: 12px; }
+  main.mon .kpi .v { font-size: 19px; margin: 3px 0 2px; }
+  main.mon .kpi .s { font-size: 12px; }
+  main.mon .kpi.main { padding: 14px 14px 22px; }
+  main.mon .kpi.main .v { font-size: 24px; }
+  main.mon table.tx { font-size: 13px; }
+  main.mon table.tx tr { padding: 11px 0; }
+  main.mon table.tx .num { font-size: 14px; }
+  .drawer { padding: 18px 16px 24px; }
+  .drawer h3 { font-size: 19px; }
+  .drawer .big { font-size: 28px; }
+}

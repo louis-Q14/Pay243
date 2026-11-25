@@ -70,6 +70,22 @@
   .secure { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 18px 0 8px; font-size: 14px; color: var(--k-mute); }
   .secure svg { width: 16px; height: 16px; color: var(--k-gold); }
   .secure-logos .brand-logos { border-radius: 2px; }
+  /* téléphone compact */
+  @media (max-width: 560px) {
+    main.center { margin: 16px auto 28px; padding: 0 12px; }
+    .brand .logo-img { height: 24px; }
+    #box > :not(.sum) { margin-left: 16px; margin-right: 16px; }
+    .sum { padding: 18px 18px 24px; margin-bottom: 16px; }
+    .sum::before { inset: 7px 7px 12px; }
+    .sum .muted { font-size: 14px; }
+    .sum .amt { font-size: 36px; }
+    .methods button { min-height: 50px; font-size: 15px; }
+    #pane label { margin: 12px 0 5px; font-size: 13px; }
+    .state { padding: 20px 6px 6px; }
+    .state .big svg { width: 40px; height: 40px; }
+    .state b { font-size: 19px; }
+    .spinner { width: 46px; height: 46px; }
+  }
 </style>
 </head>
 <body>

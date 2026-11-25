@@ -126,6 +126,22 @@
     #auth .login-panel .sub { font-size: 15px; margin-bottom: 14px; }
   }
   @media (prefers-reduced-motion: reduce) { #auth .disc { animation: none; } }
+  /* téléphone compact */
+  @media (max-width: 560px) {
+    #auth .login-bar { min-height: 54px; }
+    #auth .login-bar img { height: 22px; }
+    #auth.login-stage { --sl: 76px; }
+    #auth .sl-title { font-size: 27px; }
+    #auth .login-art { padding: 14px 16px; }
+    #auth .login-art h1 { font-size: 18px; }
+    #auth .login-panel { padding: 18px 16px 22px; }
+    #auth .login-panel .card h2 { font-size: 24px; }
+    #auth .login-panel .sub { font-size: 14px; margin-bottom: 8px; }
+    #auth .login-panel label { margin: 14px 0 6px; font-size: 13px; }
+    #auth .login-panel input { height: 46px; font-size: 15px; }
+    #auth .login-panel button.full { min-height: 48px; margin-top: 18px; font-size: 15px; }
+    #auth .login-panel .alt { margin-top: 16px; padding-top: 14px; font-size: 14px; }
+  }
 
   /* ================= Historique : liste allégée + détail au clic ================= */
   /* filets droits jusqu'au bord, rangées en retrait du cadre */

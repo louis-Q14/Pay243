@@ -124,6 +124,25 @@
     .choice .side-mark { width: 44px; }
   }
   @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+  /* téléphone compact */
+  @media (max-width: 560px) {
+    .rec-side { --sl: 88px; padding: 14px 16px; }
+    .rec .sl-title { font-size: 30px; }
+    .credit .kind { font-size: 13px; }
+    .credit .by { font-size: 19px; }
+    .form-side { padding: 18px 16px 20px; }
+    .progress { margin-bottom: 18px; }
+    .progress li { padding-top: 8px; }
+    h1#headline { font-size: 25px; margin-bottom: 16px; }
+    .choice { padding: 12px; gap: 10px; grid-template-columns: 40px minmax(0, 1fr); }
+    .choice .side-mark { width: 40px; }
+    .c-title { font-size: 18px; }
+    .c-text, .choice li { font-size: 13px; }
+    .field { margin-bottom: 12px; }
+    .field input { height: 46px; font-size: 15px; }
+    .code-input { height: 56px !important; font-size: 24px !important; }
+    .legal-line { padding-top: 18px; }
+  }
 </style>
 </head>
 <body>

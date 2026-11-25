@@ -186,6 +186,47 @@ body.locked .home .actions button { opacity: .5; }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .modal { animation: none !important; } }
 
+/* ---------- Téléphone compact : tout un cran plus petit ---------- */
+@media (max-width: 560px) {
+  header.top { min-height: 54px; }
+  header.top .logo-img { height: 22px; }
+  header.top #who .av { width: 28px; height: 28px; font-size: 11px; }
+  main#app { padding: 12px 12px 92px; }
+  .home { gap: 16px; }
+  .home-side { gap: 14px; }
+  .plaque { padding: 18px 18px 16px; gap: 12px; }
+  .plaque::before { inset: 7px; }
+  .pl-top { font-size: 12px; }
+  .plaque .balance small { font-size: 13px; }
+  .plaque .cdf .amt { font-size: 36px; }
+  .plaque .usd .amt { font-size: 22px; }
+  .plaque .usd { padding-top: 12px; }
+  .pl-thread { height: 4px; }
+  .home .actions button { min-height: 48px; font-size: 15px; column-gap: 10px; padding: 0 10px; }
+  .home .actions button i { font-size: 12px; }
+  .home .actions button .ico { width: 18px; height: 18px; }
+  #limits { font-size: 12px; }
+  #app .card { padding: 16px 14px; margin-bottom: 12px; }
+  #app .card h2 { font-size: 18px; }
+  .carnet { padding: 16px 14px 6px !important; }
+  .carnet h2 { font-size: 20px !important; }
+  #history .h-day { padding: 16px 0 6px; font-size: 14px; }
+  #history .h-item { gap: 10px; padding: 10px 2px; }
+  .h-ic { width: 32px; height: 32px; }
+  .h-ic .ico { width: 16px; height: 16px; }
+  #history .h-t b { font-size: 14px; }
+  #history .h-amt { font-size: 15px; }
+  .fx-row input, .fx-row output { font-size: 28px; }
+  .fx-box { padding: 12px 14px; }
+  .cw-head h2 { font-size: 21px; }
+  .tabs button, .tabs a.tab-link { padding: 7px 2px 5px; font-size: 11px; } /* plancher de lisibilité : 11 px */
+  .tabs button .ico { width: 20px; height: 20px; }
+  .modal { padding: 10px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .modal h3 { font-size: 20px; }
+  #app button.full, .modal button.full { min-height: 48px; font-size: 15px; }
+  #app input, #app select, .modal input, .modal select { min-height: 44px; }
+}
+
 /* ---------- Ordinateur : icônes discrètes dans les onglets ---------- */
 @media (min-width: 561px) {
   .tabs button { display: inline-flex; align-items: center; gap: 8px; }
