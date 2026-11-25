@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import { assertNewPassword, assertNewPin, hashSecret, requireUser, signToken, verifyPin, verifySecret } from '../auth.js';
 import { isUniqueViolation, q, tx } from '../db.js';
 import { serializeTxn } from '../ledger.js';
+import { accountWalletIds, consolidateBusinessWallets } from '../accounts.js';
 import { rateLimit } from '../middleware.js';
 import { issueOtp, normalizeDeviceId, verifyOtp } from '../otp.js';
 import { accessOf, createMerchantAccount } from '../services/merchants.js';
@@ -304,6 +305,8 @@ settingsRouter.post('/me/business', sensitive, async (req, res) => {
     if (existing) return { id: existing.id, name: existing.name };
     return { ...(await createMerchantAccount(u.id, name)), name };
   });
+  // Une entreprise n'a qu'un compte : son solde de particulier passe sur le compte marchand.
+  await consolidateBusinessWallets();
   const row = await q.get('SELECT * FROM merchants WHERE id=?', merchant.id);
   res.json({
     user: serializeUser(await reload(u.id)),
@@ -313,9 +316,9 @@ settingsRouter.post('/me/business', sensitive, async (req, res) => {
 });
 
 // ---------- Données personnelles et relevés ----------
-const userWalletIds = async (userId) => (await q.all("SELECT id FROM wallets WHERE owner_type='user' AND owner_id=?", userId)).map((w) => w.id);
-async function userTransactions(userId, { from, to } = {}) {
-  const ids = await userWalletIds(userId);
+// Le compte de l'utilisateur : pour une entreprise, son compte marchand (et ses anciens wallets personnels).
+async function userTransactions(user, { from, to } = {}) {
+  const ids = await accountWalletIds(user);
   const marks = ids.map(() => '?').join(',');
   const range = from ? ' AND created_at >= ? AND created_at < ?' : '';
   const rows = await q.all(
@@ -336,7 +339,7 @@ settingsRouter.get('/me/export', sensitive, async (req, res) => {
     cards: (await q.all('SELECT brand, last4, exp_month, exp_year, created_at FROM cards WHERE user_id=?', u.id)),
     kyc_submissions: (await q.all('SELECT id, status, document_type, created_at, reviewed_at, review_note FROM kyc_submissions WHERE user_id=? ORDER BY created_at', u.id)),
     merchant: await q.get('SELECT id, name, webhook_url, created_at FROM merchants WHERE owner_user_id=?', u.id) || null,
-    transactions: await userTransactions(u.id),
+    transactions: await userTransactions(u),
   };
   res.set('Content-Disposition', `attachment; filename="pay243-donnees-${u.id}.json"`);
   res.json(body);
@@ -344,7 +347,7 @@ settingsRouter.get('/me/export', sensitive, async (req, res) => {
 
 /** Mois disponibles pour les relevés. */
 settingsRouter.get('/me/statements', async (req, res) => {
-  const ids = await userWalletIds(req.user.id);
+  const ids = await accountWalletIds(req.user);
   const marks = ids.map(() => '?').join(',');
   const rows = await q.all(
     `SELECT substr(created_at, 1, 7) AS month, COUNT(*)::int AS count FROM transactions
@@ -359,7 +362,7 @@ settingsRouter.get('/me/statements/:month', async (req, res) => {
   if (!m || +m[2] < 1 || +m[2] > 12) throw new HttpError(400, 'invalid_month', 'Mois au format AAAA-MM.');
   const from = new Date(Date.UTC(+m[1], +m[2] - 1, 1)).toISOString();
   const to = new Date(Date.UTC(+m[1], +m[2], 1)).toISOString();
-  const txns = await userTransactions(req.user.id, { from, to });
+  const txns = await userTransactions(req.user, { from, to });
   const tz = req.user.timezone || 'Africa/Kinshasa';
   const date = new Intl.DateTimeFormat('fr-FR', { timeZone: tz, dateStyle: 'short', timeStyle: 'short' });
   // Texte libre (description, contrepartie) : neutralise l'injection de formules dans Excel. Les montants restent numériques.
@@ -394,7 +397,7 @@ settingsRouter.post('/me/close', sensitive, async (req, res) => {
         throw new HttpError(409, 'balance_not_zero', `Videz d'abord ${type === 'user' ? 'votre wallet' : 'votre compte marchand'} (${w.map((x) => `${(x.balance / 100).toFixed(2)} ${x.currency}`).join(', ')}) : retirez ou envoyez ce solde avant de fermer le compte.`);
       }
     }
-    const ids = await userWalletIds(u.id);
+    const ids = await accountWalletIds(u);
     const marks = ids.map(() => '?').join(',');
     const pending = await q.get(`SELECT COUNT(*)::int AS n FROM transactions WHERE status='pending' AND (from_wallet IN (${marks}) OR to_wallet IN (${marks}))`, ...ids, ...ids);
     if (pending.n) throw new HttpError(409, 'pending_transactions', 'Des opérations sont encore en cours. Attendez leur dénouement avant de fermer le compte.');

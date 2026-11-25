@@ -64,7 +64,7 @@ async function serializeMerchant(m, { withSecret = false } = {}) {
     ...(withSecret ? { webhook_secret: m.webhook_secret } : {}),
     balances,
     api_keys: keys.map((k) => ({ id: k.id, mode: k.mode, preview: `${k.prefix}…${k.last4}`, created_at: k.created_at })),
-    fees: { percent: config.fees.merchantPercent },
+    fees: { percent: config.fees.merchantPercent, withdrawal_percent: config.fees.withdrawalPercent },
     created_at: m.created_at,
   };
 }
@@ -206,6 +206,7 @@ merchantAdminRouter.get('/merchants/me/outflows', async (req, res) => {
  */
 merchantAdminRouter.post('/merchants/me/transfer-to-wallet', requireActivated, async (req, res) => {
   const m = await merchantOfUser(req.user);
+  if (req.user.account_type === 'business') throw new HttpError(409, 'single_account', 'Le compte de votre entreprise est son compte marchand : vos ventes sont déjà sur votre solde.');
   if (m.suspended_at) throw new HttpError(403, 'merchant_suspended', 'Votre espace marchand est suspendu : contactez le support.');
   const currency = assertCurrency(req.body?.currency);
   const raw = req.body?.amount;

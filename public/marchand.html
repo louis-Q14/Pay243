@@ -362,16 +362,31 @@ function openWithdraw(purpose) {
   if (!REV) return;
   const cur = REV.currency;
   const seller = purpose === 'seller_payout';
-  const max = seller ? REV.seller_payable : REV.available;
+  // Retrait Mobile Money depuis le compte de l'entreprise : montant + frais ne dépassent pas les revenus.
+  const pct = S.merchant?.fees?.withdrawal_percent || 0;
+  const withFee = (a) => a + Math.round((a * pct) / 100);
+  let max = seller ? REV.seller_payable : REV.available;
+  if (S.business && !seller) {
+    let a = Math.floor(max / (1 + pct / 100));
+    while (withFee(a + 1) <= max) a++;
+    while (a > 0 && withFee(a) > max) a--;
+    max = a;
+  }
   openDrawer(`
     <h3 id="dr-title">${seller ? 'Reverser à un vendeur' : 'Retirer mes revenus'}</h3>
-    <p class="muted" style="margin:4px 0 0">${seller
-      ? `Pour une vente <b>libérée</b> : l'argent part sur votre wallet Pay243, d'où vous payez le vendeur. ${fmt(REV.seller_due, cur)} restent réservés aux ventes non libérées.`
-      : `Vos revenus de plateforme vont sur votre wallet Pay243 personnel, instantanément et sans frais. L'argent des vendeurs (${fmt(REV.seller_due, cur)}) reste dans le solde.`}</p>
+    <p class="muted" style="margin:4px 0 0">${S.business
+      ? (seller
+        ? `Pour une vente <b>libérée</b> : l'argent part du compte de l'entreprise vers le compte Pay243 du vendeur. ${fmt(REV.seller_due, cur)} restent réservés aux ventes non libérées.`
+        : `Vos revenus de plateforme partent du compte de l'entreprise vers votre numéro Mobile Money (frais de retrait inclus dans le maximum). L'argent des vendeurs (${fmt(REV.seller_due, cur)}) reste dans le solde.`)
+      : (seller
+        ? `Pour une vente <b>libérée</b> : l'argent part sur votre wallet Pay243, d'où vous payez le vendeur. ${fmt(REV.seller_due, cur)} restent réservés aux ventes non libérées.`
+        : `Vos revenus de plateforme vont sur votre wallet Pay243 personnel, instantanément et sans frais. L'argent des vendeurs (${fmt(REV.seller_due, cur)}) reste dans le solde.`)}</p>
     <form id="wd-form">
       <label for="wd-amount">Montant (${cur === 'USD' ? '$' : 'FC'})</label>
       <input id="wd-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" required pattern="\s*\d[\d\s]*([.,]\d{1,2})?\s*" value="${decStr(max)}">
       <div class="hint">Maximum : ${fmt(max, cur)}</div>
+      ${S.business && seller ? '<label for="wd-to">Compte Pay243 du vendeur</label><input id="wd-to" name="to" maxlength="120" required placeholder="email, n° de téléphone ou @identifiant">' : ''}
+      ${S.business && !seller ? '<label for="wd-phone">Numéro Mobile Money</label><input id="wd-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="ex. 0812345678">' : ''}
       ${seller ? '<label for="wd-note">N° de vente ou vendeur</label><input id="wd-note" name="note" maxlength="140" required placeholder="ex. 514687-MHM-681749 · Boutique A">' : ''}
       <label for="wd-pin">Code PIN</label>
       <input id="wd-pin" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required>
@@ -385,8 +400,17 @@ function openWithdraw(purpose) {
     if (amount > max) return toast(`Maximum : ${fmt(max, cur)}`, true);
     const b = f.querySelector('button[type=submit]'); b.disabled = true;
     try {
-      await api('POST', '/v1/merchants/me/transfer-to-wallet', { currency: cur, amount, purpose, pin: f.pin.value, ...(f.note ? { note: f.note.value } : {}) });
-      toast(seller ? 'Reversement envoyé sur votre wallet' : 'Revenus versés sur votre wallet');
+      const note = f.note ? { note: f.note.value } : {};
+      if (!S.business) {
+        await api('POST', '/v1/merchants/me/transfer-to-wallet', { currency: cur, amount, purpose, pin: f.pin.value, ...note });
+        toast(seller ? 'Reversement envoyé sur votre wallet' : 'Revenus versés sur votre wallet');
+      } else if (seller) {
+        await api('POST', '/v1/transfers', { to: f.to.value.trim(), currency: cur, amount, purpose, pin: f.pin.value, ...note });
+        toast('Reversement envoyé au vendeur');
+      } else {
+        await api('POST', '/v1/withdrawals', { phone: f.phone.value.trim(), currency: cur, amount, purpose, pin: f.pin.value });
+        toast('Retrait en cours : validez sur votre téléphone si demandé');
+      }
       closeDrawer(); reload();
     } catch (err) { toast(err.message, true); } finally { b.disabled = false; }
   };
@@ -667,6 +691,8 @@ let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTime
 
 async function boot() {
   try { S.merchant = await api('GET', '/v1/merchants/me'); } catch (e) { S.merchant = null; }
+  // Entreprise : un seul compte, le compte marchand. Les retraits et reversements en partent directement.
+  try { S.business = (await api('GET', '/v1/me')).user.account_type === 'business'; } catch (e) { S.business = false; }
   if (!S.merchant?.access?.enabled) {
     $('main').innerHTML = `<div class="card center" style="text-align:center"><h2>Espace marchand non activé</h2><p class="muted">Le suivi des paiements est disponible une fois votre espace marchand activé par l'équipe Pay243.</p><a href="/settings#vendeur"><button class="full">Voir ma demande</button></a></div>`;
     return;

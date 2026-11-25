@@ -1,5 +1,6 @@
 import { assertProductionConfig, config } from './config.js';
 import { closeDb, openDb } from './db.js';
+import { consolidateBusinessWallets } from './accounts.js';
 import { createApp } from './app.js';
 import { purgeTechnicalTables } from './middleware.js';
 import { loadPlatformSettings } from './services/platformSettings.js';
@@ -9,6 +10,8 @@ import { startWebhookWorker } from './services/webhooks.js';
 assertProductionConfig();
 const engine = await openDb(config.db.url ? { url: config.db.url } : { dataDir: config.db.pgliteDir });
 await loadPlatformSettings();
+// Une entreprise n'a qu'un compte : les soldes restés sur ses wallets personnels passent sur son compte marchand.
+await consolidateBusinessWallets();
 setInterval(() => loadPlatformSettings().catch((e) => console.error('[settings]', e.message)), 30_000).unref();
 startWebhookWorker();
 startReconWorker();

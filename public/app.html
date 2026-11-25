@@ -738,6 +738,8 @@ async function loadSales() {
   $('[data-tab="merchant"]').classList.toggle('hidden', !enabled);
   if (!enabled && !$('#tab-merchant').classList.contains('hidden')) $('[data-tab="home"]').click();
   const total = !!MERCHANT?.balances.some((b) => b.balance > 0);
+  // Entreprise : un seul compte, ses ventes sont déjà le solde affiché en tête du wallet.
+  if (ME?.account_type === 'business') return box.classList.add('hidden');
   // Ventes déjà encaissées : toujours versables sur le wallet, même si l'espace a été désactivé.
   if (!MERCHANT || (!enabled && !total)) return box.classList.add('hidden');
   box.classList.remove('hidden');
@@ -1238,7 +1240,11 @@ async function loadMerchant() {
   try { m = await api('GET', '/v1/merchants/me'); } catch { m = null; }
   MERCHANT = m;
   if (!m?.access?.enabled) { $('[data-tab="merchant"]').classList.add('hidden'); $('[data-tab="home"]').click(); return; }
-  $('#m-bal').innerHTML = m.balances.map((b) => `<div class="balance ${b.currency === 'USD' ? 'usd' : ''}"><small>Ventes ${esc(m.name)} · ${b.currency}</small><div class="amt">${fmt(b.balance, b.currency)}</div>${b.balance > 0 ? `<button class="ghost" data-sweep="${b.currency}" style="margin-top:10px">Verser sur mon wallet</button>` : ''}</div>`).join('');
+  // Entreprise : les ventes sont le solde du compte (en tête du wallet), pas une seconde poche à verser.
+  const single = ME?.account_type === 'business';
+  $('#m-bal').classList.toggle('hidden', single);
+  $('#m-bal-hint').classList.toggle('hidden', single);
+  $('#m-bal').innerHTML = single ? '' : m.balances.map((b) => `<div class="balance ${b.currency === 'USD' ? 'usd' : ''}"><small>Ventes ${esc(m.name)} · ${b.currency}</small><div class="amt">${fmt(b.balance, b.currency)}</div>${b.balance > 0 ? `<button class="ghost" data-sweep="${b.currency}" style="margin-top:10px">Verser sur mon wallet</button>` : ''}</div>`).join('');
   bindSweep($('#m-bal'));
   $('#m-keys').innerHTML = m.api_keys.map((k) => `<li><span class="mono">${k.preview}</span><span class="pill">${k.mode}</span></li>`).join('');
   $('#m-whsec').textContent = m.webhook_secret;

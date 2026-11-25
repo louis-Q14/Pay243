@@ -25,13 +25,14 @@ export async function checkOutgoing(user, currency, amount) {
       `Plafond par opération dépassé (${formatMoney(lim.perTxnUsd * 100, 'USD')} pour le niveau "${lim.label}"). Complétez votre KYC pour l'augmenter.`);
   }
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  // Compte d'une entreprise : ses envois et retraits partent du compte marchand (versements faits par le titulaire).
   const rows = await q.all(
     `SELECT t.amount, t.currency FROM transactions t
        JOIN wallets w ON w.id = t.from_wallet
-      WHERE w.owner_type='user' AND w.owner_id=?
-        AND t.type IN ('transfer','payment','withdrawal')
-        AND t.status IN ('pending','succeeded') AND t.created_at >= ?`,
-    user.id, since,
+      WHERE t.status IN ('pending','succeeded') AND t.created_at >= ?
+        AND ((w.owner_type='user' AND w.owner_id=? AND t.type IN ('transfer','payment','withdrawal'))
+          OR (w.owner_type='merchant' AND t.metadata LIKE ?))`,
+    since, user.id, `%"initiated_by":"${user.id}"%`,
   );
   const spent = rows.reduce((s, r) => s + toUsdMinor(r.amount, r.currency), 0);
   if (spent + usd > lim.dailyUsd * 100) {

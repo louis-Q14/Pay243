@@ -510,29 +510,28 @@ test('marchand : création, paiement via wallet, webhook signé, remboursement',
   assert.equal(tooMuch.status, 400);
 });
 
-test('marchand : versement des ventes sur le wallet personnel', async () => {
+test('marchand : une entreprise ne verse pas ses ventes sur un wallet personnel, ses ventes sont déjà son solde', async () => {
   const before = await api('GET', '/v1/merchants/me', { token: state.alice });
   const sales = before.body.balances.find((b) => b.currency === 'USD').balance;
   assert.ok(sales >= 400);
   const wallet = async () => (await api('GET', '/v1/wallets', { token: state.alice })).body.data.find((w) => w.currency === 'USD').balance;
-  const w0 = await wallet();
-
-  const badPin = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'USD', amount: 400, pin: '0000' } });
-  assert.equal(badPin.status, 401);
-  const tooMuch = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'USD', amount: sales + 1, pin: '2580' } });
-  assert.equal(tooMuch.status, 402);
-  const noMerchant = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.bob, body: { currency: 'USD', amount: 100, pin: '9137' } });
-  assert.equal(noMerchant.status, 404);
+  assert.equal(await wallet(), sales);
 
   const t = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'USD', amount: 400, pin: '2580' } });
-  assert.equal(t.status, 201);
-  assert.equal(t.body.type, 'payout');
-  assert.equal(t.body.direction, 'credit');
-  assert.equal(await wallet(), w0 + 400);
-  const after = await api('GET', '/v1/merchants/me', { token: state.alice });
-  assert.equal(after.body.balances.find((b) => b.currency === 'USD').balance, sales - 400);
-  const hist = await api('GET', '/v1/transactions', { token: state.alice });
-  assert.ok(hist.body.data.some((x) => x.id === t.body.id && x.description.startsWith('Versement des ventes')));
+  assert.equal(t.status, 409);
+  assert.equal(t.body.error.code, 'single_account');
+  assert.equal(await wallet(), sales);
+  const noMerchant = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.bob, body: { currency: 'USD', amount: 100, pin: '9137' } });
+  assert.equal(noMerchant.status, 404);
+});
+
+test('marchand : un envoi depuis le compte de l\'entreprise est suivi comme un versement de l\'espace marchand', async () => {
+  const balance = async () => (await api('GET', '/v1/merchants/me', { token: state.alice })).body.balances.find((b) => b.currency === 'USD').balance;
+  const b0 = await balance();
+  const sent = await api('POST', '/v1/transfers', { token: state.alice, body: { to: '0971112222', amount: 400, currency: 'USD', pin: '2580' } });
+  assert.equal(sent.status, 201, JSON.stringify(sent.body));
+  assert.equal(sent.body.type, 'payout');
+  assert.equal(await balance(), b0 - 400);
 });
 
 test('marchand : n° de vente rattachés aux paiements, suivi des entrées et sorties, export CSV', async () => {
@@ -628,10 +627,11 @@ test('place de marché : répartition des paiements, argent des vendeurs réserv
   assert.ok(cdf.revenue.available <= cdf.balance - 90000);
 
   // Retrait des revenus : jamais au-delà, l'argent des vendeurs reste dans le solde
-  const over = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', amount: cdf.revenue.available + 1, pin: '2580' } });
+  const send = (body) => api('POST', '/v1/transfers', { token: state.alice, body: { to: '0971112222', currency: 'CDF', pin: '2580', ...body } });
+  const over = await send({ amount: cdf.revenue.available + 1 });
   assert.equal(over.status, 402);
   assert.equal(over.body.error.code, 'seller_funds_reserved');
-  const all = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', pin: '2580' } });
+  const all = await send({ amount: cdf.revenue.available });
   assert.equal(all.status, 201, JSON.stringify(all.body));
   assert.equal(all.body.amount, cdf.revenue.available);
   cdf = await summary();
@@ -644,14 +644,20 @@ test('place de marché : répartition des paiements, argent des vendeurs réserv
   await api('POST', `/v1/payments/${pay.body.id}`, { token: state.sk, body: { breakdown: lines.map((l) => (l.ref === 'V-1' ? { ...l, released: true } : l)) } });
   cdf = await summary();
   assert.equal(cdf.revenue.seller_due, 36000);
-  const sellerOver = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', amount: cdf.balance - 36000 + 1, purpose: 'seller_payout', pin: '2580' } });
+  const sellerOver = await send({ amount: cdf.balance - 36000 + 1, purpose: 'seller_payout' });
   assert.equal(sellerOver.status, 402);
-  const seller = await api('POST', '/v1/merchants/me/transfer-to-wallet', { token: state.alice, body: { currency: 'CDF', amount: 54000, purpose: 'seller_payout', note: 'V-1 Boutique A', pin: '2580' } });
+  const seller = await send({ amount: 54000, purpose: 'seller_payout', note: 'V-1 Boutique A' });
   assert.equal(seller.status, 201, JSON.stringify(seller.body));
   const outs = await api('GET', '/v1/merchants/me/outflows?currency=CDF', { token: state.alice });
   assert.deepEqual(outs.body.data.slice(0, 2).map((o) => o.purpose), ['seller_payout', 'platform_revenue']);
   const det = await api('GET', `/v1/merchants/me/payments/${pay.body.id}`, { token: state.alice });
   assert.equal(det.body.split.seller_released, 54000);
+});
+
+test('place de marché : une conversion ne puise pas dans l\'argent des vendeurs', async () => {
+  const c = await api('POST', '/v1/conversions', { token: state.alice, body: { from_currency: 'CDF', to_currency: 'USD', amount: 1000000, pin: '2580' } });
+  assert.equal(c.status, 402, JSON.stringify(c.body));
+  assert.equal(c.body.error.code, 'seller_funds_reserved', 'POST /v1/conversions (src/routes/wallet.js) doit appliquer assertWithdrawal sur le compte marchand');
 });
 
 test('checkout invité : paiement Orange Money direct', async () => {
@@ -904,6 +910,112 @@ test('versement marchand + solde', async () => {
   assert.ok(usd > 0);
   const p = await api('POST', '/v1/payouts', { token: state.sk, body: { amount: 1000, currency: 'USD', phone: '0812345678' } });
   assert.equal(p.status, 202);
+});
+
+test('compte entreprise : un seul compte, le compte marchand (reçoit, envoie, historique)', async () => {
+  const r = await register({ account_type: 'business', business_name: 'Kin Compte Unique', full_name: 'Ruth Tshala', password: 'motdepasse9', pin: '5173' });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const token = r.body.token;
+  state.ruth = token;
+  const m = (await api('GET', '/v1/merchants/me', { token })).body;
+  const merchantUsd = await q.get("SELECT id FROM wallets WHERE owner_type='merchant' AND owner_id=? AND currency='USD'", m.id);
+  const usd = async () => (await api('GET', '/v1/wallets', { token })).body.data.find((w) => w.currency === 'USD');
+
+  // Le compte d'une entreprise est son compte marchand (règle centrale, src/accounts.js)
+  const { accountWallet } = await import('../src/accounts.js');
+  const owner = await q.get('SELECT * FROM users WHERE id=?', r.body.user.id);
+  assert.equal((await accountWallet(owner, 'USD')).id, merchantUsd.id);
+  // Le wallet affiché est le compte marchand, pas un compte personnel à côté
+  assert.equal((await usd()).id, merchantUsd.id, 'GET /v1/wallets (src/routes/wallet.js) doit renvoyer accountWallet(req.user), le compte marchand, et non le wallet personnel');
+
+  // Un envoi reçu arrive sur le compte de l'entreprise
+  const inT = await api('POST', '/v1/transfers', { token: state.bob, body: { to: r.body.user.email, amount: 300, currency: 'USD', pin: '9137' } });
+  assert.equal(inT.status, 201, JSON.stringify(inT.body));
+  assert.equal((await usd()).balance, 300);
+  assert.equal((await api('GET', '/v1/merchants/me', { token })).body.balances.find((b) => b.currency === 'USD').balance, 300);
+
+  // Un envoi fait depuis le compte de l'entreprise part de ce même compte
+  const outT = await api('POST', '/v1/transfers', { token, body: { to: 'patrick.ilunga@test.cd', amount: 100, currency: 'USD', pin: '5173' } });
+  assert.equal(outT.status, 201, JSON.stringify(outT.body));
+  assert.equal((await usd()).balance, 200);
+  const personal = await q.get("SELECT balance FROM wallets WHERE owner_type='user' AND owner_id=? AND currency='USD'", r.body.user.id);
+  assert.equal(personal?.balance || 0, 0);
+
+  // L'historique du wallet montre les deux opérations, vues du compte de l'entreprise
+  const hist = (await api('GET', '/v1/transactions', { token })).body.data;
+  assert.equal(hist.find((x) => x.id === inT.body.id)?.direction, 'credit');
+  assert.equal(hist.find((x) => x.id === outT.body.id)?.direction, 'debit');
+});
+
+test('compte entreprise : un envoi du titulaire compte dans son plafond journalier', async () => {
+  const t = await api('POST', '/v1/transfers', { token: state.ruth, body: { to: '0971112222', amount: 10, currency: 'USD', pin: '5173' } });
+  assert.equal(t.status, 201, JSON.stringify(t.body));
+  const ruthId = (await api('GET', '/v1/me', { token: state.ruth })).body.user.id;
+  const row = await q.get('SELECT metadata FROM transactions WHERE id=?', t.body.id);
+  assert.equal(JSON.parse(row.metadata).initiated_by, ruthId, 'POST /v1/transfers (src/routes/wallet.js) doit marquer initiated_by sur un envoi depuis le compte marchand');
+});
+
+test('compte entreprise : un retrait Mobile Money part du compte marchand', async () => {
+  const balance = async () => (await api('GET', '/v1/merchants/me', { token: state.ruth })).body.balances.find((b) => b.currency === 'USD').balance;
+  const b0 = await balance();
+  const w = await api('POST', '/v1/withdrawals', { token: state.ruth, body: { amount: 100, currency: 'USD', phone: '0812345678', pin: '5173' } });
+  assert.equal(w.status, 202, JSON.stringify(w.body));
+  assert.equal(w.body.type, 'payout');
+  assert.equal(await balance(), b0 - 100 - w.body.fee);
+  const ruthId = (await api('GET', '/v1/me', { token: state.ruth })).body.user.id;
+  const row = await q.get('SELECT metadata FROM transactions WHERE id=?', w.body.id);
+  assert.equal(JSON.parse(row.metadata || '{}').initiated_by, ruthId, 'POST /v1/withdrawals (src/routes/wallet.js) doit marquer initiated_by sur un retrait depuis le compte marchand');
+});
+
+test('compte entreprise : l\'espace marchand indique le taux des frais de retrait', async () => {
+  const m = (await api('GET', '/v1/merchants/me', { token: state.ruth })).body;
+  assert.equal(typeof m.fees.withdrawal_percent, 'number', 'GET /v1/merchants/me (src/routes/merchants.js) doit exposer fees.withdrawal_percent');
+});
+
+test('compte entreprise : une recharge Mobile Money arrive sur le compte marchand', async () => {
+  const balance = async () => (await api('GET', '/v1/merchants/me', { token: state.ruth })).body.balances.find((b) => b.currency === 'USD').balance;
+  const b0 = await balance();
+  const t = await api('POST', '/v1/topups', { token: state.ruth, body: { amount: 500, currency: 'USD', phone: '0812345678' } });
+  assert.equal(t.status, 202, JSON.stringify(t.body));
+  await waitFor(async () => (await q.get('SELECT status FROM transactions WHERE id=?', t.body.id)).status === 'succeeded');
+  assert.equal(await balance(), b0 + 500, 'POST /v1/topups (src/routes/wallet.js) doit créditer accountWallet(req.user), le compte marchand');
+});
+
+test('compte entreprise : une conversion se fait entre les soldes du compte marchand', async () => {
+  const balances = async () => Object.fromEntries((await api('GET', '/v1/merchants/me', { token: state.ruth })).body.balances.map((b) => [b.currency, b.balance]));
+  const b0 = await balances();
+  const c = await api('POST', '/v1/conversions', { token: state.ruth, body: { from_currency: 'USD', to_currency: 'CDF', amount: 100, pin: '5173' } });
+  assert.equal(c.status, 201, `POST /v1/conversions (src/routes/wallet.js) doit convertir depuis accountWallet(req.user), le compte marchand, et non le wallet personnel vide : ${JSON.stringify(c.body)}`);
+  const b1 = await balances();
+  assert.equal(b1.USD, b0.USD - 100, 'POST /v1/conversions (src/routes/wallet.js) doit débiter accountWallet(req.user, from)');
+  assert.equal(b1.CDF, b0.CDF + JSON.parse((await q.get('SELECT metadata FROM transactions WHERE id=?', c.body.id)).metadata).to_amount);
+});
+
+test('compte entreprise : un paiement au checkout part du compte marchand', async () => {
+  const balance = async () => (await api('GET', '/v1/merchants/me', { token: state.ruth })).body.balances.find((b) => b.currency === 'USD').balance;
+  const b0 = await balance();
+  const pay = await api('POST', '/v1/payments', { token: state.sk, body: { amount: 200, currency: 'USD', description: 'Fournitures' } });
+  const view = await api('GET', `/v1/checkout/${pay.body.id}`, { token: state.ruth });
+  assert.equal(view.body.customer.balance, b0, 'GET /v1/checkout/:id (src/routes/checkout.js) doit afficher le solde de accountWallet(req.user)');
+  const r = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: state.ruth, body: { method: 'wallet', pin: '5173' } });
+  assert.equal(r.body.status, 'succeeded', `payWithWallet (src/services/payments.js) doit payer depuis accountWallet(user) : ${JSON.stringify(r.body)}`);
+  assert.equal(await balance(), b0 - 200);
+  state.ruthPayment = pay.body.id;
+});
+
+test('compte entreprise : un remboursement revient sur le compte marchand', async () => {
+  const balance = async () => (await api('GET', '/v1/merchants/me', { token: state.ruth })).body.balances.find((b) => b.currency === 'USD').balance;
+  const b0 = await balance();
+  const ref = await api('POST', `/v1/payments/${state.ruthPayment}/refunds`, { token: state.sk, body: { amount: 50 } });
+  assert.equal(ref.status, 201, JSON.stringify(ref.body));
+  assert.equal(await balance(), b0 + 50, 'refundPayment (src/services/payments.js) doit rembourser sur accountWallet(client), le compte marchand');
+});
+
+test('compte entreprise : relevés et export couvrent les opérations du compte marchand', async () => {
+  const months = (await api('GET', '/v1/me/statements', { token: state.ruth })).body.data;
+  assert.ok(months.length >= 1 && months[0].count >= 5, `GET /v1/me/statements (src/routes/settings.js) doit lire accountWalletIds(req.user) : ${JSON.stringify(months)}`);
+  const exp = await api('GET', '/v1/me/export', { token: state.ruth });
+  assert.ok(exp.body.transactions.length >= 5);
 });
 
 test('PIN bloqué après 5 erreurs', async () => {
@@ -1319,6 +1431,16 @@ test('paramètres : mot de passe changé -> autres sessions déconnectées ; PIN
   const devs = (await api('GET', '/v1/me/devices', { token: state.sarah, headers: { 'X-Device-Id': 'device-sarah-0001-test' } })).body.data;
   assert.deepEqual(devs.map((d) => d.current), [true]);
   assert.equal((await api('DELETE', `/v1/me/devices/${devs[0].id}`, { token: state.sarah })).status, 200);
+});
+
+test('passage en entreprise : le solde du particulier passe sur le compte de l\'entreprise', async () => {
+  const r = await register({ full_name: 'Gloria Mukendi', password: 'motdepasse5', pin: '3748' });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const tok = r.body.token;
+  assert.equal((await api('POST', '/v1/transfers', { token: state.bob, body: { to: r.body.user.email, amount: 50, currency: 'USD', pin: '9137' } })).status, 201);
+  assert.equal((await api('POST', '/v1/me/business', { token: tok, body: { business_name: 'Gloria Traiteur' } })).status, 200);
+  const usd = (await api('GET', '/v1/wallets', { token: tok })).body.data.find((w) => w.currency === 'USD');
+  assert.equal(usd.balance, 50, 'POST /v1/me/business (src/routes/settings.js) doit regrouper le solde personnel sur le compte marchand');
 });
 
 test('paramètres : notifications, relevé CSV, export, passage en entreprise, fermeture', async () => {

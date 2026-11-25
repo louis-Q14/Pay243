@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { notVerifiedError, optionalUser, verificationStatus } from '../auth.js';
 import { config } from '../config.js';
 import { q } from '../db.js';
-import { getWallet } from '../ledger.js';
+import { accountWallet } from '../accounts.js';
 import { publicCors, rateLimit } from '../middleware.js';
 import { cardProcessor } from '../providers/cards/index.js';
 import { getProvider } from '../providers/mobileMoney/index.js';
@@ -27,7 +27,7 @@ checkoutRouter.get('/checkout/:id', optionalUser, async (req, res) => {
   if (req.user) {
     view.customer = {
       full_name: req.user.full_name,
-      balance: (await getWallet('user', req.user.id, view.currency)).balance,
+      balance: (await accountWallet(req.user, view.currency)).balance,
       cards: await q.all('SELECT id, brand, last4 FROM cards WHERE user_id=?', req.user.id),
     };
   }

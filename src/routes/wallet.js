@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireActivated, requireUser, verifyPin } from '../auth.js';
 import { config } from '../config.js';
 import { q, tx } from '../db.js';
+import { accountWallet, accountWalletIds } from '../accounts.js';
 import { createTxn, getTxn, getWallet, lockWallet, move, serializeTxn, systemWallet, updateTxn } from '../ledger.js';
 import { checkIncoming, checkOutgoing, lockUsers } from '../limits.js';
 import { idempotent, rateLimit } from '../middleware.js';
@@ -9,6 +10,7 @@ import { cardProcessor } from '../providers/cards/index.js';
 import { listOperators } from '../providers/mobileMoney/index.js';
 import { refreshPending, startCollection, startPayout } from '../services/mobileMoney.js';
 import { assertNoRecentSimSwap } from '../services/simSwap.js';
+import { assertWithdrawal, purposeOf } from '../services/paymentSplit.js';
 import { appUrl, notifyUser } from '../services/notify.js';
 import { HttpError, assertAmount, assertCurrency, formatMoney, isEmail, newId, normalizeEmail, normalizePhone, now, percentFee } from '../util.js';
 
@@ -23,7 +25,6 @@ walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], rate
 }));
 const idem = idempotent((req) => `user:${req.user.id}`);
 
-const userWalletIds = async (userId) => (await q.all("SELECT id FROM wallets WHERE owner_type='user' AND owner_id=?", userId)).map((w) => w.id);
 
 /** Numéro Mobile Money de l'opération : celui saisi, sinon celui du profil (facultatif depuis l'inscription par email). */
 function mobileNumber(phone, user) {
@@ -37,14 +38,14 @@ walletRouter.get('/operators', (_req, res) => res.json({ data: listOperators().m
 walletRouter.get('/wallets', async (req, res) => {
   const data = [];
   for (const c of config.currencies) {
-    const w = await getWallet('user', req.user.id, c);
+    const w = await accountWallet(req.user, c);
     data.push({ id: w.id, object: 'wallet', currency: c, balance: w.balance });
   }
   res.json({ data, fx: { usd_to_cdf: config.fx.usdToCdf, spread_percent: config.fx.spreadPercent } });
 });
 
 walletRouter.get('/transactions', async (req, res) => {
-  const ids = await userWalletIds(req.user.id);
+  const ids = await accountWalletIds(req.user);
   const limit = Math.min(Number(req.query.limit) || 30, 100);
   const marks = ids.map(() => '?').join(',');
   const rows = await q.all(
@@ -55,7 +56,7 @@ walletRouter.get('/transactions', async (req, res) => {
 });
 
 walletRouter.get('/transactions/:id', async (req, res) => {
-  const ids = await userWalletIds(req.user.id);
+  const ids = await accountWalletIds(req.user);
   let t = await getTxn(req.params.id);
   if (!t || (!ids.includes(t.from_wallet) && !ids.includes(t.to_wallet))) throw new HttpError(404, 'not_found', 'Transaction introuvable.');
   t = await refreshPending(t);
@@ -68,7 +69,7 @@ walletRouter.post('/topups', idem, async (req, res) => {
   const amount = assertAmount(req.body?.amount);
   const currency = assertCurrency(req.body?.currency);
   await checkIncoming(req.user, currency, amount);
-  const wallet = await getWallet('user', req.user.id, currency);
+  const wallet = await accountWallet(req.user, currency);
 
   if (method === 'mobile_money') {
     const txn = await startCollection({
@@ -126,17 +127,21 @@ walletRouter.post('/transfers', idem, async (req, res) => {
   if (!target.activated_at) throw new HttpError(403, 'recipient_not_verified', "Ce destinataire n'a pas encore activé son compte Pay243 : il doit d'abord faire vérifier son identité.");
   await verifyPin(req.user, pin);
   await assertNoRecentSimSwap(req.user, 'transfer');
-  const from = await getWallet('user', req.user.id, currency);
-  const to = await getWallet('user', target.id, currency);
+  const from = await accountWallet(req.user, currency);
+  const to = await accountWallet(target, currency);
+  // Envoi depuis le compte d'une entreprise : un versement de son espace marchand (suivi des sorties, argent des vendeurs réservé).
+  const merchantId = from.owner_type === 'merchant' ? from.owner_id : undefined;
+  const purpose = purposeOf(req.body?.purpose);
   const txn = await tx(async () => {
     // Plafonds contrôlés sous verrou : deux transferts simultanés ne peuvent pas les contourner.
     await lockUsers(req.user.id, target.id);
     await checkOutgoing(req.user, currency, amount);
     await checkIncoming(target, currency, amount);
+    const split = merchantId && (await assertWithdrawal(merchantId, currency, amount, purpose, Number((await lockWallet(from.id)).balance))).has_split;
     const t = await createTxn({
-      type: 'transfer', status: 'succeeded', amount, currency, method: 'wallet', from_wallet: from.id, to_wallet: to.id,
+      type: merchantId ? 'payout' : 'transfer', status: 'succeeded', amount, currency, method: 'wallet', from_wallet: from.id, to_wallet: to.id, merchant_id: merchantId,
       description: note ? String(note).slice(0, 140) : 'Transfert Pay243',
-      metadata: { counterparty: `${req.user.full_name} → ${target.full_name}`, from: req.user.email || req.user.phone, to: target.email || target.phone },
+      metadata: { counterparty: `${req.user.full_name} → ${target.full_name}`, from: req.user.email || req.user.phone, to: target.email || target.phone, ...(merchantId ? { initiated_by: req.user.id } : {}), ...(split ? { purpose } : {}) },
     });
     await move(t.id, from.id, to.id, amount);
     return t;
@@ -159,10 +164,15 @@ walletRouter.post('/withdrawals', idem, async (req, res) => {
   await verifyPin(req.user, pin);
   await assertNoRecentSimSwap(req.user, 'withdrawal');
   const fee = percentFee(amount, config.fees.withdrawalPercent);
-  const wallet = await getWallet('user', req.user.id, currency);
+  const wallet = await accountWallet(req.user, currency);
+  // Retrait depuis le compte d'une entreprise : un versement de son espace marchand (argent des vendeurs réservé).
+  const merchantId = wallet.owner_type === 'merchant' ? wallet.owner_id : undefined;
+  const purpose = purposeOf(req.body?.purpose);
+  const split = merchantId && (await assertWithdrawal(merchantId, currency, amount + fee, purpose, Number(wallet.balance))).has_split;
   const txn = await startPayout({
-    type: 'withdrawal', fromWalletId: wallet.id, phone: mobileNumber(phone, req.user), operator,
-    amount, fee, currency, description: 'Retrait Pay243',
+    type: merchantId ? 'payout' : 'withdrawal', fromWalletId: wallet.id, phone: mobileNumber(phone, req.user), operator,
+    amount, fee, currency, merchantId, description: 'Retrait Pay243',
+    metadata: merchantId ? { initiated_by: req.user.id, ...(split ? { purpose } : {}) } : undefined,
     guard: async () => {
       await lockUsers(req.user.id);
       await checkOutgoing(req.user, currency, amount);
@@ -170,6 +180,7 @@ walletRouter.post('/withdrawals', idem, async (req, res) => {
       if (w.balance < amount + fee) {
         throw new HttpError(402, 'insufficient_funds', `Solde insuffisant : ${amount + fee} requis (dont ${fee} de frais).`);
       }
+      if (merchantId) await assertWithdrawal(merchantId, currency, amount + fee, purpose, Number(w.balance));
     },
   });
   res.status(202).json(serializeTxn(txn, [wallet.id]));
@@ -187,11 +198,13 @@ walletRouter.post('/conversions', idem, async (req, res) => {
   const spread = 1 - config.fx.spreadPercent / 100;
   const converted = Math.floor((from === 'USD' ? amount * rate : amount / rate) * spread);
   if (converted <= 0) throw new HttpError(400, 'amount_too_small', 'Montant trop faible pour être converti.');
-  const src = await getWallet('user', req.user.id, from);
-  const dst = await getWallet('user', req.user.id, to);
+  const src = await accountWallet(req.user, from);
+  const dst = await accountWallet(req.user, to);
   const poolFrom = await systemWallet('fx_pool', from);
   const poolTo = await systemWallet('fx_pool', to);
   const txn = await tx(async () => {
+    // Compte d'une entreprise : l'argent réservé aux vendeurs ne se convertit pas.
+    if (src.owner_type === 'merchant') await assertWithdrawal(src.owner_id, from, amount, 'platform_revenue', Number((await lockWallet(src.id)).balance));
     const t = await createTxn({
       type: 'conversion', status: 'succeeded', amount, currency: from, method: 'wallet', from_wallet: src.id, to_wallet: dst.id,
       description: `Conversion ${from} → ${to}`, metadata: { to_currency: to, to_amount: converted, rate, spread_percent: config.fx.spreadPercent },

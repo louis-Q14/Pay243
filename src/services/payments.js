@@ -8,7 +8,8 @@ import { cardProcessor } from '../providers/cards/index.js';
 import { listOperators } from '../providers/mobileMoney/index.js';
 import { HttpError, assertAmount, assertCurrency, newId, now, parseJson, percentFee } from '../util.js';
 import { resolveOperator, startCollection, startPayout } from './mobileMoney.js';
-import { parseBreakdown, splitOf } from './paymentSplit.js';
+import { assertWithdrawal, parseBreakdown, splitOf } from './paymentSplit.js';
+import { accountWallet } from '../accounts.js';
 import { enqueueEvent } from './webhooks.js';
 
 export const getPayment = (id) => q.get('SELECT * FROM payments WHERE id=?', id);
@@ -204,15 +205,18 @@ export async function payWithWallet(paymentId, user, pin) {
     await assertPayable(p);
     await lockUsers(user.id);
     await checkOutgoing(user, p.currency, p.amount);
-    const w = await lockWallet((await getWallet('user', user.id, p.currency)).id);
+    const w = await lockWallet((await accountWallet(user, p.currency)).id);
     if (w.balance < p.amount) {
       throw new HttpError(402, 'insufficient_funds', `Solde ${p.currency} insuffisant. Rechargez votre wallet via Mobile Money ou carte.`);
     }
+    // Payeur entreprise : le paiement part de son compte marchand (plafond du titulaire, argent des vendeurs réservé).
+    const business = w.owner_type === 'merchant';
+    if (business) await assertWithdrawal(w.owner_id, p.currency, p.amount, 'platform_revenue', Number(w.balance));
     const txn = await createTxn({
       type: 'payment', status: 'pending', amount: p.amount, currency: p.currency, method: 'wallet',
       from_wallet: w.id, to_wallet: (await getWallet('merchant', p.merchant_id, p.currency)).id,
       merchant_id: p.merchant_id, payment_id: p.id,
-      description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name },
+      description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name, ...(business ? { initiated_by: user.id } : {}) },
     });
     await setPayment(p.id, { customer_user_id: user.id });
     await settlePayment(p.id, txn);
@@ -333,7 +337,8 @@ export async function refundPayment(paymentId, merchant, rawAmount, reason) {
   if (p.method === 'wallet') {
     return tx(async () => {
       await reserveRefund(p, amount);
-      const to = await getWallet('user', p.customer_user_id, p.currency);
+      const customer = await q.get('SELECT id, account_type FROM users WHERE id=?', p.customer_user_id);
+      const to = await accountWallet(customer, p.currency);
       const t = await createTxn({ type: 'refund', status: 'succeeded', amount, currency: p.currency, method: 'wallet', from_wallet: mWallet.id, to_wallet: to.id, merchant_id: merchant.id, payment_id: p.id, description, metadata: { counterparty: merchant.name } });
       await move(t.id, mWallet.id, to.id, amount); // solde insuffisant -> tout est annulé, réservation comprise
       await enqueueEvent(merchant.id, 'payment.refunded', { ...serializePayment(await getPayment(p.id)), refund: refundObject(t, p) });
