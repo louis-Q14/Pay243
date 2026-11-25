@@ -102,7 +102,8 @@ img, svg { display: block; }
 .hero-copy .ctas[data-mode] { justify-content: flex-start; }
 /* Sécurité : l'icône à côté du titre, pas en pastille empilée au-dessus */
 .secure > div { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 16px; align-items: start; }
-.secure > div .ico { grid-row: span 2; margin: 0; }
+.secure > div .ico { grid-row: span 2; margin: 0; display: grid; place-items: center; padding: 0; }
+.secure > div .ico svg { width: 22px; height: 22px; }
 .hero-plaque { position: relative; margin: 0; padding: 28px 28px 24px; border-radius: 28px; overflow: hidden; isolation: isolate;
   background: linear-gradient(165deg, #211b12 0%, #120f0b 58%, #0b0a08 100%); border: 1px solid #3a2f18;
   box-shadow: 0 30px 70px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(235, 203, 132, .12); transform: rotate(-2.5deg); }
