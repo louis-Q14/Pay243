@@ -123,9 +123,10 @@ h1, h2, h3, p { margin: 0; }
 .sl-title span { display: block; }
 .sl-title span:first-child { color: var(--ivory); }
 .sl-foot { display: grid; gap: calc(var(--sl) * .028); }
-.sl-ops { display: flex; flex-wrap: wrap; gap: calc(var(--sl) * .014); list-style: none; margin: 0; padding: 0; }
-.sl-ops li { background: var(--ivory); border-radius: 2px; height: calc(var(--sl) * .072); padding: 0 calc(var(--sl) * .016); display: flex; align-items: center; }
-.sl-ops img { height: calc(var(--sl) * .046); width: auto; max-width: none; }
+/* les cinq logos se partagent toute la largeur du fil du drapeau, en parts égales */
+.sl-ops { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(var(--sl) * .014); list-style: none; margin: 0; padding: 0; }
+.sl-ops li { min-width: 0; background: var(--ivory); border-radius: 2px; height: calc(var(--sl) * .072); padding: 0 calc(var(--sl) * .012); display: flex; align-items: center; justify-content: center; }
+.sl-ops img { height: calc(var(--sl) * .046); width: auto; max-width: 100%; object-fit: contain; }
 .thread { height: 5px; background: linear-gradient(90deg, var(--rdc-blue) 0 33.3%, var(--rdc-yellow) 33.3% 66.6%, var(--rdc-red) 66.6%); }
 
 .disc {
