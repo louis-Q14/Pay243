@@ -62,6 +62,18 @@ main#app { max-width: 1120px; }
 #history .h-ic:not(.credit):not(.pending):not(.processing):not(.failed) { background: var(--k-panel); }
 #history .h-amt { font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
 
+/* ---------- Titres et montants : la police d'affichage partout dans l'appli ---------- */
+.card h2, .cw-head h2, .cw-panel h3, .modal h3, .tx-head h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.02em; }
+.cw-head h2 { font-size: 24px; }
+.fx-row input, .fx-row output, .tx-amt { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; }
+.fx-row input, .fx-row output { font-size: 38px; }
+
+/* ---------- Fenêtres d'opération ---------- */
+.modal { border-radius: 24px; padding: 26px 24px 22px; }
+.modal h3 { font-size: 24px; margin-bottom: 6px; }
+.modal > .muted:first-of-type, .modal h3 + p.muted { margin: 0 0 6px; }
+.modal .full { height: 52px; border-radius: 14px; font-size: 16px; }
+
 /* ---------- Tablette : une colonne ---------- */
 @media (max-width: 900px) {
   .home { grid-template-columns: minmax(0, 1fr); gap: 18px; }
@@ -86,7 +98,16 @@ main#app { max-width: 1120px; }
   .tabs button .ico { width: 22px; height: 22px; }
   .tabs button.on { color: var(--k-gold); background: #1a160d; }
   .tabs .kuba-ind { display: none; }
+
+  /* fenêtres d'opération : un panneau qui monte du bas, à portée du pouce */
+  .modal-bg { align-items: flex-end; padding: 0; z-index: 60; } /* au-dessus du dock d'onglets */
+  .modal { max-width: none; width: 100%; max-height: 90vh; border-radius: 24px 24px 0 0; border-bottom: 0; padding: 12px 18px calc(20px + env(safe-area-inset-bottom)); animation: sheet-up .32s cubic-bezier(.2, .8, .2, 1) both; }
+  .modal::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 99px; background: var(--k-line-2); margin: 0 auto 14px; } /* poignée */
+  .modal h3 { font-size: 22px; }
+  .fx-row input, .fx-row output { font-size: 32px; }
 }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .modal { animation: none !important; } }
 
 /* ---------- Ordinateur : icônes discrètes dans les onglets du haut ---------- */
 @media (min-width: 561px) {
