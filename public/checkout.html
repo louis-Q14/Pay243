@@ -13,17 +13,19 @@
   .sum { text-align: center; padding: 8px 0 18px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
   .sum .amt { font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
   .methods { display: grid; gap: 8px; }
-  .methods button { justify-content: flex-start; background: #fff; color: var(--ink); border: 1.5px solid var(--line); padding: 14px; }
-  .methods button.on { border-color: var(--blue); background: #eef5ff; }
+  .methods button { justify-content: flex-start; background: var(--k-raise); color: var(--ink); border: 1.5px solid var(--k-line-2); padding: 14px; }
+  .methods button.on { border-color: var(--k-gold); background: #221d12; box-shadow: 0 0 0 1px var(--k-gold); }
+  .sum .amt { font-variant-numeric: tabular-nums; }
   .state { text-align: center; padding: 26px 8px; }
   .state .big { font-size: 46px; }
-  .spinner { width: 42px; height: 42px; border: 4px solid #dbe6f5; border-top-color: var(--blue); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 14px; }
+  .spinner { width: 42px; height: 42px; border: 4px solid var(--k-line-2); border-top-color: var(--blue); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 14px; }
   @keyframes s { to { transform: rotate(360deg); } }
   .secure { text-align: center; margin: 14px 0 6px; }
   .secure-logos { text-align: center; margin: 0; }
   .secure-logos .brand-logos { flex-wrap: wrap; justify-content: center; gap: 14px; opacity: .9; }
   .methods button .brand-logos { gap: 6px; }
 </style>
+<link rel="stylesheet" href="/assets/kuba.css">
 </head>
 <body>
 <main class="center" style="margin-top:4vh">
@@ -45,7 +47,7 @@ const CARD_ONLY = new URLSearchParams(location.search).get('method') === 'card';
 { const m = new URLSearchParams(location.search).get('method'); if (['mobile_money', 'wallet', 'card'].includes(m)) METHOD = m; }
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
 const BRAND_LOGO = { mpesa: '/assets/brands/mpesa-wordmark.png', airtel: '/assets/brands/airtel-money.png', orange: '/assets/brands/orange-money.png' };
-const fmt = (m, c) => c === 'USD' ? (m / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $' : (m / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+const fmt = (m, c) => (c === 'USD' ? (m / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $' : (m / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC').replace(/ /g, ' '); // espace insécable lisible entre les milliers
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const detectOp = (phone) => { const d = String(phone).replace(/\D/g, '').replace(/^243/, '').replace(/^0/, '').slice(0, 2);
   return ['81','82','83'].includes(d) ? 'mpesa' : ['97','98','99'].includes(d) ? 'airtel' : ['80','84','85','89'].includes(d) ? 'orange' : null; };

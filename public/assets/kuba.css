@@ -1,0 +1,270 @@
+/* Pay243 — univers « Raphia Kuba »
+   Noir de raphia, or brossé, géométrie des tissus Kuba du Kasaï, fil tricolore RDC.
+   Se charge APRÈS style.css et les styles propres à la page : il remappe les jetons existants
+   (--ink, --blue…) pour que le JavaScript et les classes actuelles continuent de fonctionner. */
+
+:root {
+  /* matières */
+  --k-ground: #0d0c0a;   /* raphia noir */
+  --k-panel: #15130f;    /* panneau tissé */
+  --k-raise: #1d1a14;    /* relief, survol */
+  --k-line: #2a2620;     /* filet */
+  --k-line-2: #3d362b;   /* filet appuyé */
+  --k-ivory: #f2ead8;    /* encre ivoire */
+  --k-mute: #a79c86;     /* texte secondaire (6,6:1 sur panneau) */
+  --k-faint: #8d8576;    /* texte discret (4,9:1 sur panneau) */
+  --k-gold: #d4ad5a;     /* or brossé */
+  --k-gold-hi: #ebcb84;
+  --k-gold-deep: #9c7a35;
+  --k-on-gold: #16120a;
+  /* états : la couleur double toujours une forme ou un mot */
+  --k-ok: #86d6a4;  --k-ok-bg: #11251a;
+  --k-warn: #ecc46f; --k-warn-bg: #2d2310;
+  --k-err: #ff948a;  --k-err-bg: #2e1514;
+  /* fil du drapeau */
+  --rdc-blue: #007fff; --rdc-yellow: #f7d618; --rdc-red: #ce1021;
+  --rdc-thread: linear-gradient(90deg, var(--rdc-blue) 0 62%, var(--rdc-yellow) 62% 69%, var(--rdc-red) 69% 76%, var(--rdc-blue) 76%);
+  /* motifs Kuba */
+  --kuba-step: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V3h3V0h6v3h3v3H9V3H3v3z' fill='%23d4ad5a'/%3E%3C/svg%3E");
+  --kuba-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E");
+  --kuba-cloth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* jetons hérités de style.css, remappés */
+  --ink: var(--k-ivory); --muted: var(--k-mute); --line: var(--k-line);
+  --bg: var(--k-ground); --card: var(--k-panel);
+  --blue: var(--k-gold); --blue-d: var(--k-gold);
+  --ok: var(--k-ok); --warn: var(--k-warn); --err: var(--k-err);
+  --r: 16px;
+  color-scheme: dark;
+}
+
+/* ---------- Surfaces du navigateur ---------- */
+body { background: var(--k-ground); color: var(--k-ivory); caret-color: var(--k-gold); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--k-gold); color: var(--k-on-gold); }
+html { scrollbar-color: var(--k-line-2) var(--k-ground); scrollbar-gutter: stable; } /* la colonne ne saute pas d'un onglet à l'autre */
+:focus-visible { outline: 2px solid var(--k-gold); outline-offset: 2px; }
+a { color: var(--k-gold); text-underline-offset: .2em; }
+a:hover { color: var(--k-gold-hi); }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; display: block; flex: none; }
+
+/* ---------- En-tête ---------- */
+header.top { background: #0a0907; border-bottom: 1px solid var(--k-line); box-shadow: none; }
+header.top .logo-img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; } /* filet d'or : le bloc noir du logo se détache du fond */
+header.top #who, header.top #who a, header.top #who .me { color: var(--k-ivory); }
+header.top #who .who-set, header.top #who #logout { color: var(--k-mute); }
+header.top #who a:hover, header.top #who #logout:hover { color: var(--k-gold-hi); text-decoration: none; }
+header.top #who .sep { color: var(--k-line-2); }
+header.top #who .av, .av { background-color: var(--k-panel); color: var(--k-gold); box-shadow: 0 0 0 1.5px var(--k-gold); }
+
+/* ---------- Onglets : soulignement Kuba qui glisse ---------- */
+.tabs { position: relative; gap: 4px 22px; border-bottom: 1px solid var(--k-line); margin-bottom: 20px; }
+.tabs button { background: transparent; color: var(--k-faint); border: 0; border-radius: 0; padding: 12px 0 14px; font-weight: 600; }
+.tabs button:hover { color: var(--k-ivory); background: transparent; filter: none; }
+.tabs button.on { background: transparent; color: var(--k-ivory); border: 0; }
+.tabs .kuba-ind { position: absolute; left: 0; bottom: -1px; height: 6px; width: 0; background: var(--kuba-step) repeat-x left bottom; pointer-events: none; transition: transform .38s cubic-bezier(.2, .8, .2, 1), width .38s cubic-bezier(.2, .8, .2, 1); }
+.tabs:not(:has(.kuba-ind)) button.on { background: var(--kuba-step) repeat-x left bottom; } /* onglets sans indicateur glissant : motif fixe sous l'onglet actif */
+.tabs a.tab-link { color: var(--k-mute); }
+.tabs a.tab-link:hover { color: var(--k-ivory); background: var(--k-raise); }
+
+/* ---------- Cartes de contenu ---------- */
+.card { background: var(--k-panel); border: 1px solid var(--k-line); border-radius: 16px; }
+.card h2 { color: var(--k-ivory); font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+
+/* ---------- Soldes : grands chiffres, bande Kuba et fil tricolore ---------- */
+.balance { background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-ivory); border-radius: 16px; padding: 18px 20px 42px; }
+.balance.usd { background: var(--k-panel); }
+.balance small { color: var(--k-mute); opacity: 1; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; }
+.balance .amt .cur { font-size: .5em; font-weight: 700; color: var(--k-gold); letter-spacing: 0; margin-left: .15em; }
+.balance .amt { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1.15; color: var(--k-ivory); }
+.balance::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--rdc-thread); }
+.balance::after { content: ""; position: absolute; left: 0; right: 0; top: auto; bottom: 3px; width: auto; height: 22px; border-radius: 0; background: var(--kuba-band) repeat-x left center; border-top: 1px solid var(--k-line); animation: kuba-weave .9s cubic-bezier(.2, .8, .2, 1) both; }
+.balance.usd::after { background-position: 22px center; } /* le motif décale d'un demi-pas : deux devises, deux tissages */
+.balance.weave::after { animation-name: kuba-reweave; }
+@keyframes kuba-weave { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes kuba-reweave { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.balance button { margin-top: 12px; position: relative; z-index: 1; }
+
+/* ---------- Actions ---------- */
+.actions { gap: 10px; margin: 16px 0 20px; }
+.actions button { background: var(--k-panel); color: var(--k-ivory); border: 1px solid var(--k-line-2); border-radius: 14px; padding: 14px 6px 12px; font-size: 13px; font-weight: 600; gap: 8px; }
+.actions button i { display: grid; place-items: center; color: var(--k-gold); font-size: 0; }
+.actions button .ico { width: 22px; height: 22px; }
+.actions button:hover { border-color: var(--k-gold-deep); background: var(--k-raise); filter: none; }
+.actions button:first-child { background: var(--k-gold); color: var(--k-on-gold); border-color: var(--k-gold); }
+.actions button:first-child i { color: var(--k-on-gold); }
+.actions button:first-child:hover { background: var(--k-gold-hi); filter: none; }
+
+/* ---------- Boutons et champs ---------- */
+button { background: var(--k-gold); color: var(--k-on-gold); font-weight: 700; transition: background-color .15s, border-color .15s, color .15s, filter .15s; }
+button:hover { filter: brightness(1.1); } /* éclaircit sans toucher au fond : les boutons à fond propre (cartes, onglets) restent intacts */
+button.ghost { background: var(--k-raise); color: var(--k-ivory); border: 1px solid var(--k-line-2); }
+button.ghost:hover { background: #26221a; border-color: var(--k-gold-deep); }
+button.link { background: none; color: var(--k-gold); }
+button.link:hover { background: none; color: var(--k-gold-hi); }
+button:disabled { opacity: .5; }
+label { color: var(--k-mute); }
+input, select, textarea { background: #100e0b; color: var(--k-ivory); border: 1px solid var(--k-line-2); }
+input::placeholder, textarea::placeholder { color: var(--k-faint); }
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(212, 173, 90, .3); border-color: var(--k-gold); }
+input[type="file"] { padding: 9px 10px; color: var(--k-mute); }
+input[type="file"]::file-selector-button { background: var(--k-raise); color: var(--k-ivory); border: 1px solid var(--k-line-2); border-radius: 8px; padding: 6px 10px; margin-right: 10px; font: inherit; font-weight: 600; }
+
+/* ---------- Listes, statuts ---------- */
+.list li { border-bottom-color: var(--k-line); }
+.muted { color: var(--k-mute); }
+.credit { color: var(--k-ok); } .debit { color: var(--k-ivory); }
+.pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex: none; background: var(--k-raise); color: var(--k-ivory); border: 1px solid var(--k-line-2); }
+.pill::before { content: ""; width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; }
+.pill.succeeded { background: var(--k-ok-bg); color: var(--k-ok); border-color: #1f4a30; }
+.pill.pending, .pill.processing { background: var(--k-warn-bg); color: var(--k-warn); border-color: #5a4515; }
+.pill.pending::before, .pill.processing::before { background: none; box-shadow: inset 0 0 0 1.5px currentColor; } /* anneau vide : en attente */
+.pill.failed, .pill.canceled, .pill.expired { background: var(--k-err-bg); color: var(--k-err); border-color: #5c2622; }
+.pill.failed::before, .pill.canceled::before, .pill.expired::before { border-radius: 1px; width: 7px; height: 7px; background: linear-gradient(45deg, transparent 42%, currentColor 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, currentColor 42% 58%, transparent 58%); } /* croix : échec */
+
+/* ---------- Messages ---------- */
+.toast { background: var(--k-raise); color: var(--k-ivory); border: 1px solid var(--k-gold-deep); box-shadow: 0 12px 32px rgba(0, 0, 0, .55); }
+.toast.err { background: var(--k-err-bg); color: #ffd9d4; border-color: #7a2c26; }
+.notice { background: var(--k-warn-bg); border: 1px solid #5a4515; color: #f3e3b0; }
+.secret { background: #0a0907; color: var(--k-gold-hi); border: 1px solid var(--k-line-2); }
+code, .mono { color: var(--k-gold-hi); }
+
+/* ---------- Fenêtres ---------- */
+.modal-bg { background: rgba(5, 4, 3, .72); }
+.modal { background: var(--k-panel); color: var(--k-ivory); border: 1px solid var(--k-line-2); box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+
+/* Opérateurs et réseaux : les logos gardent leurs couleurs sur une pastille ivoire */
+.op label { background: var(--k-ivory); border: 1.5px solid var(--k-ivory); color: var(--k-on-gold); }
+.op label:has(input:checked) { background: #fff7e2; border-color: var(--k-gold); box-shadow: 0 0 0 2px var(--k-gold); }
+.op input:checked + span { color: var(--k-on-gold); }
+.brand-logos { background: var(--k-ivory); padding: 6px 10px; border-radius: 8px; }
+
+/* ---------- Mouvement réduit ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .balance::after { animation: none; }
+  .tabs .kuba-ind { transition: none; }
+}
+
+/* ---------- Téléphone ---------- */
+@media (max-width: 560px) {
+  .tabs { gap: 4px 18px; margin-bottom: 14px; }
+  .tabs button, .tabs a.tab-link { padding: 10px 0 12px; }
+  #tab-home > .grid { grid-template-columns: 1fr; gap: 10px; } /* une devise par ligne : les chiffres gardent leur taille sur téléphone */
+  .balance { padding: 14px 16px 36px; border-radius: 14px; }
+  .balance .amt { font-size: 32px; }
+  .balance::after { height: 18px; background-size: 36px 18px; }
+  .actions button { padding: 11px 2px 10px; font-size: 12px; border-radius: 12px; }
+  .actions button .ico { width: 20px; height: 20px; }
+}
+
+/* =====================================================================
+   Page wallet (/app) : écrans propres à l'application
+   ===================================================================== */
+
+/* Compte à activer */
+.gate { border: 1px solid var(--k-gold-deep); background: linear-gradient(180deg, #1a160e, var(--k-panel) 60%); }
+.steps3 li { background: var(--k-raise); color: var(--k-mute); border: 1px solid var(--k-line); }
+.steps3 li::before { background: var(--k-line-2); color: var(--k-gold); border-radius: 6px; }
+.steps3 li.done::before { background: var(--k-ok); color: var(--k-ground); }
+.steps3 li.now { background: #221d12; color: var(--k-ivory); border-color: var(--k-gold-deep); }
+.steps3 li b { color: var(--k-ivory); }
+
+/* Historique : pastilles carrées à coins doux, comme les cases d'un tissage */
+#history .h-item { margin: 0; padding: 12px 4px; border-radius: 0; } /* filets droits jusqu'au bord, rangées en retrait du cadre */
+#history .h-item:hover { background: var(--k-raise); }
+#history .h-t { flex-wrap: wrap; row-gap: 3px; } /* sur un écran étroit, le statut passe sous le titre au lieu de le tronquer */
+#history .h-item:focus-visible { outline: 2px solid var(--k-gold); }
+.h-ic { border-radius: 10px; background: var(--k-raise); color: var(--k-gold); border: 1px solid var(--k-line-2); }
+.h-ic .ico { width: 18px; height: 18px; }
+.h-ic.credit { background: var(--k-ok-bg); color: var(--k-ok); border-color: #1f4a30; }
+.h-ic.pending, .h-ic.processing { background: var(--k-warn-bg); color: var(--k-warn); border-color: #5a4515; border-style: dashed; } /* trait pointillé : pas encore abouti */
+.h-ic.failed { background: var(--k-err-bg); color: var(--k-err); border-color: #5c2622; }
+.h-amt { font-variant-numeric: tabular-nums; }
+.h-item:has(.pill.pending, .pill.processing) .h-amt { color: var(--k-mute); } /* pas encore arrivé : pas encore vert */
+.tx-head { border-bottom-color: var(--k-line); }
+.tx-head .h-ic.big { border-radius: 14px; }
+.tx-head .h-ic.big .ico { width: 24px; height: 24px; }
+.tx-amt { font-variant-numeric: tabular-nums; }
+.tx-dl code { background: var(--k-ground); }
+
+/* Connexion : un panneau de raphia tissé d'or */
+body:has(#auth:not(.hidden)) { background: var(--k-ground); }
+.login-shell { background: #090806; box-shadow: 0 40px 90px rgba(0, 0, 0, .6), 0 0 0 1px var(--k-line); }
+.login-art { background: var(--k-panel); }
+.login-art::before { inset: 0; filter: none; animation: none; transform: none; opacity: .5; background: var(--kuba-cloth) 0 0 / 96px 96px; -webkit-mask: linear-gradient(160deg, #000 10%, transparent 75%); mask: linear-gradient(160deg, #000 10%, transparent 75%); }
+.login-art::after { inset: auto 0 0 0; height: 4px; filter: none; animation: none; transform: none; mix-blend-mode: normal; opacity: 1; background: var(--rdc-thread); }
+.login-mark img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+.login-art h1 { color: var(--k-ivory); }
+.login-art h1 b { color: var(--k-gold); }
+.login-panel { color: var(--k-ivory); }
+.login-panel .card h2 { color: var(--k-ivory); font-size: 40px; font-weight: 600; } /* le titre de connexion garde sa taille (la règle .card h2 ne doit pas le réduire) */
+@media (max-width: 860px) { .login-panel .card h2 { font-size: 26px; } }
+.login-panel .sub { color: var(--k-mute); }
+.login-panel label { color: var(--k-ivory); }
+.login-panel input { background: var(--k-panel); border-color: var(--k-line-2); color: var(--k-ivory); }
+.login-panel input::placeholder { color: var(--k-faint); }
+.login-panel input:focus { outline: 2px solid rgba(212, 173, 90, .35); border-color: var(--k-gold); }
+.login-panel button.full { background: var(--k-gold); color: var(--k-on-gold); }
+.login-panel button.link, .login-panel .alt a { color: var(--k-gold); }
+.login-panel .alt { color: var(--k-mute); }
+.login-panel .muted { color: var(--k-mute); }
+
+/* Mes cartes */
+.cw-head small { color: var(--k-mute); }
+.cw-add { background: var(--k-gold); color: var(--k-on-gold); }
+.wallet { background: linear-gradient(180deg, #1c1812 0, #0a0907 75%); border: 1px solid var(--k-line); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+.wallet .hint { color: var(--k-mute); }
+.wcard:hover { filter: none; }
+.wcard:focus-visible { outline-color: var(--k-gold); }
+.wcard.ghost { border-color: var(--k-line-2); color: var(--k-mute); }
+.wcard.ghost b { color: var(--k-ivory); }
+.cw-panel { background: var(--k-panel); border-color: var(--k-line); }
+.cw-panel .sub, .cw-panel dt { color: var(--k-mute); }
+.btn-del { background: var(--k-err-bg) !important; color: var(--k-err) !important; border: 1px solid #5c2622 !important; }
+.btn-del.armed { background: #b3121f !important; color: #fff !important; }
+.test-note { background: var(--k-ground); color: var(--k-mute); border: 1px solid var(--k-line); }
+
+/* Cartes bancaires : les quatre modèles déclinés en noir et or.
+   Mêmes dispositions que dans app.html ; seuls les matières, les couleurs et la police changent.
+   « .wcard.wcard » égale la spécificité des règles .wcard.mX de la page, et ce fichier vient après. */
+.wcard.wcard .lbl, .wcard.wcard .who { font-family: var(--font-sans); } /* le numéro et l'expiration gardent leur police étroite de carte : en police large, les groupes masqués se collent et débordent */
+.wcard .holo, .wcard .nfc { filter: sepia(1) saturate(1.8) hue-rotate(-12deg) brightness(.95); } /* hologramme et sans-contact : argent → or */
+
+/* m0 : noir mat, lettrage or */
+.wcard.m0 { color: #e3c27a; background: linear-gradient(200deg, #3a3226 0%, #241f17 40%, #15120d 70%, #0a0806 100%); }
+.wcard.m0 .lbl { font-weight: 700; font-size: 6.2cqw; letter-spacing: .01em; transform: none; }
+
+/* m1 : noir laqué, gravure or pleine (plus de lettrage en dégradé) */
+.wcard.m1 { background: linear-gradient(135deg, #2e271b 0%, #14110b 55%, #050403 100%); }
+.wcard.m1::before { filter: sepia(1) saturate(2.2) hue-rotate(-12deg); }
+.wcard.m1 .title, .wcard.m1 .num, .wcard.m1 .who, .wcard.m1 .val, .wcard.m1 .net { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: #e1bd6c; filter: drop-shadow(.25cqw .3cqw 0 rgba(0, 0, 0, .85)); }
+.wcard.m1 .val b { border-left-color: #e1bd6c; }
+
+/* m2 : bronze tissé, mosaïque conservée */
+.wcard.m2 { color: #fff6e0; background: linear-gradient(115deg, #241a0b 0%, #574118 30%, #a7803a 58%, #6b4f1f 80%, #241a0b 100%); }
+.wcard.m2 > * { text-shadow: .35cqw .4cqw 0 rgba(20, 14, 4, .85); }
+.wcard.m2 .title { font-weight: 700; font-size: 6cqw; letter-spacing: .05em; transform: none; }
+.wcard.m2 .net { font-family: var(--font-sans); }
+
+/* m3 : nuit et or, carte du monde en points d'or, fil RDC en pied */
+.wcard.m3 { color: var(--k-ivory); background: linear-gradient(105deg, #0d0c0a 0%, #17140e 45%, #2b2315 100%); }
+.wcard.m3::before { background: linear-gradient(160deg, transparent 58%, rgba(212, 173, 90, .12) 58% 72%, transparent 72%), var(--rdc-thread) left bottom / 100% 1.4cqw no-repeat; }
+.wcard.m3 .map { background: radial-gradient(circle, rgba(212, 173, 90, .5) 0 42%, transparent 46%) 0 0 / 1.55cqw 1.55cqw; }
+.wcard.m3 > * { text-shadow: .3cqw .35cqw 0 rgba(0, 0, 0, .8); }
+.wcard.m3 .title { font-family: var(--font-sans); font-weight: 800; color: var(--k-gold); }
+.wcard.m3 .net { font-family: var(--font-sans); }
+
+/* Convertisseur */
+.fx { margin-inline: auto; }
+.fx-box { background: var(--k-ground); border-color: var(--k-line); }
+.fx-box label, .fx-lbl { color: var(--k-mute); }
+.fx-row input, .fx-row output { color: var(--k-ivory); background: none; border: 0; font-variant-numeric: tabular-nums; }
+.fx-row input:focus { outline: none; }
+.fx-box:focus-within { border-color: var(--k-gold-deep); }
+.fx-cur { background: var(--k-raise); border-color: var(--k-line-2); color: var(--k-ivory); }
+.fx-out { background: #1a160d; border-color: var(--k-gold-deep); }
+.fx-out output { color: var(--k-gold-hi); }
+.fx-chips button { background: var(--k-raise); color: var(--k-ivory); border-color: var(--k-line-2); }
+.fx-chips button:hover { border-color: var(--k-gold); color: var(--k-gold); filter: none; }
+.fx-swap { background: var(--k-gold) !important; color: var(--k-on-gold) !important; border-color: var(--k-panel) !important; }
+.fx-swap .ico { width: 20px; height: 20px; }
+.fx-info dt { color: var(--k-mute); }

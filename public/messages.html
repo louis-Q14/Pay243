@@ -13,9 +13,13 @@
 <style>
   /* Mêmes couleurs, polices et composants que le back-office */
   :root {
-    --ink: #0b1424; --ink-2: #2a3547; --muted: #5d6879; --line: #e4e8ef; --soft: #f4f6fa; --bg: #eef2f8; --card: #fff;
-    --blue: #0057d9; --navy: #0a2a66; --side: #0b1424; --side-2: #1a2436; --red: #ce1021;
-    --ok: #12804a; --ok-bg: #e3f5ea; --warn: #8a5a00; --warn-bg: #fff1cc; --err: #b3121f; --err-bg: #fde8ea;
+    /* univers « Raphia Kuba » (voir DESIGN.md) */
+    --ink: #f2ead8; --ink-2: #cfc5b0; --muted: #a79c86; --line: #2a2620; --soft: #1d1a14; --bg: #0d0c0a; --card: #15130f;
+    --blue: #d4ad5a; --navy: #9c7a35; --side: #0a0907; --side-2: #15130f; --red: #ce1021;
+    --ok: #86d6a4; --ok-bg: #11251a; --warn: #ecc46f; --warn-bg: #2d2310; --err: #ff948a; --err-bg: #2e1514;
+    --gold: #d4ad5a; --on-gold: #16120a; --line-2: #3d362b;
+    --rdc-thread: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%);
+    color-scheme: dark;
     --r: 14px; --font: var(--font-sans);
   }
   * { box-sizing: border-box; }
@@ -159,6 +163,39 @@
     .reply .bar .btn { flex: 1; }
     .sa-files img { width: 104px; height: 78px; }
   }
+
+  /* ================= Univers noir et or : surfaces codées en dur ================= */
+  ::selection { background: var(--gold); color: var(--on-gold); }
+  body { caret-color: var(--gold); }
+  input, select, textarea { background: #100e0b; border-color: var(--line-2); }
+  input::placeholder, textarea::placeholder { color: #8d8576; }
+  input:focus, select:focus, textarea:focus { box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
+  .btn { background: var(--gold); color: var(--on-gold); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.light { background: var(--soft); color: var(--ink); border: 1px solid var(--line-2); }
+  .toast { background: var(--soft); color: var(--ink); border: 1px solid var(--navy); box-shadow: 0 12px 32px rgba(0, 0, 0, .55); }
+  .toast.bad { background: var(--err-bg); color: #ffd9d4; border-color: #7a2c26; }
+  .top { position: relative; background: #0a0907; color: var(--ink-2); border-bottom: 1px solid var(--line); box-shadow: none; }
+  .top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--rdc-thread); opacity: .9; }
+  .top .brand { color: var(--ink); }
+  .top .brand img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+  .top .brand span { border-left-color: var(--line-2); }
+  .top nav a { color: var(--muted); }
+  .top nav a:hover { background: var(--soft); color: var(--ink); }
+  .conv:hover, .conv.sel { background: var(--card); }
+  .conv.sel { border-color: var(--navy); }
+  .conv .ic, .pane-head .ic, .closed-box .ic { background: var(--soft); color: var(--gold); border-radius: 10px; border: 1px solid var(--line-2); }
+  .conv.closed .ic { background: var(--ok-bg); color: var(--ok); border-color: #1f4a30; }
+  .pane { border-color: var(--line); box-shadow: none; }
+  .empty svg { color: var(--navy); }
+  .bubble.me { background: #221d12; border: 1px solid #3a2f18; }
+  .safety { color: #f3e3b0; border: 1px solid #5a4515; }
+  .sa-btn { background: var(--soft); border-color: var(--line-2); color: var(--gold); }
+  .sa-chip { background: var(--soft); }
+  .sa-files img { background: var(--soft); }
+  .sa-doc { background: var(--soft); border-color: var(--line-2); }
+  .sa-zoom { background: rgba(5, 4, 3, .9); }
+  @media (max-width: 860px) { .conv { background: var(--card); } }
 </style>
 </head>
 <body>
@@ -282,9 +319,10 @@ async function api(method, path, body) {
   return j;
 }
 async function busy(btn, fn) { if (btn) btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { if (btn) btn.disabled = false; } }
-const fmt = (minor, cur) => cur === 'USD'
+// espace insécable normale entre les milliers : l'espace fine du format français est presque invisible dans la police
+const fmt = (minor, cur) => (cur === 'USD'
   ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
-  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC').replace(/ /g, ' ');
 const tz = () => ME?.timezone || undefined;
 const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: tz(), dateStyle: 'short', timeStyle: 'short' }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
 /** Date courte de la liste : l'heure aujourd'hui, « 12 nov. » cette année, sinon « 12/11/2025 ». */

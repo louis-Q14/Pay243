@@ -11,3 +11,8 @@ data/
 .DS_Store
 Thumbs.db
 coverage/
+# Fichiers de travail du design (captures, maquettes, questions) et du navigateur de test
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/questions/
+.playwright-mcp/

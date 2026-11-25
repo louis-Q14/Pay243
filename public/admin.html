@@ -10,9 +10,13 @@
 <link rel="stylesheet" href="/assets/fonts.css">
 <style>
   :root {
-    --ink: #0b1424; --ink-2: #2a3547; --muted: #5d6879; --line: #e4e8ef; --soft: #f4f6fa; --bg: #eef2f8; --card: #fff;
-    --blue: #0057d9; --navy: #0a2a66; --side: #0b1424; --side-2: #1a2436;
-    --ok: #12804a; --ok-bg: #e3f5ea; --warn: #8a5a00; --warn-bg: #fff1cc; --err: #b3121f; --err-bg: #fde8ea;
+    /* univers « Raphia Kuba » (voir DESIGN.md) */
+    --ink: #f2ead8; --ink-2: #cfc5b0; --muted: #a79c86; --line: #2a2620; --soft: #1d1a14; --bg: #0d0c0a; --card: #15130f;
+    --blue: #d4ad5a; --navy: #9c7a35; --side: #0a0907; --side-2: #1d1a14;
+    --ok: #86d6a4; --ok-bg: #11251a; --warn: #ecc46f; --warn-bg: #2d2310; --err: #ff948a; --err-bg: #2e1514;
+    --gold: #d4ad5a; --on-gold: #16120a; --line-2: #3d362b;
+    --rdc-thread: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%);
+    color-scheme: dark;
     --r: 14px; --font: var(--font-sans);
   }
   * { box-sizing: border-box; }
@@ -172,6 +176,49 @@
     .grid2, .split { grid-template-columns: 1fr; }
     dl.kv { grid-template-columns: 1fr; }
   }
+
+  /* ================= Univers noir et or : surfaces codées en dur ================= */
+  ::selection { background: var(--gold); color: var(--on-gold); }
+  body { caret-color: var(--gold); }
+  input, select, textarea { background: #100e0b; border-color: var(--line-2); }
+  input::placeholder, textarea::placeholder { color: #8d8576; }
+  input:focus, select:focus, textarea:focus { box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
+  .btn { background: var(--gold); color: var(--on-gold); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.light { background: var(--soft); color: var(--ink); border: 1px solid var(--line-2); }
+  .pill.role { background: #221d12; color: var(--gold); }
+  .pill.role.super_admin { background: var(--gold); color: var(--on-gold); }
+  .card, .kpi { background: var(--card); border: 1px solid var(--line); box-shadow: none; }
+  .toast { background: var(--soft); color: var(--ink); border: 1px solid var(--navy); }
+  .notice { color: #f3e3b0; border: 1px solid #5a4515; }
+  .secret { background: #0a0907; color: #ebcb84; border: 1px solid var(--line-2); }
+  .ref { background: var(--warn-bg); color: var(--warn); }
+  #login { background: var(--bg); }
+  .login-card { background: var(--card); border: 1px solid var(--line-2); box-shadow: 0 30px 80px rgba(0, 0, 0, .55); }
+  .login-card img { box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; } /* filet d'or : le bloc noir du logo se détache */
+  aside { color: var(--muted); border-right: 1px solid var(--line); }
+  aside .brand { color: var(--ink); }
+  aside .brand img { background: none; padding: 0; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+  aside nav button { color: var(--muted); }
+  aside nav button:hover { color: var(--ink); filter: none; }
+  aside nav button.on { background: #221d12; color: var(--ink); box-shadow: inset 0 0 0 1px var(--navy); }
+  aside nav .count { background: var(--gold); color: var(--on-gold); }
+  aside .me b { color: var(--ink); }
+  aside .me button { color: var(--muted); }
+  tr.click:hover td { background: var(--soft); }
+  tr.sel td, .list li.sel { background: #221d12; }
+  .bars div { background: var(--gold); }
+  .docs figcaption { background: var(--soft); }
+  .modal-bg { background: rgba(5, 4, 3, .72); }
+  .modal { background: var(--card); border: 1px solid var(--line-2); }
+  .bubble.support { background: #221d12; border: 1px solid #3a2f18; }
+  .bubble.note { background: var(--warn-bg); border-color: #5a4515; }
+  .sa-btn { background: var(--soft); border-color: var(--line-2); color: var(--gold); }
+  .sa-chip { background: var(--soft); color: var(--ink); }
+  .sa-chip.busy::after, .sa-chip button { color: var(--muted); }
+  .sa-files img { background: var(--soft); }
+  .sa-doc, .bubble.support .sa-doc, .bubble.note .sa-doc { background: var(--soft); color: var(--ink) !important; border-color: var(--line-2); }
+  .sa-zoom { background: rgba(5, 4, 3, .9); }
 </style>
 </head>
 <body>
@@ -232,7 +279,7 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const dt = (s) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
-const fmt = (minor, cur) => (minor == null ? '—' : (Number(minor) / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 }) + (cur === 'USD' ? ' $' : ' FC'));
+const fmt = (minor, cur) => (minor == null ? '—' : (Number(minor) / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 }).replace(/ /g, ' ') + (cur === 'USD' ? ' $' : ' FC')); // espace insécable lisible entre les milliers
 const TYPE = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
 const STATUS = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré', active: 'Actif', suspended: 'Suspendu', closed: 'Fermé', approved: 'Validée', rejected: 'Refusée' };
 const pill = (st) => `<span class="pill ${esc(st)}">${esc(STATUS[st] || st)}</span>`;

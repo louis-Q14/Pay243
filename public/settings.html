@@ -214,7 +214,47 @@
     .modal .sub { font-size: 13.5px; margin-bottom: 12px; }
     .toast { font-size: 13.5px; padding: 11px 16px; }
   }
+
+  /* ================= Univers noir et or (voir DESIGN.md) : surfaces propres à la page ================= */
+  body, .page { background: var(--k-ground, #0d0c0a); }
+  .bar { position: relative; background: #0a0907; border-bottom: 1px solid #2a2620; box-shadow: none; }
+  .bar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); }
+  .bar .logo-img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+  .bar .mini-av, .mini-av { background-color: #15130f; color: #d4ad5a; box-shadow: 0 0 0 1.5px #d4ad5a; }
+  .bar #logout { color: #a79c86 !important; }
+  .tabs-bar { background: #15130f; border-top-color: #2a2620; }
+  .tab.on { color: #d4ad5a; background: #1d1a14; box-shadow: inset 0 0 0 1px #3d362b; }
+  .panel { background: #15130f; border: 1px solid #2a2620; box-shadow: none; }
+  .add { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
+  .profile .cover { position: relative; background: linear-gradient(160deg, #2a2214 0%, #15130f 70%); color: #f2ead8; }
+  .profile .cover::after { right: 0; left: 0; bottom: 0; width: auto; height: 3px; border-radius: 0; background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); }
+  .avatar { border-color: #15130f; background-color: #1d1a14; color: #d4ad5a; box-shadow: 0 0 0 1.5px #d4ad5a; }
+  .avatar-edit { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
+  .lk.danger { color: #ff948a; }
+  .opt { background: #15130f; border-color: #3d362b; }
+  .opt:hover { background: #1d1a14; border-color: #9c7a35; }
+  .tag { background: #1d1a14; color: #cfc5b0; }
+  .tag.new { background: #221a2c; color: #c9b0f0; }
+  .tag.ok { background: #11251a; color: #86d6a4; }
+  .tag.wait { background: #2d2310; color: #ecc46f; }
+  .tag.no { background: #2e1514; color: #ff948a; }
+  .field-box { border-color: #3d362b; background: #100e0b; }
+  .field-box:focus-within { border-color: #d4ad5a; box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
+  .item .bic { background: #f2ead8; border-color: #f2ead8; } /* logos de cartes : pastille ivoire */
+  .switch span { background: #3d362b; }
+  .switch span::after { background: #f2ead8; }
+  .switch input:checked + span { background: #d4ad5a; }
+  .switch input:focus-visible + span { outline-color: rgba(212, 173, 90, .5); }
+  .modal-bg { background: rgba(5, 4, 3, .72); }
+  .modal { background: #15130f; border: 1px solid #3d362b; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+  .f input, .f select { background: #100e0b; border-color: #3d362b; color: #f2ead8; }
+  .f input:focus, .f select:focus { border-color: #d4ad5a; box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
+  .err { background: #2e1514; color: #ffd9d4; border: 1px solid #5c2622; }
+  .note { background: #2d2310; color: #f3e3b0; border: 1px solid #5a4515; }
+  .toast { background: #1d1a14; color: #f2ead8; border: 1px solid #9c7a35; }
+  .toast.bad { background: #2e1514; color: #ffd9d4; border-color: #7a2c26; }
 </style>
+<link rel="stylesheet" href="/assets/landing-kuba.css">
 </head>
 <body>
 <div class="page">
@@ -780,7 +820,7 @@ $('#export').onclick = async (e) => {
   catch (x) { toast(x.message, true); } finally { e.target.disabled = false; }
 };
 
-const money = (minor, cur) => cur === 'USD' ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' $' : (minor / 100).toLocaleString('fr-FR') + ' FC';
+const money = (minor, cur) => (cur === 'USD' ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' $' : (minor / 100).toLocaleString('fr-FR') + ' FC').replace(/ /g, ' '); // espace insécable lisible
 async function loadPayments() {
   const [cards, me] = await Promise.all([api('GET', '/v1/cards'), api('GET', '/v1/me')]);
   LIMITS = me.limits;

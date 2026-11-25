@@ -214,7 +214,7 @@
   /* m1 — noire brillante, rubans et arc lumineux, lettrage argent, hologramme globe */
   .wcard.m1 { background: radial-gradient(ellipse 75% 70% at 42% 42%, #4b4b4b 0%, #262626 50%, #080808 100%); }
   .wcard.m1::before { background: var(--m1-fx) center / 100% 100% no-repeat; }
-  .wcard.m1 .title, .wcard.m1 .num, .wcard.m1 .who, .wcard.m1 .val, .wcard.m1 .net { background: linear-gradient(180deg, #fff 0%, #e6e6e6 40%, #9a9a9a 58%, #dcdcdc 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(.25cqw .3cqw 0 rgba(0, 0, 0, .85)); }
+  .wcard.m1 .title, .wcard.m1 .num, .wcard.m1 .who, .wcard.m1 .val, .wcard.m1 .net { color: #e1bd6c; filter: drop-shadow(.25cqw .3cqw 0 rgba(0, 0, 0, .85)); } /* gravure or pleine (univers noir et or) */
   .wcard.m1 .val b { border-left-color: #ddd; }
   .wcard.m1 .tag { top: 46%; }
   .wcard.m1 .title { right: 7%; top: 7%; font: 700 5.4cqw/1 Verdana, "DejaVu Sans", sans-serif; letter-spacing: .01em; }
@@ -248,7 +248,7 @@
 
   /* m3 — bleu canard → magenta, carte du monde en points, sans contact */
   .wcard.m3 { background: linear-gradient(105deg, #0aa6b9 0%, #127fa5 22%, #1b5591 42%, #5a3d8f 64%, #9a3a8c 82%, #a7357f 100%); }
-  .wcard.m3::before { background: radial-gradient(circle at 70% -35%, rgba(255, 255, 255, .16) 0 52%, transparent 52.3%), radial-gradient(150% 60% at 80% 115%, rgba(226, 64, 160, .75) 0 45%, transparent 45.5%), radial-gradient(180% 60% at 20% 125%, rgba(140, 70, 190, .7) 0 45%, transparent 45.5%); }
+  .wcard.m3::before { background: linear-gradient(160deg, transparent 58%, rgba(212, 173, 90, .12) 58% 72%, transparent 72%); } /* reflet or ; le fil RDC est ajouté par kuba.css */
   .wcard.m3 .map { inset: 6% 2% 4% 1%; background: radial-gradient(circle, rgba(255, 255, 255, .33) 0 42%, transparent 46%) 0 0 / 1.55cqw 1.55cqw; -webkit-mask: var(--worldmap) center / 100% 100% no-repeat; mask: var(--worldmap) center / 100% 100% no-repeat; z-index: -1; }
   .wcard.m3 > * { text-shadow: .3cqw .35cqw 0 rgba(15, 20, 50, .8); }
   .wcard.m3 .net { left: 9.8%; top: 9%; font: 700 4.4cqw/1 "Segoe UI", Verdana, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
@@ -326,6 +326,7 @@
   @media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
   ::view-transition-group(*) { animation-duration: .35s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
 </style>
+<link rel="stylesheet" href="/assets/kuba.css">
 </head>
 <body>
 <header class="top">
@@ -381,6 +382,7 @@
     <button data-tab="cards">Mes cartes</button>
     <button data-tab="merchant" class="hidden">Espace marchand</button>
     <a class="tab-link" id="sup-link" href="/messages" title="Le support vous a répondu" hidden>Messages <span class="badge" id="sup-badge"></span></a>
+    <span class="kuba-ind" aria-hidden="true"></span>
   </div>
 
   <section id="tab-home">
@@ -389,10 +391,10 @@
       <div class="balance usd"><small>Dollar US</small><div class="amt" id="bal-USD">—</div></div>
     </div>
     <div class="actions">
-      <button class="ghost" data-open="topup"><i>＋</i>Recharger</button>
-      <button class="ghost" data-open="send"><i>↗</i>Envoyer</button>
-      <button class="ghost" data-open="withdraw"><i>↓</i>Retirer</button>
-      <button class="ghost" data-open="convert"><i>⇄</i>Convertir</button>
+      <button class="ghost" data-open="topup"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></i>Recharger</button>
+      <button class="ghost" data-open="send"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></i>Envoyer</button>
+      <button class="ghost" data-open="withdraw"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7 7 17M15 17H7V9"/></svg></i>Retirer</button>
+      <button class="ghost" data-open="convert"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></svg></i>Convertir</button>
     </div>
     <div class="card hidden" id="kyc-box"></div>
     <div class="card hidden" id="sales-box"></div>
@@ -414,7 +416,7 @@
           <div class="fx-chips" id="fx-chips"></div>
           <small class="muted" id="fx-bal"></small>
         </div>
-        <button type="button" class="fx-swap" id="fx-swap" title="Inverser les devises" aria-label="Inverser les devises">⇅</button>
+        <button type="button" class="fx-swap" id="fx-swap" title="Inverser les devises" aria-label="Inverser les devises"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M4 8l4-4 4 4M16 20V4M12 16l4 4 4-4"/></svg></button>
         <div class="fx-box fx-out">
           <span class="fx-lbl">Vous recevriez</span>
           <div class="fx-row"><output id="fx-res" for="fx-amt" aria-live="polite">—</output><span class="fx-cur" id="fx-to">CDF</span></div>
@@ -427,7 +429,7 @@
   <section id="tab-cards" class="hidden">
     <div class="cw">
       <div>
-        <div class="cw-head"><h2>Mes cartes <small id="cw-count"></small></h2><button class="cw-add" type="button" id="cw-add">＋ Ajouter</button></div>
+        <div class="cw-head"><h2>Mes cartes <small id="cw-count"></small></h2><button class="cw-add" type="button" id="cw-add"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>Ajouter</button></div>
         <div class="wallet"><div class="stack" id="stack"></div><p class="hint" id="cw-hint"></p></div>
       </div>
       <div class="cw-panel" id="cw-panel"></div>
@@ -478,9 +480,10 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 let TOKEN = null; let ME = null; let CARDS = [];
 try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
 
-const fmt = (minor, cur) => cur === 'USD'
+// Espace insécable normale entre les milliers : l'espace fine (U+202F) du format français est presque invisible dans la police de l'interface
+const fmt = (minor, cur) => (cur === 'USD'
   ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
-  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC').replace(/ /g, ' ');
 const toMinor = (v) => Math.round(parseFloat(String(v).replace(/[\s  ]/g, '').replace(',', '.')) * 100);
 /** Champ montant : texte décimal pour accepter la virgule (23,19) comme le point (23.19). */
 const AMOUNT_ATTRS = `type="text" inputmode="decimal" pattern="\\s*\\d[\\d\\s]*([.,]\\d{1,2})?\\s*" title="Montant, ex. 23,19" autocomplete="off"`;
@@ -567,8 +570,17 @@ function setSession(t) {
 function logout() { TOKEN = null; try { sessionStorage.removeItem('pay243_token'); } catch {} $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#who').textContent = ''; }
 
 // ---------------- Onglets ----------------
+// Soulignement Kuba : glisse sous l'onglet actif
+function moveTabInd() {
+  const on = $('.tabs button.on'), ind = $('.tabs .kuba-ind');
+  if (!on || !ind || !on.offsetWidth) return;
+  ind.style.width = on.offsetWidth + 'px';
+  ind.style.transform = `translateX(${on.offsetLeft}px)`;
+}
+addEventListener('resize', moveTabInd);
 $$('[data-tab]').forEach((b) => b.onclick = () => {
   $$('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+  moveTabInd();
   ['home', 'fx', 'cards', 'merchant'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
   if (b.dataset.tab === 'merchant') loadMerchant();
   if (b.dataset.tab === 'fx') renderFx();
@@ -580,7 +592,8 @@ async function boot() {
   try {
     const me = await api('GET', '/v1/me'); ME = me.user;
     $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden');
-    const av = ME.avatar_url ? `<span class="av" style="background-image:url('${esc(ME.avatar_url)}')"></span>` : `<span class="av">${esc(ME.full_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase())}</span>`;
+    requestAnimationFrame(moveTabInd);
+    const av =ME.avatar_url ? `<span class="av" style="background-image:url('${esc(ME.avatar_url)}')"></span>` : `<span class="av">${esc(ME.full_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase())}</span>`;
     $('#who').innerHTML = `<a href="/settings" class="me" title="Paramètres du compte">${av}<span>${esc(ME.full_name)}</span></a><span class="sep"> · </span><a href="/settings" class="who-set">Paramètres</a><span class="sep"> · </span><button class="link" id="logout">Déconnexion</button>`;
     $('#logout').onclick = logout;
     const L = me.limits;
@@ -613,7 +626,14 @@ async function boot() {
 }
 async function loadWallets() {
   const w = await api('GET', '/v1/wallets');
-  w.data.forEach((x) => $('#bal-' + x.currency).textContent = fmt(x.balance, x.currency));
+  w.data.forEach((x) => {
+    const el = $('#bal-' + x.currency), v = fmt(x.balance, x.currency);
+    if (el.textContent === v) return;
+    const first = el.textContent === '—';
+    el.innerHTML = esc(v).replace(/ (FC|\$)$/, ' <span class="cur">$1</span>'); // l'unité porte l'or
+    // la bande Kuba se retisse quand le solde change (pas au premier affichage : elle vient déjà de se tisser)
+    if (!first) { const b = el.closest('.balance'); b.classList.remove('weave'); void b.offsetWidth; b.classList.add('weave'); }
+  });
   window.FX = w.fx;
   window.BAL = Object.fromEntries(w.data.map((x) => [x.currency, x.balance]));
   if (!$('#tab-fx').classList.contains('hidden')) renderFx();
@@ -701,7 +721,17 @@ function openSweep(currency) {
 }
 // ---------------- Historique : liste allégée, détail complet au clic ----------------
 let HIST = new Map(); // id -> opération
-const TXN_ICON = { topup: '＋', transfer: '↗', payment: '🛍', refund: '↩', withdrawal: '↓', conversion: '⇄', payout: '↓' };
+// Icônes dessinées (même trait que les actions du wallet)
+const ico = (d) => `<svg class="ico" viewBox="0 0 24 24">${d}</svg>`;
+const TXN_ICON = {
+  topup: ico('<path d="M12 5v14M5 12h14"/>'),
+  transfer: ico('<path d="M7 17 17 7M9 7h8v8"/>'),
+  payment: ico('<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
+  refund: ico('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>'),
+  withdrawal: ico('<path d="M17 7 7 17M15 17H7V9"/>'),
+  conversion: ico('<path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'),
+  payout: ico('<path d="M12 4v13M6 11l6 6 6-6M5 20h14"/>'),
+};
 const signOf = (x) => (x.direction === 'credit' ? '+' : x.direction === 'internal' ? '' : '−');
 const txnTitle = (x) => (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '');
 /** Transfert : seulement l'autre personne (« À … » ou « De … »), pas « Moi → Lui ». */
@@ -1073,7 +1103,7 @@ function renderPanel() {
   const c = CARDS.find((x) => x.id === CW.sel);
   if (c && !CW.adding) {
     panel.innerHTML = `<h3>${esc(NET_LABEL[c.brand] || 'Carte')} •••• ${esc(c.last4)}</h3><p class="sub">${expired(c) ? 'Cette carte a expiré : supprimez-la et ajoutez la nouvelle.' : 'Prête à recharger votre wallet, instantanément.'}</p>
-      <dl><dt>Réseau</dt><dd>${esc(NET_LABEL[c.brand] || 'Carte')}</dd><dt>Numéro</dt><dd>•••• •••• •••• ${esc(c.last4)}</dd><dt>Expiration</dt><dd>${esc(String(c.exp_month).padStart(2, '0'))}/${esc(c.exp_year)}${expired(c) ? ' · <span style="color:#b3121f">expirée</span>' : ''}</dd><dt>Ajoutée le</dt><dd>${esc(new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}</dd></dl>
+      <dl><dt>Réseau</dt><dd>${esc(NET_LABEL[c.brand] || 'Carte')}</dd><dt>Numéro</dt><dd>•••• •••• •••• ${esc(c.last4)}</dd><dt>Expiration</dt><dd>${esc(String(c.exp_month).padStart(2, '0'))}/${esc(c.exp_year)}${expired(c) ? ' · <span style="color:var(--err)">expirée</span>' : ''}</dd><dt>Ajoutée le</dt><dd>${esc(new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}</dd></dl>
       <div class="acts">${expired(c) ? '' : '<button class="full" id="cw-topup">Recharger avec cette carte</button>'}<button class="full btn-del" id="cw-del">Supprimer la carte</button><button class="link full" id="cw-close">Ranger la carte</button></div>`;
     $('#cw-topup')?.addEventListener('click', () => {
       if (!ME.activated) return toast('Activez d\'abord votre compte en vérifiant votre identité.', true);
@@ -1099,7 +1129,7 @@ function renderPanel() {
       </div>
       <button class="full">Ajouter à mon wallet</button>
     </form>`}
-    <p class="test-note">🔒 En production, ces champs sont fournis par le processeur de cartes (champs hébergés PCI DSS) : le numéro ne passe jamais par les serveurs Pay243. Cartes de test : <code>4242 4242 4242 4242</code> (acceptée), <code>4000 0000 0000 0002</code> (refusée).</p>`;
+    <p class="test-note"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;display:inline-block;vertical-align:-2px;margin-right:4px;color:var(--k-gold)"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>En production, ces champs sont fournis par le processeur de cartes (champs hébergés PCI DSS) : le numéro ne passe jamais par les serveurs Pay243. Cartes de test : <code>4242 4242 4242 4242</code> (acceptée), <code>4000 0000 0000 0002</code> (refusée).</p>`;
   const f = $('#f-card'); if (!f) return;
   const model = nextModel();
   const preview = () => {
@@ -1161,7 +1191,7 @@ async function loadMerchant() {
   $('#m-whsec').textContent = m.webhook_secret;
   $('#f-webhook').webhook_url.value = m.webhook_url || '';
   const p = await api('GET', '/v1/merchants/me/payments?limit=10');
-  $('#m-payments').innerHTML = p.data.length ? p.data.map((x) => `<li><div><b>${esc(x.description || x.id)}</b>${x.order_refs?.length ? ` <span class="mono" style="font-weight:700;background:#fff4cc;color:#6b4e00;border-radius:6px;padding:1px 6px">${esc(x.order_refs.join(', '))}</span>` : ''} <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span><div class="muted">${x.method ? (x.method === 'mobile_money' ? OPS[x.payer?.operator] : x.method === 'card' ? 'Carte' : 'Wallet Pay243') + ' · ' : ''}${when(x.created_at)}</div></div><div><b>${fmt(x.amount, x.currency)}</b>${x.net != null ? `<div class="muted">net ${fmt(x.net, x.currency)}</div>` : ''}</div></li>`).join('') : '<li class="muted">Aucun paiement.</li>';
+  $('#m-payments').innerHTML = p.data.length ? p.data.map((x) => `<li><div><b>${esc(x.description || x.id)}</b>${x.order_refs?.length ? ` <span class="mono" style="font-weight:700;background:var(--k-warn-bg, #fff4cc);color:var(--k-warn, #6b4e00);border-radius:6px;padding:1px 6px">${esc(x.order_refs.join(', '))}</span>` : ''} <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span><div class="muted">${x.method ? (x.method === 'mobile_money' ? OPS[x.payer?.operator] : x.method === 'card' ? 'Carte' : 'Wallet Pay243') + ' · ' : ''}${when(x.created_at)}</div></div><div><b>${fmt(x.amount, x.currency)}</b>${x.net != null ? `<div class="muted">net ${fmt(x.net, x.currency)}</div>` : ''}</div></li>`).join('') : '<li class="muted">Aucun paiement.</li>';
 }
 function showKey(k) { $('#m-key').textContent = k; $('#m-key-new').classList.remove('hidden'); }
 $('#m-newkey').onclick = (e) => busy(e.target, async () => { const r = await api('POST', '/v1/merchants/me/keys', { mode: 'test' }); showKey(r.secret_key); loadMerchant(); });

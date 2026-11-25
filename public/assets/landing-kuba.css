@@ -1,0 +1,143 @@
+/* Pay243 — accueil, paramètres et aide dans l'univers « Raphia Kuba » (voir DESIGN.md).
+   Se charge APRÈS landing.css : remappe ses jetons, puis reprend chaque surface codée en dur.
+   La composition des pages ne change pas ; seuls les matières, couleurs et accents changent. */
+
+:root {
+  --k-ground: #0d0c0a; --k-deep: #0a0907; --k-panel: #15130f; --k-raise: #1d1a14;
+  --k-line: #2a2620; --k-line-2: #3d362b;
+  --k-ivory: #f2ead8; --k-ivory-2: #cfc5b0; --k-mute: #a79c86;
+  --k-gold: #d4ad5a; --k-gold-hi: #ebcb84; --k-gold-deep: #9c7a35; --k-on-gold: #16120a;
+  --k-ok: #86d6a4; --k-ok-bg: #11251a; --k-warn: #ecc46f; --k-warn-bg: #2d2310;
+  --rdc-thread: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%);
+  --kuba-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E");
+  --kuba-cloth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* jetons de landing.css, remappés */
+  --ink: var(--k-ivory); --ink-2: var(--k-ivory-2); --muted: var(--k-mute); --line: var(--k-line);
+  --bg: var(--k-ground); --soft: var(--k-panel); --sand: var(--k-deep);
+  --blue: var(--k-gold); --blue-2: var(--k-gold-hi); --navy: var(--k-deep); --navy-2: var(--k-panel);
+  --green: var(--k-ok);
+  color-scheme: dark;
+}
+
+::selection { background: var(--k-gold); color: var(--k-on-gold); }
+body { background: var(--k-deep); caret-color: var(--k-gold); }
+.page { background: var(--k-ground); box-shadow: 0 0 0 1px var(--k-line); }
+:focus-visible { outline: 2px solid var(--k-gold); outline-offset: 2px; }
+
+/* ---------- Bandeau et navigation ---------- */
+.ribbon { background: var(--k-deep); border-bottom: 1px solid var(--k-line); color: var(--k-ivory-2); }
+.ribbon a { color: var(--k-gold); }
+.nav { background: var(--k-deep); box-shadow: none; border-bottom: 1px solid var(--k-line); }
+.nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--rdc-thread); }
+.nav .logo-img, .logo-img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+.logo.on-dark .logo-img { background: none; padding: 0; }
+.nav .menu a, .nav .link-help, .menu a, .link-help { color: var(--k-mute); }
+.nav .menu a:hover, .menu a:hover { background: var(--k-raise); color: var(--k-ivory); }
+.nav .link-help:hover { color: var(--k-ivory); }
+.nav .link-help.on, .nav .menu a.on { color: var(--k-gold); } /* page en cours : or, pas le jaune du drapeau */
+.burger { border-color: var(--k-line-2); background: var(--k-panel); }
+.burger span, .burger span::before, .burger span::after { background: var(--k-ivory); }
+
+/* ---------- Boutons ---------- */
+.btn-dark, .nav .btn-dark, .btn-blue, .btn-white { background: var(--k-gold); color: var(--k-on-gold); }
+.btn-dark:hover, .nav .btn-dark:hover, .btn-blue:hover, .btn-white:hover { background: var(--k-gold-hi); box-shadow: 0 10px 26px rgba(0, 0, 0, .45); }
+.btn-light, .nav .btn-light { background: var(--k-raise); color: var(--k-ivory); box-shadow: inset 0 0 0 1px var(--k-line-2); }
+.btn-light:hover, .nav .btn-light:hover { background: #26221a; }
+
+/* ---------- Hero ---------- */
+.seg { background: var(--k-panel); border-color: var(--k-line); }
+.seg button { color: var(--k-mute); }
+.seg button[aria-pressed="true"] { background: var(--k-raise); color: var(--k-ivory); box-shadow: inset 0 0 0 1px var(--k-gold-deep); }
+.hero h1 em { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--k-gold); } /* l'or porte l'accent, sans dégradé */
+
+/* ---------- Mosaïque ---------- */
+.mosaic { background: var(--k-deep); }
+.mosaic::before { background: var(--kuba-cloth) 0 0 / 96px 96px; opacity: .1; }
+.tile { background: var(--k-panel); border: 1px solid var(--k-line); }
+.tile.center { background: linear-gradient(180deg, #1a160d 0%, var(--k-ground) 100%); }
+
+/* Téléphone : l'écran montre le vrai wallet noir et or */
+.phone { background: #050403; box-shadow: 0 30px 80px rgba(0, 0, 0, .55), inset 0 0 0 2px var(--k-line-2); }
+.phone::before { background: #050403; }
+.screen { background: var(--k-ground); color: var(--k-ivory); }
+.screen .avatar { background: var(--k-panel); color: var(--k-gold); box-shadow: 0 0 0 1.5px var(--k-gold); }
+.bal, .bal.usd { background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-ivory); padding-bottom: 30px; }
+.bal::after { right: 0; left: 0; top: auto; bottom: 2px; width: auto; height: 14px; border-radius: 0; background: var(--kuba-band) repeat-x left center / 28px 14px; }
+.bal::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--rdc-thread); }
+.bal small { opacity: 1; color: var(--k-mute); text-transform: none; letter-spacing: 0; font-size: 10px; }
+.acts span { background: var(--k-panel); border-color: var(--k-line-2); color: var(--k-ivory-2); }
+.acts span:first-child { background: var(--k-gold); border-color: var(--k-gold); color: var(--k-on-gold); }
+.acts span i { color: var(--k-gold); }
+.acts span:first-child i { color: var(--k-on-gold); }
+.hist { background: var(--k-panel); border-color: var(--k-line); }
+
+/* Cartes flottantes */
+.float, .op { background: var(--k-panel); color: var(--k-ivory); border: 1px solid var(--k-line-2); box-shadow: 0 18px 50px rgba(0, 0, 0, .55); }
+.badge.ok { background: var(--k-ok-bg); color: var(--k-ok); }
+.badge.blue { background: #221d12; color: var(--k-gold); }
+/* bulle WhatsApp : la palette du mode sombre de WhatsApp, reconnaissable */
+.bubble { background: #144d37; color: #e9edef; box-shadow: 0 18px 50px rgba(0, 0, 0, .55); }
+.bubble .who { color: #86d6a4; }
+.bubble .lnk { background: var(--k-ground); color: var(--k-gold); }
+.bubble .time { color: #9fc3b0; }
+.qr { background: var(--k-ivory); }
+.qr span { background: var(--k-ground); }
+
+/* ---------- Sections ---------- */
+.eyebrow { background: #221d12; color: var(--k-gold); }
+.feature, .feature.blue { background: var(--k-panel); border: 1px solid var(--k-line); }
+.feature.yellow { background: #1a160d; border: 1px solid #3a2f18; }
+.feature.mint { background: #111a14; border: 1px solid #1f3a29; }
+.mini { background: var(--k-raise); box-shadow: 0 -2px 30px rgba(0, 0, 0, .4); }
+.mini .pill { background: var(--k-ok-bg); color: var(--k-ok); }
+.mini .field { background: var(--k-ground); }
+.mini .go { background: var(--k-gold); color: var(--k-on-gold); }
+
+/* Logos des opérateurs : pastilles ivoire, leurs couleurs restent intactes */
+.partners .chip { background: var(--k-ivory); border-radius: 12px; padding: 8px 14px; }
+.partners { border-color: var(--k-line); }
+
+.checks li::before { background-color: var(--k-ok-bg); }
+.visual { background: linear-gradient(160deg, #2a2214 0%, var(--k-panel) 70%); border: 1px solid #3a2f18; }
+.visual::before { content: ""; position: absolute; inset: 0; background: var(--kuba-cloth) 0 0 / 96px 96px; opacity: .18; -webkit-mask: linear-gradient(180deg, #000, transparent 80%); mask: linear-gradient(180deg, #000, transparent 80%); }
+
+/* Entreprises */
+.dark { background: var(--k-panel); color: var(--k-ivory); border: 1px solid var(--k-line); }
+.dark .eyebrow { background: #221d12; color: var(--k-gold); }
+.dark .sub, .stat span { color: var(--k-mute); }
+.dark .split h2.big { color: var(--k-ivory); }
+.dark .checks li::before { background-color: var(--k-ok-bg); }
+.code { background: var(--k-deep); border-color: var(--k-line); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+.code .bar { border-bottom-color: var(--k-line); }
+.code .bar i { background: var(--k-line-2); }
+.code .bar span { color: var(--k-mute); }
+.code pre { color: var(--k-ivory-2); }
+.code .k { color: #e1bd6c; } .code .p { color: #b9c9e6; }
+.stat { border-top-color: var(--k-line-2); }
+.stat b { color: var(--k-gold); font-variant-numeric: tabular-nums; }
+
+/* Sécurité */
+.secure div { background: var(--k-panel); border-color: var(--k-line); }
+.secure .ico { background: #221d12; color: var(--k-gold); }
+
+/* FAQ */
+.faq summary::after { color: var(--k-gold); }
+
+/* Appel final : le tissage Kuba en fond, le fil du drapeau en pied */
+.final { background: var(--k-panel); color: var(--k-ivory); border: 1px solid var(--k-gold-deep); }
+.final::before { left: 0; top: 0; width: 100%; height: 100%; border-radius: 0; background: var(--kuba-cloth) 0 0 / 96px 96px; opacity: .16; -webkit-mask: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 70%); mask: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 70%); }
+.final::after { left: 0; right: 0; bottom: 0; width: auto; height: 4px; border-radius: 0; background: var(--rdc-thread); }
+.final h2.big { color: var(--k-ivory); }
+.final .sub { color: var(--k-ivory-2); }
+
+/* Pied de page */
+.foot a:hover { color: var(--k-gold-hi); }
+.legal .sandbox { background: var(--k-warn-bg); color: var(--k-warn); }
+
+@media (max-width: 640px) {
+  .mobile-menu.open { background: var(--k-ground); box-shadow: 0 20px 40px rgba(0, 0, 0, .5); }
+  .dots i { background: var(--k-line-2); }
+  .dots i.on { background: var(--k-gold); }
+  .secure .ico { background: #221d12; }
+}

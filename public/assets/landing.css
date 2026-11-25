@@ -79,7 +79,7 @@ img, svg { display: block; }
 .seg button { border: 0; background: none; padding: 10px 20px; border-radius: 999px; font: 600 15px/1 var(--text); color: var(--muted); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(11, 20, 36, .12); }
 .hero h1 { font: 800 clamp(46px, 7.4vw, 104px)/.98 var(--display); letter-spacing: -.045em; margin: 34px auto 20px; max-width: 15ch; text-wrap: balance; }
-.hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--blue), #3a8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero h1 em { font-style: normal; color: var(--blue); } /* couleur pleine : landing-kuba.css la passe en or */
 .hero p.lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--ink-2); max-width: 620px; margin: 0 auto 28px; }
 .hero .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .hero .fine { margin: 16px 0 0; font-size: 13px; color: var(--muted); }

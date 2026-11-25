@@ -16,37 +16,41 @@
   header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; }
   header.top .logo-img { height: 28px; display: block; }
   .hd-links { display: flex; align-items: center; gap: 16px; font-size: 14px; }
-  .hd-links a, .hd-links button { color: rgba(255,255,255,.9); text-decoration: none; font-weight: 600; background: none; padding: 0; }
-  .hd-links a:hover, .hd-links button:hover { color: #fff; text-decoration: underline; filter: none; }
+  .hd-links a, .hd-links button { color: var(--k-mute); text-decoration: none; font-weight: 600; background: none; padding: 0; }
+  .hd-links a:hover, .hd-links button:hover { color: var(--k-gold-hi); text-decoration: underline; filter: none; }
 
   .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 6px 0 18px; }
   .page-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
   .page-head .muted { margin: 4px 0 0; }
   .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .seg { display: inline-flex; background: #e9eef6; border-radius: 10px; padding: 3px; }
+  .seg { display: inline-flex; background: var(--k-ground); border: 1px solid var(--k-line); border-radius: 10px; padding: 3px; }
   .seg button { background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 8px; font-size: 14px; }
-  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,27,45,.12); }
+  .seg button.on { background: var(--k-raise); color: var(--ink); box-shadow: inset 0 0 0 1px var(--k-gold-deep); }
+  .seg button:hover { filter: none; color: var(--ink); }
   .controls select, .controls input[type=date] { width: auto; padding: 8px 10px; font-size: 14px; }
   #custom-range { display: inline-flex; gap: 6px; align-items: center; }
 
   .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; min-width: 0; }
   .kpi small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-  .kpi .v { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .v { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
   .kpi .s { color: var(--muted); font-size: 12.5px; }
-  .kpi.main { background: linear-gradient(135deg, #10284f, #24599f); color: #fff; border: 0; }
-  .kpi.main small, .kpi.main .s { color: rgba(255,255,255,.78); }
+  /* indicateur principal : même signature que les soldes du wallet (bande Kuba + fil RDC) */
+  .kpi.main { position: relative; overflow: hidden; background: #1a160d; border: 1px solid var(--k-gold-deep); padding-bottom: 34px; }
+  .kpi.main .v { color: var(--k-gold-hi); }
+  .kpi.main::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--rdc-thread); }
+  .kpi.main::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 18px; background: var(--kuba-band) repeat-x left center / 36px 18px; border-top: 1px solid var(--k-line); }
 
   .chart-card h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   .chart-card h2 span { font-size: 13px; color: var(--muted); font-weight: 600; }
   #chart { position: relative; height: 170px; }
   #chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
   #chart .axis { fill: var(--muted); font-size: 11px; }
-  #chart .grid line { stroke: #edf1f6; }
-  #chart .bar { fill: #0070e0; }
+  #chart .grid line { stroke: var(--k-line); }
+  #chart .bar { fill: var(--k-gold); }
   #chart rect.hit { fill: transparent; cursor: default; }
-  #chart g.col:hover .bar { fill: #0b3d91; }
-  .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12.5px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px; z-index: 3; }
+  #chart g.col:hover .bar { fill: var(--k-gold-hi); }
+  .tip { position: absolute; pointer-events: none; background: var(--k-raise); color: var(--k-ivory); border: 1px solid var(--k-gold-deep); font-size: 12.5px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px; z-index: 3; }
   .chart-empty { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 14px; }
 
   .tabs { margin: 4px 0 12px; }
@@ -61,17 +65,17 @@
   table.tx th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.tx td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
   table.tx tbody tr { cursor: pointer; }
-  table.tx tbody tr:hover { background: #f7faff; }
+  table.tx tbody tr:hover { background: var(--k-raise); }
   table.tx tbody tr:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
   table.tx .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   table.tx .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
   table.tx .desc { max-width: 420px; }
   .refs { display: flex; flex-wrap: wrap; gap: 4px; }
-  .ref { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; background: #fff4cc; color: #6b4e00; border-radius: 6px; padding: 1px 6px; }
-  .ref.none { background: #f1f3f7; color: var(--muted); font-family: inherit; font-weight: 600; }
+  .ref { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; background: var(--k-warn-bg); color: var(--k-warn); border-radius: 6px; padding: 1px 6px; }
+  .ref.none { background: var(--k-raise); color: var(--muted); font-family: inherit; font-weight: 600; }
   .pid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--muted); }
-  .pill.refunded, .pill.partially_refunded { background: #efe9fb; color: #5b3aa8; }
-  .pill.requires_payment { background: #eef3fb; color: var(--blue-d); }
+  .pill.refunded, .pill.partially_refunded { background: #221a2c; color: #c9b0f0; border-color: #3e2f55; }
+  .pill.requires_payment { background: var(--k-raise); color: var(--k-mute); }
   .neg { color: var(--err); }
   .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
   .pager .row { flex: 0 0 auto; gap: 6px; }
@@ -81,9 +85,9 @@
   .totals-line b { color: var(--ink); }
 
   /* Panneau de détail */
-  .drawer-bg { position: fixed; inset: 0; background: rgba(15,27,45,.35); z-index: 30; }
-  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: #fff; z-index: 31; overflow-y: auto; box-shadow: -10px 0 40px rgba(15,27,45,.18); padding: 20px 22px 30px; }
-  .drawer .x { position: absolute; top: 12px; right: 12px; background: #f1f3f7; color: var(--ink); width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 18px; }
+  .drawer-bg { position: fixed; inset: 0; background: rgba(5, 4, 3, .6); z-index: 30; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: var(--k-panel); border-left: 1px solid var(--k-line-2); z-index: 31; overflow-y: auto; box-shadow: -10px 0 40px rgba(0, 0, 0, .5); padding: 20px 22px 30px; }
+  .drawer .x { position: absolute; top: 12px; right: 12px; background: var(--k-raise); border: 1px solid var(--k-line-2); color: var(--ink); width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 18px; }
   .drawer h3 { margin: 0 36px 2px 0; font-size: 17px; }
   .drawer .big { font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin: 6px 0 2px; }
   .drawer section { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 14px; }
@@ -101,9 +105,9 @@
 
   /* Revenus de la plateforme (place de marché) */
   .rev { display: grid; grid-template-columns: 300px 1fr; gap: 0; padding: 0; overflow: hidden; margin-bottom: 16px; }
-  .rev-main { background: #f2f8f4; border-right: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .rev-main { background: #111d15; border-right: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
   .rev-main small, .rev-grid small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-  .rev-main .v { font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: #146c43; white-space: nowrap; }
+  .rev-main .v { font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: var(--k-ok); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .rev-main .s { color: var(--muted); font-size: 12.5px; }
   .rev-main .row { gap: 8px; margin-top: auto; padding-top: 8px; flex-wrap: wrap; }
   .rev-main button { padding: 9px 14px; font-size: 14px; }
@@ -112,7 +116,7 @@
   .rev-grid .s { color: var(--muted); font-size: 12.5px; }
   .rev-fees { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 10px; }
   .rev-fees b { color: var(--ink); font-variant-numeric: tabular-nums; }
-  .warn { background: #fff4e5; color: #8a4b00; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-top: 4px; }
+  .warn { background: var(--k-warn-bg); color: var(--k-warn); border: 1px solid #5a4515; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-top: 4px; }
   ul.split { list-style: none; margin: 0 0 12px; padding: 0; }
   ul.split li { padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
   .sl-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -120,10 +124,10 @@
   ul.split .sub { font-size: 12px; margin-top: 3px; }
   .sl-fees, .sl-parts { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 4px; color: var(--muted); }
   .sl-fees b, .sl-parts b { color: var(--ink); font-variant-numeric: tabular-nums; }
-  .sl-parts b.credit { color: #146c43; }
-  .pill.reserved { background: #fff4e5; color: #8a4b00; }
-  .pill.released { background: #e7f6ec; color: #146c43; }
-  .credit { color: #146c43; }
+  .sl-parts b.credit { color: var(--k-ok); }
+  .pill.reserved { background: var(--k-warn-bg); color: var(--k-warn); border-color: #5a4515; }
+  .pill.released { background: var(--k-ok-bg); color: var(--k-ok); border-color: #1f4a30; }
+  .credit { color: var(--k-ok); }
   #wd-form label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
   #wd-form .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
 
@@ -151,6 +155,7 @@
     .rev-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
+<link rel="stylesheet" href="/assets/kuba.css">
 </head>
 <body>
 <header class="top">
@@ -241,9 +246,10 @@ async function api(method, path, body, { raw = false } = {}) {
   return j;
 }
 
-const fmt = (minor, cur) => minor == null ? '—' : cur === 'USD'
+// espace insécable normale entre les milliers : l'espace fine du format français est presque invisible dans la police
+const fmt = (minor, cur) => minor == null ? '—' : (cur === 'USD'
   ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
-  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC').replace(/ /g, ' ');
 const when = (iso) => iso ? new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 const OPS = { mpesa: 'M-Pesa', airtel: 'Airtel Money', orange: 'Orange Money' };
 const STATUS = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', requires_payment: 'À payer', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré' };

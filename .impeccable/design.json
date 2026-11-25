@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-24T00:00:00Z",
+  "title": "Design System: Pay243",
+  "extensions": {
+    "colorMeta": {
+      "raffia-ground": { "role": "neutral", "displayName": "Raffia Ground", "tonalRamp": ["#050403", "#0a0907", "#0d0c0a", "#15130f", "#1d1a14", "#2a2620", "#3d362b", "#5a5144"] },
+      "raffia-deep": { "role": "neutral", "displayName": "Raffia Deep", "tonalRamp": ["#030302", "#050403", "#0a0907", "#0d0c0a", "#15130f", "#1d1a14", "#2a2620", "#3d362b"] },
+      "field-ground": { "role": "neutral", "displayName": "Field Ground", "tonalRamp": ["#050403", "#0a0907", "#100e0b", "#15130f", "#1d1a14", "#2a2620", "#3d362b", "#5a5144"] },
+      "woven-panel": { "role": "neutral", "displayName": "Woven Panel", "tonalRamp": ["#0a0907", "#0d0c0a", "#15130f", "#1d1a14", "#26221a", "#2a2620", "#3d362b", "#5a5144"] },
+      "raised-panel": { "role": "neutral", "displayName": "Raised Panel", "tonalRamp": ["#0d0c0a", "#15130f", "#1d1a14", "#26221a", "#2a2620", "#3d362b", "#5a5144", "#7a705f"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "tonalRamp": ["#15130f", "#1d1a14", "#2a2620", "#3d362b", "#5a5144", "#7a705f", "#a79c86", "#d6ccb6"] },
+      "hairline-strong": { "role": "neutral", "displayName": "Hairline Strong", "tonalRamp": ["#1d1a14", "#2a2620", "#3d362b", "#5a5144", "#7a705f", "#a79c86", "#d6ccb6", "#f2ead8"] },
+      "ivory-ink": { "role": "neutral", "displayName": "Ivory Ink", "tonalRamp": ["#2a2620", "#5a5144", "#8d8576", "#a79c86", "#c9bfa9", "#e2d9c4", "#f2ead8", "#faf6ec"] },
+      "raffia-mute": { "role": "neutral", "displayName": "Raffia Mute", "tonalRamp": ["#2a2620", "#3d362b", "#5a5144", "#7a705f", "#a79c86", "#c9bfa9", "#e2d9c4", "#f2ead8"] },
+      "raffia-faint": { "role": "neutral", "displayName": "Raffia Faint", "tonalRamp": ["#2a2620", "#3d362b", "#5a5144", "#8d8576", "#a79c86", "#c9bfa9", "#e2d9c4", "#f2ead8"] },
+      "brushed-gold": { "role": "primary", "displayName": "Brushed Gold", "tonalRamp": ["#2d2310", "#5a451c", "#7a5e28", "#9c7a35", "#b8933f", "#d4ad5a", "#ebcb84", "#f6e5bd"] },
+      "gold-light": { "role": "primary", "displayName": "Gold Light", "tonalRamp": ["#2d2310", "#5a451c", "#9c7a35", "#d4ad5a", "#ebcb84", "#f2d9a2", "#f6e5bd", "#fff7e2"] },
+      "gold-deep": { "role": "primary", "displayName": "Gold Deep", "tonalRamp": ["#1a160e", "#2d2310", "#5a451c", "#7a5e28", "#9c7a35", "#b8933f", "#d4ad5a", "#ebcb84"] },
+      "on-gold": { "role": "primary", "displayName": "On Gold", "tonalRamp": ["#0a0805", "#16120a", "#2d2310", "#5a451c", "#7a5e28", "#9c7a35", "#d4ad5a", "#f6e5bd"] },
+      "ok": { "role": "status", "displayName": "Leaf Green", "tonalRamp": ["#11251a", "#1f4a30", "#2f6b46", "#4a9a68", "#6bbd88", "#86d6a4", "#b2e7c4", "#e0f6e8"] },
+      "ok-ground": { "role": "status", "displayName": "Leaf Ground", "tonalRamp": ["#08140d", "#11251a", "#1f4a30", "#2f6b46", "#4a9a68", "#86d6a4", "#b2e7c4", "#e0f6e8"] },
+      "warn": { "role": "status", "displayName": "Amber", "tonalRamp": ["#2d2310", "#5a4515", "#8a6a22", "#b8903a", "#d9ae55", "#ecc46f", "#f3e3b0", "#fbf3dc"] },
+      "warn-ground": { "role": "status", "displayName": "Amber Ground", "tonalRamp": ["#171107", "#2d2310", "#5a4515", "#8a6a22", "#b8903a", "#ecc46f", "#f3e3b0", "#fbf3dc"] },
+      "err": { "role": "status", "displayName": "Clay Red", "tonalRamp": ["#2e1514", "#5c2622", "#7a2c26", "#b3121f", "#e0675e", "#ff948a", "#ffd9d4", "#fff0ee"] },
+      "err-ground": { "role": "status", "displayName": "Clay Ground", "tonalRamp": ["#170a09", "#2e1514", "#5c2622", "#7a2c26", "#b3121f", "#ff948a", "#ffd9d4", "#fff0ee"] },
+      "rdc-blue": { "role": "tertiary", "displayName": "RDC Sky Blue", "tonalRamp": ["#00203f", "#003a73", "#0055a8", "#006fdc", "#007fff", "#4da3ff", "#99c9ff", "#e0efff"] },
+      "rdc-yellow": { "role": "tertiary", "displayName": "RDC Yellow", "tonalRamp": ["#3e3606", "#6f600b", "#a08b10", "#d1b515", "#f7d618", "#f9e15a", "#fbec9c", "#fef8de"] },
+      "rdc-red": { "role": "tertiary", "displayName": "RDC Red", "tonalRamp": ["#330408", "#5c0710", "#870b18", "#ce1021", "#e04655", "#ea7c87", "#f3b2b8", "#fbe6e8"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Balance figures only; tabular, unit in gold at .5em. 32px on phones." },
+      "headline": { "displayName": "Headline", "purpose": "Amount at the head of a transaction detail; 24px on phones." },
+      "title": { "displayName": "Title", "purpose": "Card headings." },
+      "body": { "displayName": "Body", "purpose": "Running text and list rows; word-spacing .08em." },
+      "label": { "displayName": "Label", "purpose": "Field labels, balance captions, tabs, action tile names; sentence case, no tracking." },
+      "status": { "displayName": "Status", "purpose": "Status pills." }
+    },
+    "patterns": [
+      { "name": "kuba-step", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V3h3V0h6v3h3v3H9V3H3v3z' fill='%23d4ad5a'/%3E%3C/svg%3E\")", "purpose": "Stepped tab underline, repeat-x, 6px tall." },
+      { "name": "kuba-band", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E\")", "purpose": "Meander band at the foot of balance panels; USD offset by 22px." },
+      { "name": "kuba-cloth", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E\")", "purpose": "Cloth tile at 50% under a diagonal mask on the sign-in art." },
+      { "name": "rdc-thread", "value": "linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%)", "purpose": "3px under the balance band, 4px under the sign-in art." }
+    ],
+    "shadows": [
+      { "name": "toast", "value": "0 12px 32px rgba(0,0,0,.55)", "purpose": "Floating messages." },
+      { "name": "window", "value": "0 24px 60px rgba(0,0,0,.6)", "purpose": "Modals, over a rgba(5,4,3,.72) scrim." },
+      { "name": "wallet", "value": "0 24px 60px rgba(0,0,0,.45)", "purpose": "The card wallet container." },
+      { "name": "gold-hair-ring", "value": "0 0 0 1px rgba(212,173,90,.55)", "purpose": "Logo frame." },
+      { "name": "gold-ring", "value": "0 0 0 1.5px #d4ad5a", "purpose": "Avatar ring." },
+      { "name": "gold-select", "value": "0 0 0 2px #d4ad5a", "purpose": "Selected operator chip." }
+    ],
+    "motion": [
+      { "name": "ease-weave", "value": "cubic-bezier(.2, .8, .2, 1)", "purpose": "Tab underline slide and balance band weave." },
+      { "name": "tab-slide", "value": "380ms", "purpose": "Kuba underline transform and width between tabs." },
+      { "name": "band-weave", "value": "900ms", "purpose": "Balance band clip-path reveal left to right on load and on amount change." },
+      { "name": "state", "value": "150ms", "purpose": "Button background, border, colour and filter transitions." },
+      { "name": "reduced-motion", "value": "none", "purpose": "Under prefers-reduced-motion the slide and weave are removed." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "560px" },
+      { "name": "container", "value": "980px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Gold fill for the main confirmation of a form or modal.",
+      "html": "<button class=\"ds-btn-primary\">Confirmer</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #d4ad5a; color: #16120a; border: 0; border-radius: 10px; padding: 11px 16px; font: 700 15px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, filter .15s; } .ds-btn-primary:hover { background: #ebcb84; } .ds-btn-primary:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .5; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action on raised panel with a strong hairline.",
+      "html": "<button class=\"ds-btn-ghost\">Annuler</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; background: #1d1a14; color: #f2ead8; border: 1px solid #3d362b; border-radius: 10px; padding: 11px 16px; font: 700 15px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, border-color .15s; } .ds-btn-ghost:hover { background: #26221a; border-color: #9c7a35; } .ds-btn-ghost:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; }"
+    },
+    {
+      "name": "Action Tiles",
+      "kind": "custom",
+      "refersTo": "action-tile",
+      "description": "The four money verbs; the first is always solid gold.",
+      "html": "<div class=\"ds-actions\"><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Recharger</button><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 17 17 7M9 7h8v8\"/></svg>Envoyer</button><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M17 7 7 17M15 17H7V9\"/></svg>Retirer</button><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7\"/></svg>Convertir</button></div>",
+      "css": ".ds-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #0d0c0a; padding: 12px; } .ds-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; background: #15130f; color: #f2ead8; border: 1px solid #3d362b; border-radius: 14px; padding: 14px 6px 12px; font: 600 13px 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, border-color .15s; } .ds-tile svg { width: 22px; height: 22px; fill: none; stroke: #d4ad5a; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-tile:hover { background: #1d1a14; border-color: #9c7a35; } .ds-tile:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; } .ds-tile:first-child { background: #d4ad5a; color: #16120a; border-color: #d4ad5a; } .ds-tile:first-child svg { stroke: #16120a; } .ds-tile:first-child:hover { background: #ebcb84; }"
+    },
+    {
+      "name": "Balance Panel",
+      "kind": "card",
+      "refersTo": "balance-panel",
+      "description": "Signature: tabular figure with gold unit, Kuba band and DRC thread at its foot, woven in on load.",
+      "html": "<div class=\"ds-balance\"><small>Franc congolais</small><div class=\"ds-amt\">1 205 000<span>FC</span></div></div>",
+      "css": ".ds-balance { position: relative; overflow: hidden; background: #15130f; border: 1px solid #2a2620; border-radius: 16px; padding: 18px 20px 42px; color: #f2ead8; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; max-width: 360px; } .ds-balance small { color: #a79c86; font-size: 13px; font-weight: 600; } .ds-amt { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; } .ds-amt span { font-size: .5em; color: #d4ad5a; margin-left: .15em; } .ds-balance::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); } .ds-balance::after { content: ''; position: absolute; left: 0; right: 0; bottom: 3px; height: 22px; border-top: 1px solid #2a2620; background: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E\") repeat-x left center; animation: ds-weave .9s cubic-bezier(.2,.8,.2,1) both; } @keyframes ds-weave { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } } @media (prefers-reduced-motion: reduce) { .ds-balance::after { animation: none; } }"
+    },
+    {
+      "name": "Tabs with Kuba Underline",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Text-only tabs on a hairline; the active one carries the stepped gold underline, which slides between tabs.",
+      "html": "<nav class=\"ds-tabs\"><button class=\"on\">Wallet</button><button>Convertisseur</button><button>Mes cartes</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: 22px; border-bottom: 1px solid #2a2620; background: #0d0c0a; padding: 0 12px; } .ds-tabs button { position: relative; background: transparent; color: #8d8576; border: 0; padding: 12px 0 14px; font: 600 15px 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: color .15s; } .ds-tabs button:hover { color: #f2ead8; } .ds-tabs button:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; } .ds-tabs button.on { color: #f2ead8; } .ds-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 6px; background: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V3h3V0h6v3h3v3H9V3H3v3z' fill='%23d4ad5a'/%3E%3C/svg%3E\") repeat-x left bottom; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunk field below the panel tone; gold border and soft gold outline on focus.",
+      "html": "<label class=\"ds-field\"><span>Numéro</span><input placeholder=\"+243 …\"></label>",
+      "css": ".ds-field { display: block; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #15130f; padding: 12px; } .ds-field span { display: block; color: #a79c86; font-size: 13px; font-weight: 600; margin: 0 0 4px; } .ds-field input { width: 100%; box-sizing: border-box; background: #100e0b; color: #f2ead8; caret-color: #d4ad5a; border: 1px solid #3d362b; border-radius: 10px; padding: 11px 12px; font: inherit; font-size: 15px; } .ds-field input::placeholder { color: #8d8576; } .ds-field input:focus { outline: 2px solid rgba(212,173,90,.3); border-color: #d4ad5a; }"
+    },
+    {
+      "name": "Status Pills",
+      "kind": "chip",
+      "refersTo": "pill-succeeded",
+      "description": "Status doubled by shape: filled dot, empty ring, cross.",
+      "html": "<div class=\"ds-pills\"><span class=\"ds-pill ok\">Réussi</span><span class=\"ds-pill wait\">En attente</span><span class=\"ds-pill fail\">Échoué</span></div>",
+      "css": ".ds-pills { display: flex; gap: 8px; background: #15130f; padding: 12px; } .ds-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font: 700 12px 'Plus Jakarta Sans', system-ui, sans-serif; padding: 2px 8px; border-radius: 99px; border: 1px solid; } .ds-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; } .ds-pill.ok { background: #11251a; color: #86d6a4; border-color: #1f4a30; } .ds-pill.wait { background: #2d2310; color: #ecc46f; border-color: #5a4515; } .ds-pill.wait::before { background: none; box-shadow: inset 0 0 0 1.5px currentColor; } .ds-pill.fail { background: #2e1514; color: #ff948a; border-color: #5c2622; } .ds-pill.fail::before { border-radius: 1px; width: 7px; height: 7px; background: linear-gradient(45deg, transparent 42%, currentColor 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, currentColor 42% 58%, transparent 58%); }"
+    },
+    {
+      "name": "History Row",
+      "kind": "custom",
+      "refersTo": "history-icon",
+      "description": "Rounded-square weave cell icon, tabular amount; pending icon dashed and amount mute.",
+      "html": "<ul class=\"ds-hist\"><li><i class=\"ds-hic credit\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></svg></i><b>Recharge · M-Pesa</b><em>+500,00 $</em></li><li><i class=\"ds-hic wait\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></svg></i><b>Recharge · M-Pesa</b><em class=\"mute\">+300,00 $</em></li></ul>",
+      "css": ".ds-hist { list-style: none; margin: 0; padding: 0 16px; background: #15130f; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #f2ead8; } .ds-hist li { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid #2a2620; cursor: pointer; } .ds-hist li:hover { background: #1d1a14; } .ds-hist b { flex: 1; font-size: 15px; } .ds-hist em { font-style: normal; font-weight: 700; color: #86d6a4; font-variant-numeric: tabular-nums; } .ds-hist em.mute { color: #a79c86; } .ds-hic { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: #1d1a14; color: #d4ad5a; border: 1px solid #3d362b; } .ds-hic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; } .ds-hic.credit { background: #11251a; color: #86d6a4; border-color: #1f4a30; } .ds-hic.wait { background: #2d2310; color: #ecc46f; border-color: #5a4515; border-style: dashed; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Raphia Kuba",
+    "overview": "Pay243 is black raffia cloth with gold woven into it. The ground is a warm near-black, never a cold neutral; panels sit on it as slightly lighter woven squares edged by a brown-gold hairline. Gold is not a glow or an accent sprinkled over darkness: it is a material that does work. It fills the one action that matters most, rings the person's avatar, frames the logo, and above all runs as a stepped Kuba band along the foot of every balance. That band is the signature of money held. Under it, and only there (and at the foot of the sign-in art), a 3px thread in the colours of the DRC flag ties the product to the country.\n\nDensity is calm and phone-first. Figures are large, tabular and ivory, with the currency unit set in gold at half size so CDF and USD are told apart at a glance in full sun. Every status reads by shape and word as well as colour: a filled dot for done, an empty ring and dashed border for pending, a cross for failed. Motion is limited to two woven gestures, the Kuba underline that slides between tabs and the band that re-weaves left to right when an amount changes, both removed under reduced motion.\n\nThe system rejects the category default of a black screen with a lone gold accent and glowing cards. Nothing glows; depth comes from tone and hairlines.",
+    "keyCharacteristics": [
+      "Warm near-black raffia ground, woven panels, brown-gold hairlines; dark only (`color-scheme: dark`).",
+      "Gold is a working material: lead action, avatar ring, logo frame, focus, links, the Kuba band.",
+      "Rectilinear stepped Kuba motifs; corners softened to 14-16px on containers.",
+      "Large tabular ivory figures, currency unit in gold at .5em.",
+      "Vivid colour confined to operator logos, statuses and the DRC tricolour thread.",
+      "Status is always doubled by shape and word."
+    ],
+    "rules": [
+      { "name": "The Gold Does Work Rule", "body": "Gold appears where it carries meaning: the lead action, the held-money band, focus, the unit of a figure, the person's ring. It is never a decorative glow or gradient wash.", "section": "colors" },
+      { "name": "The Rationed Colour Rule", "body": "Saturated colour is reserved for operator logos (shown on an ivory chip so their own colours stay true), statuses, and the DRC thread. Nothing else on the screen is vivid.", "section": "colors" },
+      { "name": "The Shape And Word Rule", "body": "No state is signalled by colour alone. Done is a filled dot, pending an empty ring (and a dashed icon border), failed a cross, each with its word.", "section": "colors" },
+      { "name": "The Tabular Money Rule", "body": "Every amount (balances, history, transaction detail, converter) uses `font-variant-numeric: tabular-nums`, so columns of figures align and changing values do not jitter.", "section": "typography" },
+      { "name": "The Sentence Case Rule", "body": "Captions and labels are sentence case with no letter-spacing. The legacy uppercase tracked captions are switched off on balances and are not to return.", "section": "typography" },
+      { "name": "The No Glow Rule", "body": "No coloured shadows, no gold blur, no glowing cards. A gold edge is always a crisp ring or hairline.", "section": "elevation" },
+      { "name": "The Orthogonal Motif Rule", "body": "Kuba ornament is built from horizontal and vertical steps only. No curves, diagonals or generic \"African\" pattern clip art.", "section": "shapes" }
+    ],
+    "dos": [
+      "**Do** put the Kuba band and DRC thread at the foot of every panel that shows money held, and nowhere as filler.",
+      "**Do** make the first action in a row of money verbs solid gold and keep the rest woven panel.",
+      "**Do** set every amount in tabular figures, with the unit in gold at .5em on balances.",
+      "**Do** double every status with a shape and a word (filled dot, empty ring or dashed border, cross).",
+      "**Do** show operator and card-network logos on an ivory chip so their own colours stay true.",
+      "**Do** keep secondary text at raffia mute (6.6:1) and never below raffia faint (4.9:1) on panels.",
+      "**Do** drop the tab slide and band weave under `prefers-reduced-motion: reduce`."
+    ],
+    "donts": [
+      "**Don't** add glow, gold blur or coloured shadows to cards or buttons; depth is tonal.",
+      "**Don't** introduce vivid colour outside logos, statuses and the DRC thread.",
+      "**Don't** reintroduce the legacy blue gradients, the yellow circle on balances, or uppercase tracked captions.",
+      "**Don't** draw Kuba motifs with curves or diagonals; they are orthogonal steps.",
+      "**Don't** colour a pending amount green before the money has arrived.",
+      "**Don't** load external fonts or assets; the CSP forbids it and Plus Jakarta Sans is self-hosted."
+    ]
+  }
+}

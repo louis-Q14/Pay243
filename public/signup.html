@@ -12,8 +12,12 @@
 <link rel="stylesheet" href="/assets/fonts.css">
 <style>
   :root {
-    --y: #fdb813; --y-soft: rgba(253, 184, 19, .14); --bg: #111; --panel: #000; --tile: #141416; --tile-2: #1d1d1f; --line: #2a2a2e;
-    --txt: #f2f2f2; --txt-2: #c9c9cd; --muted: #8d8d93; --ok: #2fd27a; --err: #ff6b6b;
+    /* univers « Raphia Kuba » (voir DESIGN.md) : noir de raphia, or brossé, fil tricolore RDC */
+    --y: #d4ad5a; --y-soft: rgba(212, 173, 90, .16); --bg: #0d0c0a; --panel: #090806; --tile: #15130f; --tile-2: #1d1a14; --line: #2a2620;
+    --txt: #f2ead8; --txt-2: #cfc5b0; --muted: #a79c86; --ok: #86d6a4; --err: #ff948a;
+    --rdc-thread: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%);
+    --kuba-cloth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E");
+    color-scheme: dark;
     --display: var(--font-sans);
     --text: var(--font-sans);
   }
@@ -232,6 +236,43 @@
     .choice p, .choice ul { margin-left: 0; }
     .progress { margin-bottom: 18px; }
   }
+
+  /* ================= Univers noir et or (remplace l'aurore et le verre) ================= */
+  ::selection { background: var(--y); color: #16120a; }
+  body { background: var(--bg); caret-color: var(--y); }
+  .shell { box-shadow: 0 40px 90px rgba(0, 0, 0, .6), 0 0 0 1px var(--line); }
+  .art { background: var(--tile); }
+  .art::before, .art.biz::before { inset: 0; filter: none; animation: none; transform: none; opacity: .45; background: var(--kuba-cloth) 0 0 / 96px 96px;
+    -webkit-mask: linear-gradient(165deg, #000 5%, transparent 70%); mask: linear-gradient(165deg, #000 5%, transparent 70%); }
+  .art::after { inset: auto 0 0 0; height: 4px; filter: none; animation: none; transform: none; mix-blend-mode: normal; opacity: 1; background: var(--rdc-thread); }
+  .mark img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+  .pill { background: rgba(13, 12, 10, .8); border-color: var(--line); color: var(--txt); backdrop-filter: none; }
+  .orbit { border-color: rgba(212, 173, 90, .22); }
+  .orbit span { background: rgba(13, 12, 10, .85); border-color: var(--line); color: var(--txt); backdrop-filter: none; }
+  .orbit span b { background: #f2ead8; border-color: #f2ead8; }
+  /* la carte d'aperçu : noir laqué et or, comme les cartes du wallet */
+  .pcard { color: var(--txt); background: linear-gradient(135deg, #2e271b 0%, #14110b 60%, #070605 100%); border-color: rgba(212, 173, 90, .35); backdrop-filter: none;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(235, 203, 132, .25); }
+  .pcard::before { background: linear-gradient(115deg, transparent 40%, rgba(235, 203, 132, .1) 50%, transparent 60%); }
+  .note { background: rgba(21, 19, 15, .92); border-color: var(--line); backdrop-filter: none; }
+  .note .ic { color: #16120a; }
+  .note b, .tagline, h1#headline, .choice h2, .field label, .perks li b, .progress li.now { color: var(--txt); }
+  .tagline b { color: var(--y); }
+  .progress li.now::before { background: var(--y); box-shadow: none; }
+  .choice:hover { border-color: #3d362b; }
+  .choice:has(input:checked) { background: linear-gradient(180deg, rgba(212, 173, 90, .08), var(--tile)); }
+  .choice:has(input:focus-visible) { outline-color: rgba(212, 173, 90, .5); }
+  .choice:has(input:checked) .ico, .choice li::before, .btn { color: #16120a; }
+  .radio { border-color: #5a5040; }
+  .field input { color: var(--txt); }
+  .field input::placeholder { color: #8d8576; }
+  .field input:focus { background: #221d16; box-shadow: none; outline: 2px solid rgba(212, 173, 90, .35); outline-offset: 0; }
+  .pill i { animation: none; box-shadow: none; } /* pastille fixe : pas de halo pulsé */
+  .who button { background: var(--panel); }
+  .btn:hover { box-shadow: 0 12px 30px rgba(0, 0, 0, .4); filter: brightness(1.08); }
+  .err { background: #2e1514; border-color: #5c2622; color: #ffd9d4; }
+  .sandbox { background: #2d2310; border-color: #5a4515; color: #f3e3b0; }
+  @media (prefers-reduced-motion: reduce) { .orbit { animation: none; } }
 </style>
 </head>
 <body>
@@ -435,7 +476,7 @@ const SCENES = {
 };
 const fmtMoney = (minor, cur) => cur === 'USD'
   ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
-  : Math.round(minor).toLocaleString('fr-FR') + ' FC';
+  : Math.round(minor).toLocaleString('fr-FR').replace(/ /g, ' ') + ' FC'; // espace fine presque invisible dans la police : espace insécable normale
 
 let countRaf;
 function countTo(target, cur) {

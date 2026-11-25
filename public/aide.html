@@ -120,7 +120,26 @@
     .h-foot { margin-top: 40px; font-size: 12.5px; }
     .h-foot a { margin: 0 14px 0 0; }
   }
+
+  /* ================= Univers noir et or (voir DESIGN.md) : surfaces propres à la page ================= */
+  body { background: #0d0c0a; }
+  .search input { background: #15130f; border-color: #3d362b; color: #f2ead8; }
+  .search input::placeholder { color: #8d8576; }
+  .search input:focus { border-color: #d4ad5a; box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
+  .search button { background: #d4ad5a; color: #16120a; }
+  .chip { background: #15130f; border-color: #3d362b; color: #cfc5b0; }
+  .chip:hover { border-color: #9c7a35; }
+  .chip.on { background: #d4ad5a; border-color: #d4ad5a; color: #16120a; }
+  .art { border-bottom-color: #2a2620; }
+  .helpful button { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
+  .msg-cta { background: #15130f; color: #f2ead8; border: 1px solid #9c7a35; }
+  .msg-cta .mi { background: #d4ad5a; color: #16120a; }
+  .msg-cta small { color: #a79c86; }
+  .msg-cta .go { background: #d4ad5a; color: #16120a; }
+  .toast { background: #1d1a14; color: #f2ead8; border: 1px solid #9c7a35; }
+  .toast.err { background: #2e1514; color: #ffd9d4; border-color: #7a2c26; }
 </style>
+<link rel="stylesheet" href="/assets/landing-kuba.css">
 </head>
 <body>
 <div class="page">
@@ -283,9 +302,10 @@ async function api(method, path, body) {
 }
 async function busy(btn, fn) { if (btn) btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { if (btn) btn.disabled = false; } }
 const formData = (f) => Object.fromEntries(new FormData(f));
-const fmt = (minor, cur) => cur === 'USD'
+// espace insécable normale entre les milliers : l'espace fine du format français est presque invisible dans la police
+const fmt = (minor, cur) => (cur === 'USD'
   ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
-  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC';
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC').replace(/ /g, ' ');
 const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: ME?.timezone, dateStyle: 'short', timeStyle: 'short' }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
 const TYPE_LABEL = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
 
