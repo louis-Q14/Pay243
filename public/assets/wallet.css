@@ -1,118 +1,193 @@
-/* Pay243 — mise en page du wallet : « la plaque et le carnet ».
-   Se charge après kuba.css (jetons et composants partagés).
-   La plaque : les deux soldes dans un seul objet, cousus par la bande Kuba.
-   Le carnet : l'historique groupé par jour, un fil vertical relie les opérations.
-   Sur téléphone, les onglets deviennent un dock au pouce. */
+/* Pay243 — le wallet dans le monde « pochette de rumba » (comme l'accueil, l'inscription et la connexion).
+   Chargé uniquement par app.html, APRÈS kuba.css : il ne change que le wallet, pas les autres pages Kuba.
+   La pochette : les deux soldes dans un objet carré, filet de dorure en retrait, fil RDC au pied.
+   La liste de titres : les quatre opérations, la première en or plein (la plage « en cours »).
+   Le carnet : l'historique en lignes filetées, un intitulé de jour en or.
+   Formes : angles de 2 px, filets ; les cercles sont réservés au disque. */
 
-/* ---------- Colonne : plaque + actions à gauche, carnet à droite ---------- */
-main#app { max-width: 1120px; }
-.home { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 28px; align-items: start; }
-.home-side { position: sticky; top: 88px; display: grid; gap: 14px; }
+:root {
+  --w-ease: cubic-bezier(.16, 1, .3, 1);
+  --w-gutter: clamp(16px, 4vw, 56px);
+}
+body { background: var(--k-ground); }
+
+/* ---------- En-tête : la barre de l'accueil ---------- */
+header.top {
+  min-height: 68px; padding: 0 var(--w-gutter); background: rgba(13, 12, 10, .96);
+  border-bottom: 1px solid var(--k-line); box-shadow: none;
+}
+header.top .logo-img { height: 30px; box-shadow: none; border-radius: 0; }
+header.top #who { gap: 10px; font-size: 14px; }
+header.top #who .av { width: 32px; height: 32px; border-radius: 50%; box-shadow: 0 0 0 1px var(--k-gold); }
+header.top #who .me span:not(.av) { font-weight: 600; }
+
+/* ---------- Cadre ---------- */
+main#app { max-width: 1520px; padding: 0 var(--w-gutter) 56px; }
+
+/* ---------- Onglets : un menu souligné d'or (l'indicateur glisse sous l'onglet actif) ---------- */
+.tabs { gap: 4px 28px; margin: 0 0 32px; border-bottom: 1px solid var(--k-line); }
+.tabs button, .tabs a.tab-link { padding: 18px 0 16px; font-size: 15px; font-weight: 600; color: var(--k-mute); border-radius: 0; }
+.tabs button:hover, .tabs a.tab-link:hover { color: var(--k-ivory); background: transparent; }
+.tabs button.on { color: var(--k-ivory); }
+.tabs .kuba-ind { height: 2px; background: var(--k-gold); }
+.tabs:not(:has(.kuba-ind)) button.on { background: none; box-shadow: inset 0 -2px 0 var(--k-gold); }
+.tabs .badge { border-radius: 2px; }
+
+/* ---------- Mise en page : la pochette et ses titres à gauche, le carnet à droite ---------- */
+.home { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: clamp(28px, 4vw, 64px); align-items: start; }
+.home-side { position: sticky; top: 96px; display: grid; gap: 22px; }
 .home-main { min-width: 0; }
-#limits { margin: 2px 4px 0; line-height: 1.5; }
+#limits { margin: 0; font-size: 13px; line-height: 1.55; color: var(--k-faint); }
 
-/* ---------- La plaque ---------- */
+/* ---------- La pochette des soldes ---------- */
 .plaque {
-  position: relative; overflow: hidden; isolation: isolate;
-  border-radius: 24px; padding: 24px 24px 22px;
-  background: linear-gradient(165deg, #211b12 0%, #120f0b 58%, #0b0a08 100%);
-  border: 1px solid #3a2f18;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(235, 203, 132, .12);
+  position: relative; display: grid; gap: 22px;
+  padding: 30px 30px 26px; background: var(--k-panel); border-radius: 2px;
+  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, .8);
 }
-/* tissage Kuba gravé dans le coin, très discret */
-.plaque::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; opacity: .16;
-  background: var(--kuba-cloth) right -18px top -18px / 96px 96px;
-  -webkit-mask: radial-gradient(120% 90% at 100% 0%, #000 0%, transparent 55%); mask: radial-gradient(120% 90% at 100% 0%, #000 0%, transparent 55%);
+.plaque::before { /* filet de dorure à chaud, en retrait du bord */
+  content: ""; position: absolute; inset: 12px; border: 1px solid rgba(212, 173, 90, .38); pointer-events: none;
 }
-.plaque .balance { background: none; border: 0; border-radius: 0; padding: 0; overflow: visible; }
-.plaque .balance::before, .plaque .balance::after { display: none; } /* la bande passe dans la couture, plus sous chaque solde */
-.plaque .balance small { display: block; font-size: 13px; font-weight: 600; color: var(--k-mute); letter-spacing: 0; }
-.plaque .amt { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.035em; color: var(--k-ivory); line-height: 1.02; margin-top: 6px; }
-.plaque .cdf .amt { font-size: 50px; }
-.plaque .usd .amt { font-size: 30px; }
-.plaque .amt .cur { font-family: var(--font-sans); font-size: .4em; font-weight: 700; letter-spacing: 0; color: var(--k-gold); margin-left: .25em; vertical-align: .55em; }
-/* la couture : bande Kuba et fil du drapeau, d'un bord à l'autre de la plaque */
-.seam { position: relative; height: 26px; margin: 18px -24px 16px; background: var(--kuba-band) repeat-x left center; border-top: 1px solid rgba(212, 173, 90, .18); border-bottom: 1px solid rgba(212, 173, 90, .18); animation: kuba-weave .9s cubic-bezier(.2, .8, .2, 1) both; }
-.seam::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--rdc-thread); }
+.pl-top { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 600; color: var(--k-gold-hi); }
+.pl-top span:last-child { color: var(--k-mute); }
+.plaque .balance { background: none; border: 0; border-radius: 0; padding: 0; overflow: visible; color: var(--k-ivory); }
+.plaque .balance::before, .plaque .balance::after { display: none; }
+.plaque .balance small { display: block; font-size: 14px; font-weight: 600; color: var(--k-mute); }
+.plaque .amt { margin-top: 4px; font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.04em; line-height: .95; overflow-wrap: anywhere; }
+.plaque .cdf .amt { font-size: clamp(44px, 4.4vw, 64px); color: var(--k-gold); }
+.plaque .usd .amt { font-size: clamp(28px, 2.6vw, 36px); color: var(--k-ivory); }
+.plaque .amt .cur { font-family: var(--font-display); font-size: .42em; font-weight: 700; letter-spacing: 0; margin-left: .22em; vertical-align: baseline; color: var(--k-gold-hi); }
+.plaque .usd .amt .cur { color: var(--k-gold); }
+.plaque .usd { padding-top: 18px; border-top: 1px solid var(--k-line); }
+.pl-thread { height: 5px; margin-top: 4px; background: linear-gradient(90deg, var(--rdc-blue) 0 33.3%, var(--rdc-yellow) 33.3% 66.6%, var(--rdc-red) 66.6%); }
 
-/* ---------- Actions : Recharger en grand, puis une barre en trois segments ---------- */
-.home .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0; position: relative; z-index: 1; } /* au-dessus de l'ombre de la plaque */
-.home .actions button { flex-direction: row; justify-content: center; gap: 8px; height: 50px; padding: 0 8px; font-size: 14px; font-weight: 700; border-radius: 0; background: var(--k-panel); border: 1px solid var(--k-line-2); margin-left: -1px; }
-.home .actions button i { font-size: 0; }
-.home .actions button .ico { width: 19px; height: 19px; }
-.home .actions button:first-child { grid-column: 1 / -1; height: 58px; margin: 0 0 10px; border-radius: 16px; font-size: 16px; background: var(--k-gold); border-color: var(--k-gold); color: var(--k-on-gold); }
-.home .actions button:nth-child(2) { border-radius: 14px 0 0 14px; margin-left: 0; }
-.home .actions button:last-child { border-radius: 0 14px 14px 0; }
-.home .actions button:not(:first-child):hover { background: var(--k-raise); border-color: var(--k-gold-deep); position: relative; z-index: 1; }
+/* ---------- Les opérations : une liste de titres ---------- */
+.home .actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0; border-top: 1px solid var(--k-line-2); }
+.home .actions button {
+  display: grid; grid-template-columns: 2.6em auto minmax(16px, 1fr) auto; align-items: center; column-gap: 12px;
+  min-height: 58px; height: auto; padding: 0 14px; margin: 0; text-align: left;
+  background: transparent; color: var(--k-ivory); border: 0; border-bottom: 1px solid var(--k-line); border-radius: 0;
+  font-size: 17px; font-weight: 600; transition: background-color .2s, color .2s;
+}
+.home .actions button i { font-style: normal; font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--k-faint); }
+.home .actions button .dots { align-self: center; height: 0; border-bottom: 2px dotted var(--k-line-2); transform: translateY(5px); }
+.home .actions button .ico { width: 20px; height: 20px; color: var(--k-gold); }
+.home .actions button:hover { background: var(--k-raise); filter: none; }
+.home .actions button:hover .dots { border-color: var(--k-gold-deep); }
+/* la plage « en cours » : Recharger, en or plein */
+.home .actions button:first-child { background: var(--k-gold); color: var(--k-on-gold); border-bottom-color: var(--k-gold); }
+.home .actions button:first-child i, .home .actions button:first-child .ico { color: var(--k-on-gold); }
+.home .actions button:first-child .dots { border-color: rgba(22, 18, 10, .35); }
+.home .actions button:first-child:hover { background: var(--k-gold-hi); }
+body.locked .home .actions button { opacity: .5; }
+
+/* ---------- Cartes de contenu : filets, angles de 2 px ---------- */
+#app .card { background: var(--k-panel); border: 1px solid var(--k-line); border-radius: 2px; padding: 24px 26px; margin-bottom: 18px; }
+#app .card h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 8px; }
+.gate { background: var(--k-panel) !important; border: 1px solid var(--k-gold-deep) !important; box-shadow: inset 0 0 0 1px rgba(212, 173, 90, .15); }
+.steps3 li { border-radius: 2px !important; }
+.steps3 li::before { border-radius: 2px !important; }
 
 /* ---------- Le carnet ---------- */
-.carnet { padding: 22px 24px 10px; }
-.carnet h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 4px; }
-#history .h-day { display: block; padding: 18px 0 8px; border: 0; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--k-gold); }
-#history .h-day:first-child { padding-top: 8px; }
+.carnet { padding: 26px 28px 12px !important; }
+.carnet h2 { font-size: 26px !important; margin: 0 0 6px !important; }
+#history .h-day {
+  display: flex; align-items: baseline; gap: 12px; padding: 22px 0 10px; border: 0;
+  font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--k-gold);
+}
+#history .h-day::after { content: ""; flex: 1; border-bottom: 1px solid var(--k-line); transform: translateY(-4px); }
+#history .h-day:first-child { padding-top: 10px; }
 #history .h-day::first-letter { text-transform: uppercase; }
-#history .h-item { position: relative; border-bottom: 0; padding: 10px 4px; }
-/* le fil du carnet : relie les pastilles d'un même jour */
-#history .h-item::before { content: ""; position: absolute; left: 23px; top: 0; bottom: 0; width: 1px; background: var(--k-line-2); }
-#history .h-day + .h-item::before { top: 50%; }
-#history .h-item:has(+ .h-day)::before, #history .h-item:last-child::before { bottom: 50%; }
-#history .h-day + .h-item:has(+ .h-day)::before, #history .h-day + .h-item:last-child::before { display: none; }
-#history .h-ic { position: relative; z-index: 1; background-clip: padding-box; }
-#history .h-ic:not(.credit):not(.pending):not(.processing):not(.failed) { background: var(--k-panel); }
-#history .h-amt { font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+#history .h-item { position: relative; gap: 14px; padding: 13px 6px; border-bottom: 1px solid var(--k-line); border-radius: 0; }
+#history .h-item:has(+ .h-day), #history .h-item:last-child { border-bottom: 0; }
+#history .h-item::before { display: none; }
+#history .h-item:hover { background: var(--k-raise); }
+.h-ic { width: 38px; height: 38px; border-radius: 2px; }
+.h-ic.pending, .h-ic.processing { border-style: dashed; }
+#history .h-t b { font-weight: 600; }
+#history .h-amt { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.tx-head .h-ic.big { border-radius: 2px; }
+.tx-amt { font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; }
+.tx-dl code { border-radius: 2px; }
 
-/* ---------- Titres et montants : la police d'affichage partout dans l'appli ---------- */
+/* ---------- Statuts et messages : étiquettes carrées ---------- */
+#app .pill, .modal .pill { border-radius: 2px; }
+.toast { border-radius: 2px; }
+.notice, .secret, .test-note { border-radius: 2px !important; }
+
+/* ---------- Champs et boutons du wallet ---------- */
+#app input, #app select, .modal input, .modal select, .modal textarea { border-radius: 2px; min-height: 48px; }
+#app input:focus, #app select:focus, .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: var(--k-gold); box-shadow: 0 0 0 1px var(--k-gold); }
+#app button:not(.wcard):not(.fx-swap), .modal button { border-radius: 2px; }
+#app button.full, .modal button.full { min-height: 52px; font-size: 16px; }
+.op label { border-radius: 2px !important; }
+
+/* ---------- Titres et montants : la police d'affichage ---------- */
 .card h2, .cw-head h2, .cw-panel h3, .modal h3, .tx-head h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.02em; }
-.cw-head h2 { font-size: 24px; }
-.fx-row input, .fx-row output, .tx-amt { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; }
-.fx-row input, .fx-row output { font-size: 38px; }
+.cw-head h2 { font-size: 26px; }
+.fx-row input, .fx-row output { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 40px; }
+
+/* ---------- Convertisseur : deux boîtes filetées, l'inverseur est un petit disque d'or ---------- */
+.fx { max-width: 600px; }
+.fx-box { border-radius: 2px; background: var(--k-ground); border-color: var(--k-line-2); padding: 16px 18px; }
+.fx-out { background: var(--k-ground); border-color: var(--k-gold-deep); }
+.fx-cur, .fx-chips button { border-radius: 2px !important; }
+.fx-swap { border-radius: 50% !important; border-color: var(--k-panel) !important; }
+
+/* ---------- Mes cartes : l'étui et le panneau en filets (les visuels des cartes ne changent pas) ---------- */
+.wallet { background: var(--k-deep); border: 1px solid var(--k-line); border-radius: 2px; box-shadow: none; }
+.cw-panel { border-radius: 2px; background: var(--k-panel); }
+.cw-add { border-radius: 2px !important; min-height: 40px; }
+.wcard.ghost { border-radius: 2px; }
+
+/* ---------- Espace marchand (onglet) ---------- */
+#m-bal .balance { border-radius: 2px; }
 
 /* ---------- Fenêtres d'opération ---------- */
-.modal { border-radius: 24px; padding: 26px 24px 22px; }
-.modal h3 { font-size: 24px; margin-bottom: 6px; }
-.modal > .muted:first-of-type, .modal h3 + p.muted { margin: 0 0 6px; }
-.modal .full { height: 52px; border-radius: 14px; font-size: 16px; }
+.modal-bg { background: rgba(5, 4, 3, .78); }
+.modal { border-radius: 2px; padding: 28px 26px 24px; border: 1px solid var(--k-line-2); max-width: 460px; }
+.modal h3 { font-size: 26px; margin: 0 0 6px; }
+.modal > .muted:first-of-type, .modal h3 + p.muted { margin: 0 0 8px; }
 
 /* ---------- Tablette : une colonne ---------- */
 @media (max-width: 900px) {
-  .home { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .home { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .home-side { position: static; }
 }
 
-/* ---------- Téléphone : plaque pleine largeur, onglets en dock au pouce ---------- */
+/* ---------- Téléphone : pochette pleine largeur, onglets en dock au pouce, fenêtres en panneau du bas ---------- */
 @media (max-width: 560px) {
-  main#app { padding-bottom: 96px; }
-  .plaque { padding: 20px 18px 18px; border-radius: 20px; }
-  .seam { margin: 14px -18px 12px; height: 22px; background-size: 36px 18px; }
-  .plaque .cdf .amt { font-size: 40px; }
-  .plaque .usd .amt { font-size: 26px; }
-  .home .actions button { height: 48px; font-size: 13px; gap: 6px; }
-  .home .actions button:first-child { height: 54px; }
-  .carnet { padding: 18px 16px 6px; }
-  #history .h-amt { font-size: 15px; }
+  header.top { min-height: 60px; }
+  header.top .logo-img { height: 26px; }
+  main#app { padding: 16px 16px 100px; }
+  .plaque { padding: 24px 22px 20px; gap: 18px; }
+  .plaque::before { inset: 9px; }
+  .plaque .cdf .amt { font-size: 44px; }
+  .plaque .usd .amt { font-size: 28px; }
+  .home .actions button { min-height: 54px; font-size: 16px; padding: 0 12px; }
+  #app .card { padding: 20px 18px; }
+  .carnet { padding: 20px 16px 8px !important; }
+  .carnet h2 { font-size: 22px !important; }
+  #history .h-amt { font-size: 16px; }
 
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; border: 0; border-top: 1px solid var(--k-line);
-    background: rgba(10, 9, 7, .97); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); display: flex; flex-wrap: nowrap; justify-content: space-around; gap: 0; overflow: visible; }
-  .tabs button, .tabs a.tab-link { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 4px; margin: 0; font-size: 11px; font-weight: 600; color: var(--k-faint); background: none; border-radius: 12px; white-space: nowrap; }
-  .tabs button .ico { width: 22px; height: 22px; }
-  .tabs button.on { color: var(--k-gold); background: #1a160d; }
+    background: rgba(10, 9, 7, .97); padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); display: flex; flex-wrap: nowrap; justify-content: space-around; gap: 0; overflow: visible; }
+  .tabs button, .tabs a.tab-link { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px 6px; margin: 0; font-size: 11px; font-weight: 600; color: var(--k-faint); background: none; border-radius: 0; white-space: nowrap; }
+  .tabs button .ico { width: 22px; height: 22px; opacity: 1; }
+  .tabs button.on { color: var(--k-gold); background: none; box-shadow: inset 0 2px 0 var(--k-gold); }
   .tabs .kuba-ind { display: none; }
 
-  /* fenêtres d'opération : un panneau qui monte du bas, à portée du pouce */
-  .modal-bg { align-items: flex-end; padding: 0; z-index: 60; } /* au-dessus du dock d'onglets */
-  .modal { max-width: none; width: 100%; max-height: 90vh; border-radius: 24px 24px 0 0; border-bottom: 0; padding: 12px 18px calc(20px + env(safe-area-inset-bottom)); animation: sheet-up .32s cubic-bezier(.2, .8, .2, 1) both; }
-  .modal::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 99px; background: var(--k-line-2); margin: 0 auto 14px; } /* poignée */
+  .modal-bg { align-items: flex-end; padding: 0; z-index: 60; }
+  .modal { max-width: none; width: 100%; max-height: 90vh; border-radius: 0; border: 0; border-top: 1px solid var(--k-line-2); padding: 12px 18px calc(20px + env(safe-area-inset-bottom)); animation: sheet-up .32s var(--w-ease) both; }
+  .modal::before { content: ""; display: block; width: 40px; height: 3px; background: var(--k-line-2); margin: 0 auto 14px; } /* poignée */
   .modal h3 { font-size: 22px; }
   .fx-row input, .fx-row output { font-size: 32px; }
 }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .modal { animation: none !important; } }
 
-/* ---------- Ordinateur : icônes discrètes dans les onglets du haut ---------- */
+/* ---------- Ordinateur : icônes discrètes dans les onglets ---------- */
 @media (min-width: 561px) {
   .tabs button { display: inline-flex; align-items: center; gap: 8px; }
   .tabs button .ico { width: 17px; height: 17px; opacity: .8; }
 }
-
-@media (prefers-reduced-motion: reduce) { .seam { animation: none; } }

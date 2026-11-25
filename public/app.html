@@ -66,54 +66,66 @@
     .modal h3 { font-size: 17px; }
   }
 
-  /* ---------- Écran de connexion ---------- */
-  body:has(#auth:not(.hidden)) { min-height: 100vh; }
+  /* ---------- Écran de connexion : le monde « pochette de rumba » de l'accueil et de l'inscription ----------
+     Styles limités à #auth : le reste du wallet garde son propre système (style.css). */
+  body:has(#auth:not(.hidden)) { min-height: 100vh; background: #0d0c0a; }
   body:has(#auth:not(.hidden)) header.top { display: none; }
-  #auth.login-stage { max-width: none; margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; box-sizing: border-box; }
-  .login-shell { width: min(1180px, 100%); min-height: min(720px, calc(100vh - 64px)); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    background: var(--k-deep); border-radius: 40px; padding: 10px; box-shadow: 0 40px 90px rgba(0, 0, 0, .6), 0 0 0 1px var(--k-line); box-sizing: border-box; }
-  /* panneau de gauche : un raphia tissé d'or, le fil du drapeau en pied */
-  .login-art { position: relative; overflow: hidden; border-radius: 30px; background: var(--k-panel); isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; padding: 40px; }
-  .login-art::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5; background: var(--kuba-cloth) 0 0 / 96px 96px;
-    -webkit-mask: linear-gradient(160deg, #000 10%, transparent 75%); mask: linear-gradient(160deg, #000 10%, transparent 75%); }
-  .login-art::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--rdc-thread); }
-  .login-mark { display: inline-grid; place-items: center; width: max-content; justify-self: start; align-self: flex-start; }
-  .login-mark img { height: 38px; width: auto; display: block; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
-  .login-art h1 { color: var(--ink); font-weight: 300; font-size: clamp(32px, 4.2vw, 58px); line-height: 1.12; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
-  .login-art h1 b { font-weight: 800; color: var(--k-gold); }
-  .login-panel { display: grid; place-items: center; padding: 40px 28px; color: var(--ink); }
-  .login-panel .card { background: transparent; border: 0; padding: 0; margin: 0; width: min(420px, 100%); }
-  .login-panel .card h2 { color: var(--ink); text-align: center; font-size: 40px; font-weight: 600; margin: 0 0 10px; letter-spacing: -.01em; }
-  .login-panel .sub { text-align: center; color: var(--muted); margin: 0 0 36px; font-size: 16px; letter-spacing: .01em; }
-  .login-panel label { color: var(--ink); font-size: 15px; font-weight: 700; margin: 22px 0 10px; }
-  .login-panel input { background: var(--k-panel); border: 1px solid var(--k-line-2); color: var(--ink); border-radius: 10px; padding: 16px 18px; font-size: 16px; }
-  .login-panel input::placeholder { color: var(--k-faint); }
-  .login-panel input:focus { outline: 2px solid rgba(212, 173, 90, .35); border-color: var(--k-gold); }
-  .login-panel button.full { margin-top: 30px; font-weight: 800; font-size: 17px; padding: 17px; border-radius: 10px; }
-  .login-panel button.link { font-weight: 700; }
-  .login-panel .alt { text-align: center; color: var(--muted); margin: 26px 0 0; }
-  .login-panel .alt a { font-weight: 800; text-decoration: none; }
-  .login-panel .alt a:hover { text-decoration: underline; }
-  .login-panel .row-forgot { text-align: right; margin: 10px 0 0; }
-  .login-panel .row-forgot button { padding: 0; font-size: 14px; font-weight: 600; }
+  #auth.login-stage { --sl: min(380px, 26vw); max-width: none; margin: 0; min-height: 100vh; display: flex; flex-direction: column; padding: 0; box-sizing: border-box; color: #f2ead8; }
+  #auth .login-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 0 clamp(16px, 4vw, 56px); border-bottom: 1px solid #2a2620; font-size: 15px; color: #a79c86; }
+  #auth .login-bar img { height: 30px; width: auto; display: block; }
+  #auth .login-bar a.to-signup { color: #ebcb84; font-weight: 700; text-decoration: none; }
+  #auth .login-bar a.to-signup:hover { text-decoration: underline; text-underline-offset: .2em; }
+  #auth .login-shell { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); }
+  #auth .login-art { position: relative; overflow: hidden; background: #0a0907; border-right: 1px solid #2a2620; display: grid; align-content: center; justify-content: center; padding: 48px clamp(16px, 4vw, 56px); }
+  #auth .art-wrap { width: calc(var(--sl) * 1.5); display: grid; gap: 28px; }
+  #auth .rec { position: relative; width: var(--sl); aspect-ratio: 1; }
+  #auth .sleeve { position: relative; z-index: 2; height: 100%; display: grid; grid-template-rows: auto 1fr auto; padding: calc(var(--sl) * .075); background: #15130f; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .8); }
+  #auth .sleeve::before { content: ""; position: absolute; inset: calc(var(--sl) * .03); border: 1px solid rgba(212, 173, 90, .38); pointer-events: none; }
+  #auth .sl-top { font-size: max(11px, calc(var(--sl) * .028)); font-weight: 600; color: #ebcb84; }
+  #auth .sl-title { align-self: center; font-family: var(--font-display); font-weight: 800; font-size: calc(var(--sl) * .37); line-height: .8; letter-spacing: -.04em; color: #d4ad5a; }
+  #auth .sl-title span { display: block; }
+  #auth .sl-title span:first-child { color: #f2ead8; }
+  #auth .thread { height: 5px; background: linear-gradient(90deg, #007fff 0 33.3%, #f7d618 33.3% 66.6%, #ce1021 66.6%); }
+  #auth .disc { position: absolute; z-index: 1; top: 3%; left: 3%; width: 94%; aspect-ratio: 1; border-radius: 50%; transform: translateX(56%); animation: login-slide 1.4s cubic-bezier(.16, 1, .3, 1) .2s both;
+    background: radial-gradient(circle, transparent 0 33%, rgba(0, 0, 0, .55) 33.4% 35.5%, transparent 36% 62%, rgba(0, 0, 0, .45) 62.3% 63.2%, transparent 63.5% 96%, #2a251d 96.4% 97.2%, #060504 97.5%), repeating-radial-gradient(circle, #0e0d0a 0 1.5px, #221e17 1.5px 3px);
+    box-shadow: 0 24px 50px -16px rgba(0, 0, 0, .85); }
+  @keyframes login-slide { from { transform: translateX(3%); } }
+  #auth .disc i { position: absolute; inset: 33%; border-radius: 50%; background: #d4ad5a; }
+  #auth .disc i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 7%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: #0d0c0a; }
+  #auth .login-art h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 2.4vw, 34px); line-height: 1.08; letter-spacing: -.025em; color: #f2ead8; text-wrap: balance; }
+  #auth .login-art h1 b { font-weight: 700; color: #d4ad5a; }
+  #auth .login-panel { display: grid; align-content: center; padding: 44px clamp(20px, 4vw, 56px); }
+  #auth .login-panel .card { background: transparent; border: 0; box-shadow: none; padding: 0; margin: 0; width: min(440px, 100%); border-radius: 0; }
+  #auth .login-panel .card h2 { font-family: var(--font-display); color: #f2ead8; text-align: left; font-size: clamp(32px, 2.8vw, 40px); font-weight: 700; margin: 0 0 8px; letter-spacing: -.03em; line-height: 1.05; }
+  #auth .login-panel .sub { text-align: left; color: #a79c86; margin: 0 0 26px; font-size: 16px; }
+  #auth .login-panel label { color: #f2ead8; font-size: 14px; font-weight: 700; margin: 18px 0 7px; }
+  #auth .login-panel input { height: 52px; box-sizing: border-box; background: #15130f; border: 1px solid #3d362b; color: #f2ead8; border-radius: 2px; padding: 0 16px; font-size: 16px; }
+  #auth .login-panel input::placeholder { color: #8d8576; }
+  #auth .login-panel input:focus { outline: none; border-color: #d4ad5a; box-shadow: 0 0 0 1px #d4ad5a; }
+  #auth .login-panel button.full { margin-top: 24px; min-height: 56px; font-weight: 700; font-size: 16px; padding: 0 24px; border-radius: 2px; background: #d4ad5a; color: #16120a; border: 0; }
+  #auth .login-panel button.full:hover { background: #ebcb84; }
+  #auth .login-panel button.link { font-weight: 700; color: #ebcb84; }
+  #auth .login-panel .alt { text-align: left; color: #a79c86; margin: 22px 0 0; padding-top: 18px; border-top: 1px solid #2a2620; }
+  #auth .login-panel .alt a { font-weight: 700; color: #ebcb84; text-decoration: none; }
+  #auth .login-panel .alt a:hover { text-decoration: underline; }
+  #auth .login-panel .row-forgot { text-align: right; margin: 10px 0 0; }
+  #auth .login-panel .row-forgot button { padding: 4px 0; font-size: 14px; font-weight: 600; }
+  #auth .login-panel .notice { border-radius: 2px; }
   @media (max-width: 860px) {
-    #auth.login-stage { padding: 16px 12px; }
-    .login-shell { grid-template-columns: 1fr; border-radius: 26px; min-height: 0; width: min(520px, 100%); gap: 6px; padding: 6px; }
-    .login-art { min-height: 0; border-radius: 20px; padding: 16px 18px; flex-direction: row; align-items: center; gap: 14px; justify-content: flex-start; }
-    .login-art h1 { font-size: 21px; line-height: 1.15; }
-    .login-art h1 br { display: none; }
-    .login-mark { flex: none; }
-    .login-mark img { height: 28px; }
-    .login-panel { padding: 22px 14px 24px; }
-    .login-panel .card h2 { font-size: 26px; margin-bottom: 4px; }
-    .login-panel .sub { font-size: 14px; margin-bottom: 14px; }
-    .login-panel label { font-size: 14px; margin: 14px 0 6px; }
-    .login-panel input { padding: 12px 14px; }
-    .login-panel .row-forgot { margin-top: 8px; }
-    .login-panel .row-forgot button { font-size: 13px; }
-    .login-panel button.full { margin-top: 18px; padding: 13px; font-size: 16px; }
-    .login-panel .alt { margin-top: 16px; font-size: 14px; }
+    #auth.login-stage { --sl: 96px; }
+    #auth .login-shell { grid-template-columns: minmax(0, 1fr); }
+    #auth .login-art { border-right: 0; border-bottom: 1px solid #2a2620; padding: 18px clamp(16px, 4vw, 56px); justify-content: stretch; }
+    #auth .art-wrap { width: auto; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 18px; }
+    #auth .disc, #auth .sl-top { display: none; }
+    #auth .sleeve { padding: 10px; }
+    #auth .sl-title { font-size: 34px; }
+    #auth .login-art h1 { font-size: 21px; }
+    #auth .login-art h1 br { display: none; }
+    #auth .login-panel { padding: 24px clamp(16px, 4vw, 56px) 28px; align-content: start; }
+    #auth .login-panel .card h2 { font-size: 28px; }
+    #auth .login-panel .sub { font-size: 15px; margin-bottom: 14px; }
   }
+  @media (prefers-reduced-motion: reduce) { #auth .disc { animation: none; } }
 
   /* ================= Historique : liste allégée + détail au clic ================= */
   /* filets droits jusqu'au bord, rangées en retrait du cadre */
@@ -324,10 +336,23 @@
 
 <!-- ======================= Connexion / Inscription ======================= -->
 <main id="auth" class="login-stage">
+ <div class="login-bar">
+   <a href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243"></a>
+   <a href="/" class="to-signup">← Accueil</a>
+ </div>
  <div class="login-shell">
   <aside class="login-art" aria-hidden="true">
-    <a href="/" class="login-mark" tabindex="-1"><img src="/assets/logo.png" alt="Pay243"></a>
+   <div class="art-wrap">
+    <div class="rec">
+      <div class="disc"><i></i></div>
+      <div class="sleeve">
+        <div class="sl-top">Kinshasa · Lubumbashi · Goma</div>
+        <div class="sl-title"><span>Pay</span><span>243</span></div>
+        <div class="thread"></div>
+      </div>
+    </div>
     <h1>Payez, encaissez, <br>envoyez. <b>Simplement.</b></h1>
+   </div>
   </aside>
   <div class="login-panel">
   <div class="card" id="login-card">
@@ -376,17 +401,19 @@
   <section id="tab-home">
    <div class="home">
     <div class="home-side">
-    <!-- La plaque : les deux soldes dans un seul objet, cousus par la bande Kuba -->
+    <!-- La pochette : les deux soldes dans un seul objet, filet de dorure et fil RDC au pied -->
     <div class="plaque">
+      <div class="pl-top" aria-hidden="true"><span>Solde disponible</span><span>CDF · USD</span></div>
       <div class="balance cdf"><small>Franc congolais</small><div class="amt" id="bal-CDF">—</div></div>
-      <div class="seam" aria-hidden="true"></div>
       <div class="balance usd"><small>Dollar US</small><div class="amt" id="bal-USD">—</div></div>
+      <div class="pl-thread" aria-hidden="true"></div>
     </div>
-    <div class="actions">
-      <button class="ghost" data-open="topup"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></i>Recharger</button>
-      <button class="ghost" data-open="send"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></i>Envoyer</button>
-      <button class="ghost" data-open="withdraw"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7 7 17M15 17H7V9"/></svg></i>Retirer</button>
-      <button class="ghost" data-open="convert"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></svg></i>Convertir</button>
+    <!-- Les actions : une liste de titres, la première est la plage « en cours » (or plein) -->
+    <div class="actions" role="group" aria-label="Opérations">
+      <button class="ghost" data-open="topup"><i aria-hidden="true">A1</i><span>Recharger</span><span class="dots" aria-hidden="true"></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="ghost" data-open="send"><i aria-hidden="true">A2</i><span>Envoyer</span><span class="dots" aria-hidden="true"></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      <button class="ghost" data-open="withdraw"><i aria-hidden="true">A3</i><span>Retirer</span><span class="dots" aria-hidden="true"></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7 7 17M15 17H7V9"/></svg></button>
+      <button class="ghost" data-open="convert"><i aria-hidden="true">A4</i><span>Convertir</span><span class="dots" aria-hidden="true"></span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></svg></button>
     </div>
     <p class="muted" id="limits"></p>
     </div>
