@@ -215,44 +215,110 @@
     .toast { font-size: 13.5px; padding: 11px 16px; }
   }
 
-  /* ================= Univers noir et or (voir DESIGN.md) : surfaces propres à la page ================= */
-  body, .page { background: var(--k-ground, #0d0c0a); }
-  .bar { position: relative; background: #0a0907; border-bottom: 1px solid #2a2620; box-shadow: none; }
-  .bar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); }
-  .bar .logo-img { filter: none; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
-  .bar .mini-av, .mini-av { background-color: #15130f; color: #d4ad5a; box-shadow: 0 0 0 1.5px #d4ad5a; }
-  .bar #logout { color: #a79c86 !important; }
-  .tabs-bar { background: #15130f; border-top-color: #2a2620; }
-  .tab.on { color: #d4ad5a; background: #1d1a14; box-shadow: inset 0 0 0 1px #3d362b; }
-  .panel { background: #15130f; border: 1px solid #2a2620; box-shadow: none; }
-  .add { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
-  .profile .cover { position: relative; background: linear-gradient(160deg, #2a2214 0%, #15130f 70%); color: #f2ead8; }
-  .profile .cover::after { right: 0; left: 0; top: 0; bottom: auto; width: auto; height: 3px; border-radius: 0; /* fil RDC en haut de la bannière, pas derrière l'avatar */ background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); }
-  .avatar { border-color: #15130f; background-color: #1d1a14; color: #d4ad5a; box-shadow: 0 0 0 1.5px #d4ad5a; }
-  .avatar-edit { background: #1d1a14; border-color: #3d362b; color: #f2ead8; }
+  /* ================= Monde « pochette de rumba » (voir DESIGN.md), comme l'accueil et le wallet =================
+     Angles de 2 px et filets ; cercles réservés aux avatars. Titres et chiffres en police d'affichage. */
+  body, .page { background: #0d0c0a; color: #f2ead8; }
+  ::selection { background: #d4ad5a; color: #16120a; }
+  .topline { display: none; }
+  .wrap { max-width: 1520px; padding: 0 clamp(16px, 4vw, 56px); }
+  /* la barre de l'accueil, puis les onglets soulignés d'or */
+  .bar { position: sticky; background: rgba(13, 12, 10, .96); border-bottom: 0; box-shadow: none; }
+  .bar .wrap { height: 68px; }
+  .bar .logo-img { filter: none; box-shadow: none; border-radius: 0; }
+  .bar .mini-av, .mini-av { background-color: #15130f; color: #d4ad5a; box-shadow: 0 0 0 1px #d4ad5a; }
+  .bar #logout { color: #a79c86 !important; font-weight: 600; }
+  .bar #logout:hover { color: #ebcb84 !important; text-decoration: none; }
+  .me-chip a.btn { border-radius: 2px; background: transparent; box-shadow: inset 0 0 0 1px #3d362b; color: #f2ead8; }
+  .me-chip a.btn:hover { box-shadow: inset 0 0 0 1px #9c7a35; background: #1d1a14; }
+  .tabs-bar { background: #0d0c0a; border-top: 1px solid #2a2620; border-bottom: 1px solid #2a2620; }
+  .tabs-bar .wrap { gap: 28px; padding-top: 0; padding-bottom: 0; }
+  .tab { padding: 16px 0 14px; border-radius: 0; font: 600 15px var(--text); color: #a79c86; background: none; }
+  .tab:hover { background: none; color: #f2ead8; }
+  .tab.on { color: #f2ead8; font-weight: 600; background: none; box-shadow: inset 0 -2px 0 #d4ad5a; }
+
+  main.settings { padding: 44px 0 80px; }
+  .sec-title h2 { font: 700 clamp(24px, 2.2vw, 30px)/1.1 var(--display); letter-spacing: -.025em; color: #f2ead8; }
+  .panel { background: #15130f; border: 1px solid #2a2620; border-radius: 2px; box-shadow: none; padding: 18px 20px; }
+  .add { border-radius: 2px; background: transparent; border-color: #3d362b; color: #f2ead8; min-height: 38px; }
+  .add:hover { background: #1d1a14; border-color: #9c7a35; }
+  .lk { color: #ebcb84; }
   .lk.danger { color: #ff948a; }
-  .opt { background: #15130f; border-color: #3d362b; }
+
+  /* le profil : la bannière est une pochette (filet de dorure en retrait, fil RDC au pied) */
+  .profile { padding: 0; }
+  .profile .cover { position: relative; background: #15130f; color: #ebcb84; border-bottom: 0; }
+  .profile .cover::before { content: ""; position: absolute; inset: 10px 10px 15px; border: 1px solid rgba(212, 173, 90, .38); pointer-events: none; }
+  .profile .cover::after { left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 5px; border-radius: 0; background: linear-gradient(90deg, #007fff 0 33.3%, #f7d618 33.3% 66.6%, #ce1021 66.6%); }
+  .avatar-wrap { z-index: 1; }
+  .avatar { border-color: #15130f; background-color: #1d1a14; color: #d4ad5a; box-shadow: 0 0 0 1px #d4ad5a; font-family: var(--display); }
+  .avatar-edit { background: #1d1a14; border-color: #3d362b; color: #f2ead8; border-radius: 2px; }
+  .line .name { font-weight: 700; letter-spacing: -.025em; }
+
+  .opt { background: transparent; border-color: #3d362b; border-radius: 2px; color: #f2ead8; }
   .opt:hover { background: #1d1a14; border-color: #9c7a35; }
-  .tag { background: #1d1a14; color: #cfc5b0; }
+  .opt svg { color: #d4ad5a; }
+  .opt .u { color: #ebcb84; }
+  .tag { border-radius: 2px; background: #1d1a14; color: #cfc5b0; }
   .tag.new { background: #221a2c; color: #c9b0f0; }
   .tag.ok { background: #11251a; color: #86d6a4; }
   .tag.wait { background: #2d2310; color: #ecc46f; }
   .tag.no { background: #2e1514; color: #ff948a; }
-  .field-box { border-color: #3d362b; background: #100e0b; }
-  .field-box:focus-within { border-color: #d4ad5a; box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
-  .item .bic { background: #f2ead8; border-color: #f2ead8; } /* logos de cartes : pastille ivoire */
-  .switch span { background: #3d362b; }
-  .switch span::after { background: #f2ead8; }
+  .field-box { border-color: #3d362b; background: #100e0b; border-radius: 2px; }
+  .field-box label { color: #a79c86; }
+  .field-box select { color: #f2ead8; }
+  .field-box::after { border-color: #a79c86; }
+  .field-box:focus-within { border-color: #d4ad5a; box-shadow: 0 0 0 1px #d4ad5a; outline: none; }
+  .kv dt { color: #a79c86; }
+  .copy { border-radius: 2px; background: #1d1a14; color: #ebcb84; }
+  .item { border-radius: 0; }
+  .item + .item { border-top-color: #2a2620; }
+  .item svg.ic { color: #d4ad5a; }
+  .item .bic { background: #f2ead8; border-color: #f2ead8; border-radius: 2px; } /* logos de cartes : pastille ivoire */
+  .row-set + .row-set { border-top-color: #2a2620; }
+  .row-set h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.015em; }
+  .row-set p, .intro, .empty, .item .txt small { color: #a79c86; }
+
+  /* interrupteurs carrés, en or quand ils sont activés */
+  .switch span { border-radius: 2px; background: #3d362b; }
+  .switch span::after { border-radius: 1px; background: #f2ead8; box-shadow: none; }
   .switch input:checked + span { background: #d4ad5a; }
-  .switch input:focus-visible + span { outline-color: rgba(212, 173, 90, .5); }
-  .modal-bg { background: rgba(5, 4, 3, .72); }
-  .modal { background: #15130f; border: 1px solid #3d362b; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
-  .f input, .f select { background: #100e0b; border-color: #3d362b; color: #f2ead8; }
-  .f input:focus, .f select:focus { border-color: #d4ad5a; box-shadow: none; outline: 2px solid rgba(212, 173, 90, .3); }
-  .err { background: #2e1514; color: #ffd9d4; border: 1px solid #5c2622; }
-  .note { background: #2d2310; color: #f3e3b0; border: 1px solid #5a4515; }
-  .toast { background: #1d1a14; color: #f2ead8; border: 1px solid #9c7a35; }
+  .switch input:checked + span::after { background: #16120a; }
+  .switch input:focus-visible + span { outline: 2px solid #d4ad5a; outline-offset: 2px; }
+
+  /* plafonds : trois colonnes filetées, chiffres en or */
+  .limits { gap: 0; padding: 6px 0 12px; }
+  .limits div { background: transparent; border-radius: 0; padding: 12px 16px; }
+  .limits div + div { border-left: 1px solid #2a2620; }
+  .limits small { color: #a79c86; }
+  .limits b { font: 700 24px var(--display); color: #d4ad5a; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+  .btn { border-radius: 2px; }
+  .btn-danger { background: #2e1514; color: #ff948a; box-shadow: inset 0 0 0 1px #5c2622; }
+  .btn-danger:hover { background: #ce1021; color: #fff; }
+
+  .modal-bg { background: rgba(5, 4, 3, .78); }
+  .modal { background: #15130f; border: 1px solid #3d362b; border-radius: 2px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+  .modal h3 { font-weight: 700; letter-spacing: -.025em; }
+  .modal .sub, .f label, .f .hint { color: #a79c86; }
+  .f input, .f select { background: #100e0b; border: 1px solid #3d362b; border-radius: 2px; color: #f2ead8; min-height: 48px; }
+  .f input:focus, .f select:focus { border-color: #d4ad5a; box-shadow: 0 0 0 1px #d4ad5a; outline: none; }
+  .chk input { accent-color: #d4ad5a; }
+  .err { background: #2e1514; color: #ffd9d4; border: 1px solid #5c2622; border-radius: 2px; }
+  .note { background: #2d2310; color: #f3e3b0; border: 1px solid #5a4515; border-radius: 2px; }
+  .secret { border-radius: 2px; }
+  .toast { background: #1d1a14; color: #f2ead8; border: 1px solid #9c7a35; border-radius: 2px; }
   .toast.bad { background: #2e1514; color: #ffd9d4; border-color: #7a2c26; }
+  @media (max-width: 560px) {
+    .bar .wrap { height: 60px; }
+    .tabs-bar .wrap { gap: 20px; }
+    .tab { padding: 13px 0 11px; font-size: 14px; }
+    .panel { border-radius: 2px; padding: 12px 14px; }
+    .limits div { padding: 8px 8px; }
+    .limits b { font-size: 16px; }
+    .modal { border-radius: 2px; }
+    .profile .cover { height: 86px; padding: 16px 18px; }
+    .profile .cover::before { inset: 6px 6px 11px; }
+  }
 </style>
 </head>
 <body>
