@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-24T00:00:00Z",
+  "generatedAt": "2026-11-25T00:00:00Z",
   "title": "Design System: Pay243",
   "extensions": {
     "colorMeta": {
@@ -29,37 +29,63 @@
       "rdc-red": { "role": "tertiary", "displayName": "RDC Red", "tonalRamp": ["#330408", "#5c0710", "#870b18", "#ce1021", "#e04655", "#ea7c87", "#f3b2b8", "#fbe6e8"] }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Balance figures only; tabular, unit in gold at .5em. 32px on phones." },
-      "headline": { "displayName": "Headline", "purpose": "Amount at the head of a transaction detail; 24px on phones." },
-      "title": { "displayName": "Title", "purpose": "Card headings." },
-      "body": { "displayName": "Body", "purpose": "Running text and list rows; word-spacing .08em." },
-      "label": { "displayName": "Label", "purpose": "Field labels, balance captions, tabs, action tile names; sentence case, no tracking." },
-      "status": { "displayName": "Status", "purpose": "Status pills." }
+      "display": { "displayName": "Display", "purpose": "Raphia Kuba: balance figures on the plaque; tabular, unit in gold. 40px on phones." },
+      "headline": { "displayName": "Headline", "purpose": "Raphia Kuba: page, card and modal titles, transaction-detail amount." },
+      "title": { "displayName": "Title", "purpose": "Raphia Kuba: card headings." },
+      "body": { "displayName": "Body", "purpose": "Raphia Kuba: running text and list rows; word-spacing .08em." },
+      "label": { "displayName": "Label", "purpose": "Raphia Kuba: field labels, balance captions, tabs, action tile names; sentence case, no tracking." },
+      "status": { "displayName": "Status", "purpose": "Raphia Kuba: status pills." },
+      "sleeve-title": { "displayName": "Sleeve Title", "purpose": "Home page: 'Pay / 243' stamped on the sleeve at 37% of the sleeve width; first line ivory, second gold. Once only." },
+      "home-display": { "displayName": "Home Display", "purpose": "Home page H1; key words in gold, upright." },
+      "home-headline": { "displayName": "Home Headline", "purpose": "Home page section titles beside a side mark; 36-68px for the closing fin de face." },
+      "home-title": { "displayName": "Home Title", "purpose": "Home page plage titles." },
+      "home-body": { "displayName": "Home Body", "purpose": "Home page running text; plage text at 17px mute." },
+      "home-lead": { "displayName": "Home Lead", "purpose": "Home page hero lead and section subtitles, mute, 44-58ch." },
+      "track": { "displayName": "Track", "purpose": "Home page tracklist rows; 19px in the tarifs." },
+      "track-fee": { "displayName": "Track Fee", "purpose": "Home page fee at the end of a dotted leader; gold, tabular. Word fees drop to Plus Jakarta 600 15px gold light." },
+      "code": { "displayName": "Code", "purpose": "Home page API example only." }
     },
     "patterns": [
-      { "name": "kuba-step", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V3h3V0h6v3h3v3H9V3H3v3z' fill='%23d4ad5a'/%3E%3C/svg%3E\")", "purpose": "Stepped tab underline, repeat-x, 6px tall." },
-      { "name": "kuba-band", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E\")", "purpose": "Meander band at the foot of balance panels; USD offset by 22px." },
-      { "name": "kuba-cloth", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E\")", "purpose": "Cloth tile at 50% under a diagonal mask on the sign-in art." },
-      { "name": "rdc-thread", "value": "linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%)", "purpose": "3px under the balance band, 4px under the sign-in art." }
+      { "name": "kuba-step", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V3h3V0h6v3h3v3H9V3H3v3z' fill='%23d4ad5a'/%3E%3C/svg%3E\")", "purpose": "Raphia Kuba: stepped tab underline, repeat-x, 6px tall." },
+      { "name": "kuba-band", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E\")", "purpose": "Raphia Kuba: meander band at the foot of balance panels; USD offset by 22px." },
+      { "name": "kuba-cloth", "value": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23d4ad5a' stroke-width='2.5'%3E%3Cpath d='M0 24h24V0M72 0v24h24M0 72h24v24M72 96V72h24'/%3E%3Cpath d='M36 36h24v24H36z'/%3E%3Cpath d='M42 42h12v12H42z' stroke='%239c7a35'/%3E%3Cpath d='M48 0v14M48 82v14M0 48h14M82 48h14'/%3E%3C/g%3E%3C/svg%3E\")", "purpose": "Raphia Kuba: cloth tile at 50% under a diagonal mask on the sign-in art." },
+      { "name": "rdc-thread", "value": "linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%)", "purpose": "Raphia Kuba: 3px under the balance band, 4px under the sign-in art." },
+      { "name": "rdc-thread-home", "value": "linear-gradient(90deg, #007fff 0 33.3%, #f7d618 33.3% 66.6%, #ce1021 66.6%)", "purpose": "Home page: 5px at the foot of the sleeve." },
+      { "name": "vinyl-grooves", "value": "radial-gradient(circle, transparent 0 33%, rgba(0,0,0,.55) 33.4% 35.5%, transparent 36% 62%, rgba(0,0,0,.45) 62.3% 63.2%, transparent 63.5% 96%, #2a251d 96.4% 97.2%, #060504 97.5%), repeating-radial-gradient(circle, #0e0d0a 0 1.5px, #221e17 1.5px 3px)", "purpose": "Home page: the disc." },
+      { "name": "vinyl-sheen", "value": "conic-gradient(from 200deg, transparent 0 4%, rgba(242,234,216,.13) 11%, transparent 19% 54%, rgba(242,234,216,.09) 61%, transparent 69%)", "purpose": "Home page: lamp reflection on the disc, masked off the label; it does not rotate." },
+      { "name": "side-mark-grooves", "value": "repeating-radial-gradient(circle, #0c0b09 0 1.5px, #17140f 1.5px 3px)", "purpose": "Home page: the small grooved disc of a side mark." },
+      { "name": "dotted-leader", "value": "border-bottom: 2px dotted #3d362b", "purpose": "Home page: tracklist leader running to the fee." },
+      { "name": "foil-rule", "value": "1px solid rgba(212,173,90,.38), inset 3% of the sleeve", "purpose": "Home page: hot-foil frame inside the sleeve." }
     ],
     "shadows": [
-      { "name": "toast", "value": "0 12px 32px rgba(0,0,0,.55)", "purpose": "Floating messages." },
-      { "name": "window", "value": "0 24px 60px rgba(0,0,0,.6)", "purpose": "Modals, over a rgba(5,4,3,.72) scrim." },
-      { "name": "wallet", "value": "0 24px 60px rgba(0,0,0,.45)", "purpose": "The card wallet container." },
-      { "name": "gold-hair-ring", "value": "0 0 0 1px rgba(212,173,90,.55)", "purpose": "Logo frame." },
-      { "name": "gold-ring", "value": "0 0 0 1.5px #d4ad5a", "purpose": "Avatar ring." },
-      { "name": "gold-select", "value": "0 0 0 2px #d4ad5a", "purpose": "Selected operator chip." }
+      { "name": "toast", "value": "0 12px 32px rgba(0,0,0,.55)", "purpose": "Raphia Kuba: floating messages." },
+      { "name": "window", "value": "0 24px 60px rgba(0,0,0,.6)", "purpose": "Raphia Kuba: modals, over a rgba(5,4,3,.72) scrim." },
+      { "name": "wallet", "value": "0 24px 60px rgba(0,0,0,.45)", "purpose": "Raphia Kuba: the card wallet container." },
+      { "name": "gold-hair-ring", "value": "0 0 0 1px rgba(212,173,90,.55)", "purpose": "Raphia Kuba: logo frame." },
+      { "name": "gold-ring", "value": "0 0 0 1.5px #d4ad5a", "purpose": "Raphia Kuba: avatar ring." },
+      { "name": "gold-select", "value": "0 0 0 2px #d4ad5a", "purpose": "Raphia Kuba: selected operator chip." },
+      { "name": "sleeve", "value": "0 30px 60px -20px rgba(0,0,0,.8)", "purpose": "Home page: the sleeve resting on the page." },
+      { "name": "vinyl", "value": "0 24px 50px -16px rgba(0,0,0,.85)", "purpose": "Home page: the disc." }
     ],
     "motion": [
-      { "name": "ease-weave", "value": "cubic-bezier(.2, .8, .2, 1)", "purpose": "Tab underline slide and balance band weave." },
-      { "name": "tab-slide", "value": "380ms", "purpose": "Kuba underline transform and width between tabs." },
-      { "name": "band-weave", "value": "900ms", "purpose": "Balance band clip-path reveal left to right on load and on amount change." },
-      { "name": "state", "value": "150ms", "purpose": "Button background, border, colour and filter transitions." },
-      { "name": "reduced-motion", "value": "none", "purpose": "Under prefers-reduced-motion the slide and weave are removed." }
+      { "name": "ease-weave", "value": "cubic-bezier(.2, .8, .2, 1)", "purpose": "Raphia Kuba: tab underline slide and balance band weave." },
+      { "name": "tab-slide", "value": "380ms", "purpose": "Raphia Kuba: Kuba underline transform and width between tabs." },
+      { "name": "band-weave", "value": "900ms", "purpose": "Raphia Kuba: balance band clip-path reveal left to right on load and on amount change." },
+      { "name": "state", "value": "150ms", "purpose": "Raphia Kuba: button background, border, colour and filter transitions." },
+      { "name": "reduced-motion", "value": "none", "purpose": "Under prefers-reduced-motion every motion is removed, on both worlds." },
+      { "name": "ease-out-expo", "value": "cubic-bezier(.16, 1, .3, 1)", "purpose": "Home page: disc slide, disc flip, button press, FAQ toggle, burger." },
+      { "name": "disc-slide", "value": "1.6s, delay .25s", "purpose": "Home page: on load the disc slides from 3% to 56% out of the sleeve (62% in one column)." },
+      { "name": "disc-spin", "value": "1.8s linear infinite", "purpose": "Home page: 33 1/3 rpm, only while the tracklist or side switch is hovered, only on (hover: hover)." },
+      { "name": "disc-flip", "value": "1.1s", "purpose": "Home page: 180deg turn of the disc for Face B; label faces cross-fade over .3s after .35s." },
+      { "name": "home-state", "value": "200ms", "purpose": "Home page: button colour and border; 1px press on the expo ease." },
+      { "name": "faq-toggle", "value": "300ms", "purpose": "Home page: the gold plus turns 45deg into a cross." }
     ],
     "breakpoints": [
       { "name": "phone", "value": "560px" },
-      { "name": "container", "value": "980px" }
+      { "name": "container", "value": "980px" },
+      { "name": "home-stack", "value": "900px" },
+      { "name": "home-nav", "value": "1080px" },
+      { "name": "home-container", "value": "1520px" }
     ]
   },
   "components": [
@@ -67,7 +93,7 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Gold fill for the main confirmation of a form or modal.",
+      "description": "Raphia Kuba: gold fill for the main confirmation of a form or modal.",
       "html": "<button class=\"ds-btn-primary\">Confirmer</button>",
       "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #d4ad5a; color: #16120a; border: 0; border-radius: 10px; padding: 11px 16px; font: 700 15px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, filter .15s; } .ds-btn-primary:hover { background: #ebcb84; } .ds-btn-primary:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .5; }"
     },
@@ -75,7 +101,7 @@
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "Secondary action on raised panel with a strong hairline.",
+      "description": "Raphia Kuba: secondary action on raised panel with a strong hairline.",
       "html": "<button class=\"ds-btn-ghost\">Annuler</button>",
       "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; background: #1d1a14; color: #f2ead8; border: 1px solid #3d362b; border-radius: 10px; padding: 11px 16px; font: 700 15px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, border-color .15s; } .ds-btn-ghost:hover { background: #26221a; border-color: #9c7a35; } .ds-btn-ghost:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; }"
     },
@@ -83,7 +109,7 @@
       "name": "Action Tiles",
       "kind": "custom",
       "refersTo": "action-tile",
-      "description": "The four money verbs; the first is always solid gold.",
+      "description": "Raphia Kuba: the four money verbs; the first is always solid gold.",
       "html": "<div class=\"ds-actions\"><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Recharger</button><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 17 17 7M9 7h8v8\"/></svg>Envoyer</button><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M17 7 7 17M15 17H7V9\"/></svg>Retirer</button><button class=\"ds-tile\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7\"/></svg>Convertir</button></div>",
       "css": ".ds-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #0d0c0a; padding: 12px; } .ds-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; background: #15130f; color: #f2ead8; border: 1px solid #3d362b; border-radius: 14px; padding: 14px 6px 12px; font: 600 13px 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, border-color .15s; } .ds-tile svg { width: 22px; height: 22px; fill: none; stroke: #d4ad5a; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-tile:hover { background: #1d1a14; border-color: #9c7a35; } .ds-tile:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; } .ds-tile:first-child { background: #d4ad5a; color: #16120a; border-color: #d4ad5a; } .ds-tile:first-child svg { stroke: #16120a; } .ds-tile:first-child:hover { background: #ebcb84; }"
     },
@@ -91,7 +117,7 @@
       "name": "Balance Panel",
       "kind": "card",
       "refersTo": "balance-panel",
-      "description": "Signature: tabular figure with gold unit, Kuba band and DRC thread at its foot, woven in on load.",
+      "description": "Raphia Kuba signature: tabular figure with gold unit, Kuba band and DRC thread at its foot, woven in on load.",
       "html": "<div class=\"ds-balance\"><small>Franc congolais</small><div class=\"ds-amt\">1 205 000<span>FC</span></div></div>",
       "css": ".ds-balance { position: relative; overflow: hidden; background: #15130f; border: 1px solid #2a2620; border-radius: 16px; padding: 18px 20px 42px; color: #f2ead8; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; max-width: 360px; } .ds-balance small { color: #a79c86; font-size: 13px; font-weight: 600; } .ds-amt { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; } .ds-amt span { font-size: .5em; color: #d4ad5a; margin-left: .15em; } .ds-balance::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%); } .ds-balance::after { content: ''; position: absolute; left: 0; right: 0; bottom: 3px; height: 22px; border-top: 1px solid #2a2620; background: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke-width='2'%3E%3Cpath d='M0 11h6V5h10v12h12V5h10v6h6' stroke='%23d4ad5a'/%3E%3Cpath d='M22 1v6M22 15v6' stroke='%239c7a35'/%3E%3C/g%3E%3C/svg%3E\") repeat-x left center; animation: ds-weave .9s cubic-bezier(.2,.8,.2,1) both; } @keyframes ds-weave { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } } @media (prefers-reduced-motion: reduce) { .ds-balance::after { animation: none; } }"
     },
@@ -99,7 +125,7 @@
       "name": "Tabs with Kuba Underline",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Text-only tabs on a hairline; the active one carries the stepped gold underline, which slides between tabs.",
+      "description": "Raphia Kuba: text-only tabs on a hairline; the active one carries the stepped gold underline, which slides between tabs.",
       "html": "<nav class=\"ds-tabs\"><button class=\"on\">Wallet</button><button>Convertisseur</button><button>Mes cartes</button></nav>",
       "css": ".ds-tabs { display: flex; gap: 22px; border-bottom: 1px solid #2a2620; background: #0d0c0a; padding: 0 12px; } .ds-tabs button { position: relative; background: transparent; color: #8d8576; border: 0; padding: 12px 0 14px; font: 600 15px 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: color .15s; } .ds-tabs button:hover { color: #f2ead8; } .ds-tabs button:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 2px; } .ds-tabs button.on { color: #f2ead8; } .ds-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 6px; background: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V3h3V0h6v3h3v3H9V3H3v3z' fill='%23d4ad5a'/%3E%3C/svg%3E\") repeat-x left bottom; }"
     },
@@ -107,7 +133,7 @@
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Sunk field below the panel tone; gold border and soft gold outline on focus.",
+      "description": "Raphia Kuba: sunk field below the panel tone; gold border and soft gold outline on focus.",
       "html": "<label class=\"ds-field\"><span>Numéro</span><input placeholder=\"+243 …\"></label>",
       "css": ".ds-field { display: block; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #15130f; padding: 12px; } .ds-field span { display: block; color: #a79c86; font-size: 13px; font-weight: 600; margin: 0 0 4px; } .ds-field input { width: 100%; box-sizing: border-box; background: #100e0b; color: #f2ead8; caret-color: #d4ad5a; border: 1px solid #3d362b; border-radius: 10px; padding: 11px 12px; font: inherit; font-size: 15px; } .ds-field input::placeholder { color: #8d8576; } .ds-field input:focus { outline: 2px solid rgba(212,173,90,.3); border-color: #d4ad5a; }"
     },
@@ -115,7 +141,7 @@
       "name": "Status Pills",
       "kind": "chip",
       "refersTo": "pill-succeeded",
-      "description": "Status doubled by shape: filled dot, empty ring, cross.",
+      "description": "Raphia Kuba: status doubled by shape: filled dot, empty ring, cross.",
       "html": "<div class=\"ds-pills\"><span class=\"ds-pill ok\">Réussi</span><span class=\"ds-pill wait\">En attente</span><span class=\"ds-pill fail\">Échoué</span></div>",
       "css": ".ds-pills { display: flex; gap: 8px; background: #15130f; padding: 12px; } .ds-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font: 700 12px 'Plus Jakarta Sans', system-ui, sans-serif; padding: 2px 8px; border-radius: 99px; border: 1px solid; } .ds-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; } .ds-pill.ok { background: #11251a; color: #86d6a4; border-color: #1f4a30; } .ds-pill.wait { background: #2d2310; color: #ecc46f; border-color: #5a4515; } .ds-pill.wait::before { background: none; box-shadow: inset 0 0 0 1.5px currentColor; } .ds-pill.fail { background: #2e1514; color: #ff948a; border-color: #5c2622; } .ds-pill.fail::before { border-radius: 1px; width: 7px; height: 7px; background: linear-gradient(45deg, transparent 42%, currentColor 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, currentColor 42% 58%, transparent 58%); }"
     },
@@ -123,47 +149,101 @@
       "name": "History Row",
       "kind": "custom",
       "refersTo": "history-icon",
-      "description": "Rounded-square weave cell icon, tabular amount; pending icon dashed and amount mute.",
+      "description": "Raphia Kuba: rounded-square weave cell icon, tabular amount; pending icon dashed and amount mute.",
       "html": "<ul class=\"ds-hist\"><li><i class=\"ds-hic credit\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></svg></i><b>Recharge · M-Pesa</b><em>+500,00 $</em></li><li><i class=\"ds-hic wait\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></svg></i><b>Recharge · M-Pesa</b><em class=\"mute\">+300,00 $</em></li></ul>",
       "css": ".ds-hist { list-style: none; margin: 0; padding: 0 16px; background: #15130f; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #f2ead8; } .ds-hist li { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid #2a2620; cursor: pointer; } .ds-hist li:hover { background: #1d1a14; } .ds-hist b { flex: 1; font-size: 15px; } .ds-hist em { font-style: normal; font-weight: 700; color: #86d6a4; font-variant-numeric: tabular-nums; } .ds-hist em.mute { color: #a79c86; } .ds-hic { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: #1d1a14; color: #d4ad5a; border: 1px solid #3d362b; } .ds-hic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; } .ds-hic.credit { background: #11251a; color: #86d6a4; border-color: #1f4a30; } .ds-hic.wait { background: #2d2310; color: #ecc46f; border-color: #5a4515; border-style: dashed; }"
+    },
+    {
+      "name": "Home Gold Button",
+      "kind": "button",
+      "refersTo": "home-button-gold",
+      "description": "Home page: square-cut gold action, 48px (56px large).",
+      "html": "<button class=\"ds-hbtn\">Créer mon wallet</button>",
+      "css": ".ds-hbtn { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 0 28px; border-radius: 2px; border: 1px solid transparent; background: #d4ad5a; color: #16120a; font: 700 16px/1 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: background-color .2s, transform .2s cubic-bezier(.16,1,.3,1); } .ds-hbtn:hover { background: #ebcb84; } .ds-hbtn:active { transform: translateY(1px); } .ds-hbtn:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 3px; } @media (prefers-reduced-motion: reduce) { .ds-hbtn { transition: none; } }"
+    },
+    {
+      "name": "Home Line Button",
+      "kind": "button",
+      "refersTo": "home-button-line",
+      "description": "Home page: hairline secondary action.",
+      "html": "<button class=\"ds-hline\">Voir l'API</button>",
+      "css": ".ds-hline { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 0 28px; border-radius: 2px; border: 1px solid #3d362b; background: transparent; color: #f2ead8; font: 700 16px/1 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; transition: border-color .2s, color .2s; } .ds-hline:hover { border-color: #d4ad5a; color: #ebcb84; } .ds-hline:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Side Switch",
+      "kind": "nav",
+      "refersTo": "side-switch-active",
+      "description": "Home page: Face A / Face B toggle; swaps the hero copy and flips the disc.",
+      "html": "<div class=\"ds-sw\"><button aria-pressed=\"true\"><b>Face A</b>Particuliers</button><button aria-pressed=\"false\"><b>Face B</b>Entreprises</button></div>",
+      "css": ".ds-sw { display: inline-grid; grid-template-columns: 1fr 1fr; border: 1px solid #3d362b; border-radius: 2px; background: #0d0c0a; } .ds-sw button { display: grid; gap: 1px; text-align: left; padding: 10px 18px 11px; min-width: 150px; background: none; border: 0; color: #a79c86; font: 600 15px 'Plus Jakarta Sans', system-ui, sans-serif; cursor: pointer; } .ds-sw button + button { border-left: 1px solid #3d362b; } .ds-sw b { font: 700 13px 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif; color: #8d8576; } .ds-sw button[aria-pressed=true] { background: #1d1a14; color: #f2ead8; } .ds-sw button[aria-pressed=true] b { color: #d4ad5a; } .ds-sw button:hover { color: #f2ead8; } .ds-sw button:focus-visible { outline: 2px solid #d4ad5a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Tracklist",
+      "kind": "custom",
+      "refersTo": "track-row",
+      "description": "Home page: ruled rows with a dotted leader running to a gold tabular fee; word fees in gold light.",
+      "html": "<ol class=\"ds-tr\"><li class=\"h\"><span>Face A</span><span>Frais Pay243</span></li><li><i>A1</i><span>Recharger depuis le Mobile Money</span><span class=\"d\"></span><b>0 FC</b></li><li><i>A3</i><span>Retirer vers un numéro</span><span class=\"d\"></span><b>1 %</b></li><li><i>A4</i><span>Convertir CDF ⇄ USD</span><span class=\"d\"></span><b class=\"w\">taux affiché</b></li></ol>",
+      "css": ".ds-tr { list-style: none; margin: 0; padding: 12px 16px; background: #0d0c0a; color: #f2ead8; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-tr .h { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #8d8576; padding-bottom: 8px; border-bottom: 1px solid #3d362b; } .ds-tr li:not(.h) { display: grid; grid-template-columns: 2.4em minmax(0,auto) 1fr auto; align-items: baseline; column-gap: 10px; padding: 11px 0; border-bottom: 1px solid #2a2620; font-size: 17px; font-weight: 600; } .ds-tr i { font: 700 14px 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif; font-style: normal; color: #8d8576; } .ds-tr .d { border-bottom: 2px dotted #3d362b; height: 1px; align-self: end; margin-bottom: 7px; min-width: 16px; } .ds-tr b { font: 700 20px 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif; color: #d4ad5a; font-variant-numeric: tabular-nums; white-space: nowrap; } .ds-tr b.w { font: 600 15px 'Plus Jakarta Sans', system-ui, sans-serif; color: #ebcb84; }"
+    },
+    {
+      "name": "Sleeve and Disc",
+      "kind": "custom",
+      "refersTo": "sleeve",
+      "description": "Home page signature: the record slides out of the sleeve on load and spins at 33 1/3 rpm on hover (hover devices only); static under reduced motion.",
+      "html": "<div class=\"ds-rec\"><div class=\"ds-disc\"><div class=\"ds-lab\">Face A</div></div><div class=\"ds-slv\"><small>Kinshasa · Goma</small><strong><span>Pay</span>243</strong><i></i></div></div>",
+      "css": ".ds-rec { --sl: 220px; position: relative; width: var(--sl); aspect-ratio: 1; margin-right: 130px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-slv { position: relative; z-index: 2; height: 100%; box-sizing: border-box; display: grid; grid-template-rows: auto 1fr auto; padding: 16px; background: #15130f; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8); } .ds-slv::before { content: ''; position: absolute; inset: 7px; border: 1px solid rgba(212,173,90,.38); pointer-events: none; } .ds-slv small { font-size: 11px; font-weight: 600; color: #ebcb84; } .ds-slv strong { align-self: center; font: 800 calc(var(--sl) * .37)/.8 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif; letter-spacing: -.04em; color: #d4ad5a; } .ds-slv strong span { display: block; color: #f2ead8; } .ds-slv i { height: 5px; background: linear-gradient(90deg, #007fff 0 33.3%, #f7d618 33.3% 66.6%, #ce1021 66.6%); } .ds-disc { position: absolute; z-index: 1; top: 3%; left: 3%; width: 94%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, transparent 0 62%, rgba(0,0,0,.45) 62.3% 63.2%, transparent 63.5% 96%, #2a251d 96.4% 97.2%, #060504 97.5%), repeating-radial-gradient(circle, #0e0d0a 0 1.5px, #221e17 1.5px 3px); box-shadow: 0 24px 50px -16px rgba(0,0,0,.85); transform: translateX(56%); animation: ds-out 1.6s cubic-bezier(.16,1,.3,1) .25s both; } .ds-lab { position: absolute; inset: 33%; border-radius: 50%; background: #d4ad5a; color: #16120a; display: grid; place-items: center; padding-left: 30%; font: 700 11px 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif; } @keyframes ds-out { from { transform: translateX(3%); } } @media (hover: hover) { .ds-rec:hover .ds-disc { animation: ds-out 1.6s cubic-bezier(.16,1,.3,1) .25s both, ds-spin 1.8s linear infinite; } } @keyframes ds-spin { from { rotate: 0deg; } to { rotate: 360deg; } } @media (prefers-reduced-motion: reduce) { .ds-disc, .ds-rec:hover .ds-disc { animation: none; } }"
+    },
+    {
+      "name": "Receipt",
+      "kind": "card",
+      "refersTo": "receipt",
+      "description": "Home page proof: example amounts as the screen shows them, with a 2px status tag doubled by icon and word.",
+      "html": "<figure class=\"ds-rc\"><div class=\"l\"><span>Montant</span><b class=\"g\">25 000 FC</b></div><div class=\"l\"><span>Statut</span><span class=\"tag\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Reçu</span></div><figcaption>Montants d'exemple</figcaption></figure>",
+      "css": ".ds-rc { margin: 0; max-width: 340px; background: #15130f; border: 1px solid #2a2620; border-radius: 2px; padding: 6px 18px; font: 15px 'Plus Jakarta Sans', system-ui, sans-serif; color: #f2ead8; } .ds-rc .l { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 11px 0; border-bottom: 1px solid #2a2620; } .ds-rc .l span { color: #a79c86; } .ds-rc b { font-variant-numeric: tabular-nums; } .ds-rc b.g { color: #d4ad5a; font: 700 17px 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif; } .ds-rc .tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 2px; font-size: 13px; font-weight: 700; background: #11251a; color: #86d6a4; } .ds-rc .tag svg { width: 13px; height: 13px; } .ds-rc figcaption { font-size: 12px; color: #8d8576; padding: 4px 0 10px; }"
     }
   ],
   "narrative": {
-    "northStar": "Raphia Kuba",
-    "overview": "Pay243 is black raffia cloth with gold woven into it. The ground is a warm near-black, never a cold neutral; panels sit on it as slightly lighter woven squares edged by a brown-gold hairline. Gold is not a glow or an accent sprinkled over darkness: it is a material that does work. It fills the one action that matters most, rings the person's avatar, frames the logo, and above all runs as a stepped Kuba band along the foot of every balance. That band is the signature of money held. Under it, and only there (and at the foot of the sign-in art), a 3px thread in the colours of the DRC flag ties the product to the country.\n\nDensity is calm and phone-first. Figures are large, tabular and ivory, with the currency unit set in gold at half size so CDF and USD are told apart at a glance in full sun. Every status reads by shape and word as well as colour: a filled dot for done, an empty ring and dashed border for pending, a cross for failed. Motion is limited to two woven gestures, the Kuba underline that slides between tabs and the band that re-weaves left to right when an amount changes, both removed under reduced motion.\n\nThe system rejects the category default of a black screen with a lone gold accent and glowing cards. Nothing glows; depth comes from tone and hairlines.",
+    "northStar": "Raphia Kuba (product pages) and La pochette de rumba (home page)",
+    "overview": "Pay243 currently runs on two worlds made of the same materials: the same warm near-black, the same ivory, the same brushed gold, the same two self-hosted faces. Which world governs a page depends on the stylesheet it loads. Raphia Kuba (kuba.css, plus wallet.css on the wallet) governs the wallet, marchand, checkout and docs, and is the target for signup, settings, messages, aide and admin until they are redesigned. La pochette de rumba (home.css, standalone) governs the home page only. Do not carry home-page components onto the product pages, or Kuba components onto the home page, until a page is explicitly redesigned.\n\nRaphia Kuba. Pay243 is black raffia cloth with gold woven into it. The ground is a warm near-black, never a cold neutral; panels sit on it as slightly lighter woven squares edged by a brown-gold hairline. Gold is not a glow or an accent sprinkled over darkness: it is a material that does work. It fills the one action that matters most, rings the person's avatar, frames the logo, and above all runs as a stepped Kuba band along the foot of every balance. That band is the signature of money held. Under it, and only there (and at the foot of the sign-in art), a 3px thread in the colours of the DRC flag ties the product to the country.\n\nDensity is calm and phone-first. Figures are large, tabular and ivory, with the currency unit set in gold at half size so CDF and USD are told apart at a glance in full sun. Every status reads by shape and word as well as colour: a filled dot for done, an empty ring and dashed border for pending, a cross for failed. Motion is limited to two woven gestures, the Kuba underline that slides between tabs and the band that re-weaves left to right when an amount changes, both removed under reduced motion.\n\nLa pochette de rumba (home page). The home page is a Congolese rumba LP. Its first screen is a square black-board sleeve with \"Pay 243\" stamped in giant hot-foil gold, the cities across its top, the operators on ivory chips and the DRC thread at its foot; the record slides halfway out of it with a gold centre label reading \"Face A\". The sections are the sides of the disc: Face A for individuals, Face B for merchants, then the liner notes (security) and the questions. Lists are tracklists: ruled lines, a track number, a dotted leader running to a tabular gold figure. Form language is hairline rules, squares and circles; corners are a near-square 2px, the only rounded surface being the WhatsApp message bubble, which depicts WhatsApp's own screen.\n\nBoth worlds reject the category default of a black screen with a lone gold accent and glowing cards. Nothing glows; depth comes from tone and hairlines.",
     "keyCharacteristics": [
-      "Warm near-black raffia ground, woven panels, brown-gold hairlines; dark only (`color-scheme: dark`).",
-      "Gold is a working material: lead action, avatar ring, logo frame, focus, links, the Kuba band.",
-      "Rectilinear stepped Kuba motifs; corners softened to 14-16px on containers.",
-      "Large tabular ivory figures, currency unit in gold at .5em.",
+      "Warm near-black ground, ivory ink, brushed gold as a working material; dark only (`color-scheme: dark`). Shared by both worlds.",
+      "Bricolage Grotesque for money and titles, Plus Jakarta Sans for the interface; every figure tabular.",
+      "Raphia Kuba: woven panels with 14-16px corners, stepped orthogonal Kuba motifs, the balance band.",
+      "Pochette de rumba: 2px corners, hairline rules, circles (disc, label, side marks), tracklists with dotted leaders.",
       "Vivid colour confined to operator logos, statuses and the DRC tricolour thread.",
       "Status is always doubled by shape and word."
     ],
     "rules": [
-      { "name": "The Gold Does Work Rule", "body": "Gold appears where it carries meaning: the lead action, the held-money band, focus, the unit of a figure, the person's ring. It is never a decorative glow or gradient wash.", "section": "colors" },
-      { "name": "The Rationed Colour Rule", "body": "Saturated colour is reserved for operator logos (shown on an ivory chip so their own colours stay true), statuses, and the DRC thread. Nothing else on the screen is vivid.", "section": "colors" },
-      { "name": "The Shape And Word Rule", "body": "No state is signalled by colour alone. Done is a filled dot, pending an empty ring (and a dashed icon border), failed a cross, each with its word.", "section": "colors" },
-      { "name": "The Tabular Money Rule", "body": "Every amount (balances, history, transaction detail, converter) uses `font-variant-numeric: tabular-nums`, so columns of figures align and changing values do not jitter.", "section": "typography" },
-      { "name": "The Sentence Case Rule", "body": "Captions and labels are sentence case with no letter-spacing. The legacy uppercase tracked captions are switched off on balances and are not to return.", "section": "typography" },
-      { "name": "The No Glow Rule", "body": "No coloured shadows, no gold blur, no glowing cards. A gold edge is always a crisp ring or hairline.", "section": "elevation" },
-      { "name": "The Orthogonal Motif Rule", "body": "Kuba ornament is built from horizontal and vertical steps only. No curves, diagonals or generic \"African\" pattern clip art.", "section": "shapes" }
+      { "name": "The Gold Does Work Rule", "body": "Gold appears where it carries meaning: the lead action, the held-money band, focus, the unit or fee of a figure, the person's ring, the sleeve's foil. It is never a decorative glow or gradient wash.", "section": "colors" },
+      { "name": "The Rationed Colour Rule", "body": "Saturated colour is reserved for operator logos (shown on an ivory chip so their own colours stay true), statuses, and the DRC thread. Nothing else is vivid. The home page's two depicted surfaces are the stated exceptions: the WhatsApp bubble keeps WhatsApp's green (`#1f2a22`) and link blue (`#9bd0ff`), and the API example uses that same blue for numbers.", "section": "colors" },
+      { "name": "The Shape And Word Rule", "body": "No state is signalled by colour alone. *Raphia Kuba:* done is a filled dot, pending an empty ring (and a dashed icon border), failed a cross. *Home page:* done is a check, pending a clock. Each always carries its word.", "section": "colors" },
+      { "name": "The Tabular Money Rule", "body": "Every amount and fee (balances, history, transaction detail, converter, tracklists, receipts, the sleeve title) uses `font-variant-numeric: tabular-nums`, so columns of figures align and changing values do not jitter.", "section": "typography" },
+      { "name": "The Sentence Case Rule", "body": "Captions and labels are sentence case with no letter-spacing. Uppercase tracked captions are not to return, on either world.", "section": "typography" },
+      { "name": "The No Glow Rule", "body": "No coloured shadows, no gold blur, no glowing cards. A gold edge is always a crisp ring or hairline. The home page's vinyl sheen (a faint ivory conic highlight, max 13%, masked off the label) is a lamp reflection on a black object, not a glow.", "section": "elevation" },
+      { "name": "The Orthogonal Motif Rule", "body": "*Raphia Kuba.* Kuba ornament is built from horizontal and vertical steps only. No curves, diagonals or generic \"African\" pattern clip art.", "section": "shapes" },
+      { "name": "The One Rounded Bubble Rule", "body": "*Home page.* No rounded cards. The single rounded surface is the WhatsApp bubble (2px 12px 12px 12px), because it depicts WhatsApp's own interface.", "section": "shapes" }
     ],
     "dos": [
-      "**Do** put the Kuba band and DRC thread at the foot of every panel that shows money held, and nowhere as filler.",
-      "**Do** make the first action in a row of money verbs solid gold and keep the rest woven panel.",
-      "**Do** set every amount in tabular figures, with the unit in gold at .5em on balances.",
-      "**Do** double every status with a shape and a word (filled dot, empty ring or dashed border, cross).",
+      "**Do** check which stylesheet a page loads before designing on it: `home.css` means the rumba sleeve, `kuba.css` means Raphia Kuba.",
+      "**Do** set every amount and fee in tabular figures, on both worlds.",
+      "**Do** double every status with a shape and a word (filled dot, empty ring or dashed border, cross on Kuba pages; check or clock on the home page).",
       "**Do** show operator and card-network logos on an ivory chip so their own colours stay true.",
-      "**Do** keep secondary text at raffia mute (6.6:1) and never below raffia faint (4.9:1) on panels.",
-      "**Do** drop the tab slide and band weave under `prefers-reduced-motion: reduce`."
+      "**Do** keep secondary text at raffia mute (6.6:1) and never below raffia faint (4.9:1).",
+      "**Do** (Raphia Kuba) put the Kuba band and DRC thread at the foot of every panel that shows money held, and nowhere as filler.",
+      "**Do** (Raphia Kuba) make the first action in a row of money verbs solid gold and keep the rest woven panel.",
+      "**Do** (Home page) run every price as a tracklist row: number, gesture, dotted leader, gold tabular fee at the end.",
+      "**Do** (Home page) keep rectangles at 2px and reserve circles for the disc, its label and the side marks.",
+      "**Do** keep every motion off under `prefers-reduced-motion: reduce` (tab slide, band weave, disc slide, spin, flip, button and FAQ transitions), and keep the disc's spin behind `(hover: hover)`."
     ],
     "donts": [
       "**Don't** add glow, gold blur or coloured shadows to cards or buttons; depth is tonal.",
-      "**Don't** introduce vivid colour outside logos, statuses and the DRC thread.",
+      "**Don't** introduce vivid colour outside logos, statuses, the DRC thread, and the home page's depicted WhatsApp and code surfaces.",
       "**Don't** reintroduce the legacy blue gradients, the yellow circle on balances, or uppercase tracked captions.",
-      "**Don't** draw Kuba motifs with curves or diagonals; they are orthogonal steps.",
+      "**Don't** (Raphia Kuba) draw Kuba motifs with curves or diagonals; they are orthogonal steps.",
+      "**Don't** (Home page) add rounded cards or a second rounded surface beside the WhatsApp bubble.",
+      "**Don't** mix the worlds: no Kuba band, plaque or 16px panels on the home page, no sleeve, disc or tracklist on product pages until they are redesigned.",
       "**Don't** colour a pending amount green before the money has arrived.",
-      "**Don't** load external fonts or assets; the CSP forbids it and Plus Jakarta Sans is self-hosted."
+      "**Don't** load external fonts or assets; the CSP forbids it and both faces are self-hosted."
     ]
   }
 }
