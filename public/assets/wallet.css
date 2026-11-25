@@ -140,8 +140,27 @@ body.locked .home .actions button { opacity: .5; }
 .cw-add { border-radius: 2px !important; min-height: 40px; }
 .wcard.ghost { border-radius: 2px; }
 
-/* ---------- Espace marchand (onglet) ---------- */
-#m-bal .balance { border-radius: 2px; }
+/* ---------- Espace marchand (onglet) : les ventes non versées, chacune sur une petite pochette ---------- */
+#m-bal { gap: 16px; }
+#m-bal .balance { position: relative; border: 0; border-radius: 2px; background: var(--k-panel); padding: 20px 22px 26px; overflow: visible; }
+#m-bal .balance::before { /* filet de dorure en retrait (remplace la bande Kuba) */
+  content: ""; position: absolute; inset: 8px 8px 13px; width: auto; height: auto; border: 1px solid rgba(212, 173, 90, .38); border-radius: 0; background: none; animation: none; pointer-events: none;
+}
+#m-bal .balance::after { /* fil RDC au pied, en trois tiers égaux */
+  content: ""; position: absolute; left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 5px; border: 0; border-radius: 0; animation: none;
+  background: linear-gradient(90deg, var(--rdc-blue) 0 33.3%, var(--rdc-yellow) 33.3% 66.6%, var(--rdc-red) 66.6%);
+}
+#m-bal .balance small { position: relative; font-size: 14px; color: var(--k-mute); }
+#m-bal .balance .amt { position: relative; margin-top: 6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 2.6vw, 38px); letter-spacing: -.035em; color: var(--k-gold); }
+#m-bal .balance .amt .cur { font-size: .5em; color: var(--k-gold-hi); }
+#m-bal .balance button { position: relative; z-index: 1; margin-top: 12px; }
+#m-bal-hint { margin: 12px 0 0 !important; }
+@media (max-width: 560px) {
+  #m-bal { grid-template-columns: minmax(0, 1fr); gap: 10px; } /* une vente par ligne : le nom de la boutique tient sur une ligne */
+  #m-bal .balance { padding: 14px 14px 20px; }
+  #m-bal .balance small { font-size: 12px; }
+  #m-bal .balance .amt { font-size: 24px; }
+}
 
 /* ---------- Fenêtres d'opération ---------- */
 .modal-bg { background: rgba(5, 4, 3, .78); }
