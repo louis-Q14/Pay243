@@ -16,3 +16,5 @@ coverage/
 .impeccable/mocks/
 .impeccable/questions/
 .playwright-mcp/
+# Résultat local des tests pour tdd-guard
+.claude/tdd-guard/data/test.json
