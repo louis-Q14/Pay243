@@ -314,6 +314,7 @@
   ::view-transition-group(*) { animation-duration: .35s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
 </style>
 <link rel="stylesheet" href="/assets/kuba.css">
+<link rel="stylesheet" href="/assets/wallet.css">
 </head>
 <body>
 <header class="top">
@@ -364,17 +365,21 @@
 <!-- ======================= Application ======================= -->
 <main id="app" class="hidden">
   <div class="tabs">
-    <button class="on" data-tab="home">Wallet</button>
-    <button data-tab="fx">Convertisseur</button>
-    <button data-tab="cards">Mes cartes</button>
-    <button data-tab="merchant" class="hidden">Espace marchand</button>
+    <button class="on" data-tab="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/><path d="M4 7l11-3v3M16 13.5h.01"/></svg>Wallet</button>
+    <button data-tab="fx"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></svg>Convertisseur</button>
+    <button data-tab="cards"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>Mes cartes</button>
+    <button data-tab="merchant" class="hidden"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-1-4H5L4 9Z"/><path d="M5 9v10h14V9M10 19v-5h4v5"/></svg>Espace marchand</button>
     <a class="tab-link" id="sup-link" href="/messages" title="Le support vous a répondu" hidden>Messages <span class="badge" id="sup-badge"></span></a>
     <span class="kuba-ind" aria-hidden="true"></span>
   </div>
 
   <section id="tab-home">
-    <div class="grid">
-      <div class="balance"><small>Franc congolais</small><div class="amt" id="bal-CDF">—</div></div>
+   <div class="home">
+    <div class="home-side">
+    <!-- La plaque : les deux soldes dans un seul objet, cousus par la bande Kuba -->
+    <div class="plaque">
+      <div class="balance cdf"><small>Franc congolais</small><div class="amt" id="bal-CDF">—</div></div>
+      <div class="seam" aria-hidden="true"></div>
       <div class="balance usd"><small>Dollar US</small><div class="amt" id="bal-USD">—</div></div>
     </div>
     <div class="actions">
@@ -383,13 +388,18 @@
       <button class="ghost" data-open="withdraw"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7 7 17M15 17H7V9"/></svg></i>Retirer</button>
       <button class="ghost" data-open="convert"><i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/></svg></i>Convertir</button>
     </div>
+    <p class="muted" id="limits"></p>
+    </div>
+    <div class="home-main">
     <div class="card hidden" id="kyc-box"></div>
     <div class="card hidden" id="sales-box"></div>
-    <div class="card">
+    <!-- Le carnet : l'historique groupé par jour, un fil relie les opérations -->
+    <div class="card carnet">
       <h2>Historique</h2>
       <ul class="list" id="history"><li class="muted">Aucune opération pour l'instant.</li></ul>
     </div>
-    <p class="muted" id="limits"></p>
+    </div>
+   </div>
   </section>
 
   <section id="tab-fx" class="hidden">
@@ -732,17 +742,30 @@ const shortWhen = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', 
 async function loadHistory() {
   const t = await api('GET', '/v1/transactions?limit=30');
   HIST = new Map(t.data.map((x) => [x.id, x]));
+  // Le carnet : un intitulé de jour (« Aujourd'hui », « Hier », sinon la date) avant chaque nouveau jour
+  const dayKey = (iso) => { try { return new Date(iso).toLocaleDateString('fr-CA', { timeZone: ME?.timezone }); } catch { return String(iso).slice(0, 10); } };
+  const today = dayKey(new Date().toISOString()), yesterday = dayKey(new Date(Date.now() - 864e5).toISOString());
+  const dayLabel = (iso) => { const k = dayKey(iso); if (k === today) return 'Aujourd\'hui'; if (k === yesterday) return 'Hier';
+    try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: ME?.timezone }); } catch { return k; } };
+  let lastDay = null;
   $('#history').innerHTML = t.data.length ? t.data.map((x) => {
-    const who = x.type === 'transfer' ? transferPeer(x) : x.counterparty || x.description;
-    const amount = x.type === 'conversion'
-      ? `${fmt(x.amount, x.currency)} → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}`
-      : `${signOf(x)}${fmt(x.amount, x.currency)}`;
-    return `<li class="h-item" data-txn="${esc(x.id)}" role="button" tabindex="0" aria-label="${esc(txnTitle(x))}, ${esc(amount)} : voir le détail">
+    const k = dayKey(x.created_at), head = k !== lastDay ? `<li class="h-day" role="presentation">${esc(dayLabel(x.created_at))}</li>` : '';
+    lastDay = k;
+    return head + histRow(x);
+  }).join('') : '<li class="muted">Aucune opération pour l\'instant.</li>';
+}
+/** Une ligne du carnet : l'heure seule, le jour est déjà dans l'intitulé au-dessus. */
+function histRow(x) {
+  const who = x.type === 'transfer' ? transferPeer(x) : x.counterparty || x.description;
+  const amount = x.type === 'conversion'
+    ? `${fmt(x.amount, x.currency)} → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}`
+    : `${signOf(x)}${fmt(x.amount, x.currency)}`;
+  let hour; try { hour = new Date(x.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: ME?.timezone }); } catch { hour = shortWhen(x.created_at); }
+  return `<li class="h-item" data-txn="${esc(x.id)}" role="button" tabindex="0" aria-label="${esc(txnTitle(x))}, ${esc(amount)} : voir le détail">
       <span class="h-ic ${x.direction || ''} ${x.status}" aria-hidden="true">${TXN_ICON[x.type] || '•'}</span>
       <div class="h-txt"><div class="h-t"><b>${esc(txnTitle(x))}</b>${x.status !== 'succeeded' ? ` <span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span>` : ''}</div>
-        <div class="muted h-s">${shortWhen(x.created_at)}${who ? ' · ' + esc(who) : ''}</div></div>
+        <div class="muted h-s">${hour}${who ? ' · ' + esc(who) : ''}</div></div>
       <div class="h-amt ${x.status === 'failed' ? 'void' : x.direction}">${amount}</div></li>`;
-  }).join('') : '<li class="muted">Aucune opération pour l\'instant.</li>';
 }
 $('#history').addEventListener('click', (e) => { const li = e.target.closest('[data-txn]'); if (li) openTxn(li.dataset.txn); });
 $('#history').addEventListener('keydown', (e) => {

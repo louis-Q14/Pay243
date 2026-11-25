@@ -1,0 +1,97 @@
+/* Pay243 — mise en page du wallet : « la plaque et le carnet ».
+   Se charge après kuba.css (jetons et composants partagés).
+   La plaque : les deux soldes dans un seul objet, cousus par la bande Kuba.
+   Le carnet : l'historique groupé par jour, un fil vertical relie les opérations.
+   Sur téléphone, les onglets deviennent un dock au pouce. */
+
+/* ---------- Colonne : plaque + actions à gauche, carnet à droite ---------- */
+main#app { max-width: 1120px; }
+.home { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.home-side { position: sticky; top: 88px; display: grid; gap: 14px; }
+.home-main { min-width: 0; }
+#limits { margin: 2px 4px 0; line-height: 1.5; }
+
+/* ---------- La plaque ---------- */
+.plaque {
+  position: relative; overflow: hidden; isolation: isolate;
+  border-radius: 24px; padding: 24px 24px 22px;
+  background: linear-gradient(165deg, #211b12 0%, #120f0b 58%, #0b0a08 100%);
+  border: 1px solid #3a2f18;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(235, 203, 132, .12);
+}
+/* tissage Kuba gravé dans le coin, très discret */
+.plaque::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; opacity: .16;
+  background: var(--kuba-cloth) right -18px top -18px / 96px 96px;
+  -webkit-mask: radial-gradient(120% 90% at 100% 0%, #000 0%, transparent 55%); mask: radial-gradient(120% 90% at 100% 0%, #000 0%, transparent 55%);
+}
+.plaque .balance { background: none; border: 0; border-radius: 0; padding: 0; overflow: visible; }
+.plaque .balance::before, .plaque .balance::after { display: none; } /* la bande passe dans la couture, plus sous chaque solde */
+.plaque .balance small { display: block; font-size: 13px; font-weight: 600; color: var(--k-mute); letter-spacing: 0; }
+.plaque .amt { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.035em; color: var(--k-ivory); line-height: 1.02; margin-top: 6px; }
+.plaque .cdf .amt { font-size: 50px; }
+.plaque .usd .amt { font-size: 30px; }
+.plaque .amt .cur { font-family: var(--font-sans); font-size: .4em; font-weight: 700; letter-spacing: 0; color: var(--k-gold); margin-left: .25em; vertical-align: .55em; }
+/* la couture : bande Kuba et fil du drapeau, d'un bord à l'autre de la plaque */
+.seam { position: relative; height: 26px; margin: 18px -24px 16px; background: var(--kuba-band) repeat-x left center; border-top: 1px solid rgba(212, 173, 90, .18); border-bottom: 1px solid rgba(212, 173, 90, .18); animation: kuba-weave .9s cubic-bezier(.2, .8, .2, 1) both; }
+.seam::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--rdc-thread); }
+
+/* ---------- Actions : Recharger en grand, puis une barre en trois segments ---------- */
+.home .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0; position: relative; z-index: 1; } /* au-dessus de l'ombre de la plaque */
+.home .actions button { flex-direction: row; justify-content: center; gap: 8px; height: 50px; padding: 0 8px; font-size: 14px; font-weight: 700; border-radius: 0; background: var(--k-panel); border: 1px solid var(--k-line-2); margin-left: -1px; }
+.home .actions button i { font-size: 0; }
+.home .actions button .ico { width: 19px; height: 19px; }
+.home .actions button:first-child { grid-column: 1 / -1; height: 58px; margin: 0 0 10px; border-radius: 16px; font-size: 16px; background: var(--k-gold); border-color: var(--k-gold); color: var(--k-on-gold); }
+.home .actions button:nth-child(2) { border-radius: 14px 0 0 14px; margin-left: 0; }
+.home .actions button:last-child { border-radius: 0 14px 14px 0; }
+.home .actions button:not(:first-child):hover { background: var(--k-raise); border-color: var(--k-gold-deep); position: relative; z-index: 1; }
+
+/* ---------- Le carnet ---------- */
+.carnet { padding: 22px 24px 10px; }
+.carnet h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 4px; }
+#history .h-day { display: block; padding: 18px 0 8px; border: 0; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--k-gold); }
+#history .h-day:first-child { padding-top: 8px; }
+#history .h-day::first-letter { text-transform: uppercase; }
+#history .h-item { position: relative; border-bottom: 0; padding: 10px 4px; }
+/* le fil du carnet : relie les pastilles d'un même jour */
+#history .h-item::before { content: ""; position: absolute; left: 23px; top: 0; bottom: 0; width: 1px; background: var(--k-line-2); }
+#history .h-day + .h-item::before { top: 50%; }
+#history .h-item:has(+ .h-day)::before, #history .h-item:last-child::before { bottom: 50%; }
+#history .h-day + .h-item:has(+ .h-day)::before, #history .h-day + .h-item:last-child::before { display: none; }
+#history .h-ic { position: relative; z-index: 1; background-clip: padding-box; }
+#history .h-ic:not(.credit):not(.pending):not(.processing):not(.failed) { background: var(--k-panel); }
+#history .h-amt { font-family: var(--font-display); font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+
+/* ---------- Tablette : une colonne ---------- */
+@media (max-width: 900px) {
+  .home { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .home-side { position: static; }
+}
+
+/* ---------- Téléphone : plaque pleine largeur, onglets en dock au pouce ---------- */
+@media (max-width: 560px) {
+  main#app { padding-bottom: 96px; }
+  .plaque { padding: 20px 18px 18px; border-radius: 20px; }
+  .seam { margin: 14px -18px 12px; height: 22px; background-size: 36px 18px; }
+  .plaque .cdf .amt { font-size: 40px; }
+  .plaque .usd .amt { font-size: 26px; }
+  .home .actions button { height: 48px; font-size: 13px; gap: 6px; }
+  .home .actions button:first-child { height: 54px; }
+  .carnet { padding: 18px 16px 6px; }
+  #history .h-amt { font-size: 15px; }
+
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; border: 0; border-top: 1px solid var(--k-line);
+    background: rgba(10, 9, 7, .97); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); display: flex; flex-wrap: nowrap; justify-content: space-around; gap: 0; overflow: visible; }
+  .tabs button, .tabs a.tab-link { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 4px; margin: 0; font-size: 11px; font-weight: 600; color: var(--k-faint); background: none; border-radius: 12px; white-space: nowrap; }
+  .tabs button .ico { width: 22px; height: 22px; }
+  .tabs button.on { color: var(--k-gold); background: #1a160d; }
+  .tabs .kuba-ind { display: none; }
+}
+
+/* ---------- Ordinateur : icônes discrètes dans les onglets du haut ---------- */
+@media (min-width: 561px) {
+  .tabs button { display: inline-flex; align-items: center; gap: 8px; }
+  .tabs button .ico { width: 17px; height: 17px; opacity: .8; }
+}
+
+@media (prefers-reduced-motion: reduce) { .seam { animation: none; } }
