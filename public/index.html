@@ -58,7 +58,8 @@
 <main>
 <!-- Hero -->
 <div class="hero" data-view="personal" id="hero">
-  <div class="wrap">
+  <div class="wrap hero-grid">
+   <div class="hero-copy">
     <div class="seg" role="group" aria-label="Choisir votre profil">
       <button type="button" aria-pressed="true" data-switch="personal">Particuliers</button>
       <button type="button" aria-pressed="false" data-switch="business">Entreprises</button>
@@ -79,6 +80,19 @@
       <a class="btn btn-light btn-lg" href="/docs">Voir l'API</a>
     </div>
     <p class="fine">Ouverture en 2 minutes avec votre adresse email. Aucun frais d'ouverture.</p>
+   </div>
+   <!-- La plaque : le wallet lui-même, deux devises cousues par la bande Kuba (montants d'exemple) -->
+   <figure class="hero-plaque" aria-label="Exemple de wallet Pay243 : un solde en francs congolais et un en dollars">
+     <div class="hp-row"><span>Franc congolais</span><b>1 250 000<i>FC</i></b></div>
+     <div class="hp-seam" aria-hidden="true"></div>
+     <div class="hp-row usd"><span>Dollar US</span><b>480,00<i>$</i></b></div>
+     <ul class="hp-ops" aria-label="Rechargez et retirez avec">
+       <li><img src="/assets/brands/mpesa.png" alt="M-Pesa"></li>
+       <li><img src="/assets/brands/airtel-money.png" alt="Airtel Money"></li>
+       <li><img src="/assets/brands/orange-money.png" alt="Orange Money"></li>
+     </ul>
+     <figcaption>Exemple de soldes</figcaption>
+   </figure>
   </div>
 
 </div>
