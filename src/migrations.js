@@ -501,4 +501,24 @@ CREATE INDEX idx_txn_merchant ON transactions (merchant_id, created_at);
 ALTER TABLE payments ADD COLUMN breakdown TEXT;
 `,
   },
+  {
+    version: 13,
+    name: 'paramètres : comptes bancaires enregistrés pour recevoir l\'argent',
+    // Un compte par banque et devise (les comptes en RDC sont tenus en CDF ou en USD). Le titulaire porte
+    // le nom de l'utilisateur ou la raison sociale de l'entreprise. Aucun virement automatique pour l'instant.
+    sql: `
+CREATE TABLE bank_accounts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  bank_name TEXT NOT NULL,
+  holder_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  swift TEXT,
+  currency TEXT NOT NULL CHECK (currency IN ('CDF','USD')),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_bank_accounts_user ON bank_accounts (user_id, created_at);
+CREATE UNIQUE INDEX uq_bank_accounts_number ON bank_accounts (user_id, account_number, currency);
+`,
+  },
 ];

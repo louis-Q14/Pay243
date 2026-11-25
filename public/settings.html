@@ -461,6 +461,8 @@
         <div class="panel" id="cards"></div>
         <div class="sec-title space"><h2>Mobile Money</h2></div>
         <div class="panel" id="mm"></div>
+        <div class="sec-title space"><h2>Comptes bancaires</h2><button class="add" id="add-bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter</span></button></div>
+        <div class="panel" id="banks"></div>
         <div class="sec-title space"><h2>Vos plafonds</h2></div>
         <div class="panel"><div class="limits" id="limits"></div><div class="row-set" id="limits-cta"></div></div>
       </div>
@@ -538,6 +540,7 @@ const IC = {
   home: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>',
   device: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
   card: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/></svg>',
+  bank: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M4 20h16M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/></svg>',
   doc: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
 };
 
@@ -906,10 +909,39 @@ async function loadPayments() {
   $('#mm').innerHTML = u.phone
     ? `<div class="item">${brandIc(u.operator, IC.phone)}<div class="txt"><b>${esc(OPS[u.operator] || 'Mobile Money')}</b><small>${esc(maskPhone(u.phone))} · proposé par défaut pour les recharges et retraits</small></div><div class="acts"><button class="lk" data-act="phone">Modifier</button></div></div>`
     : '<div class="empty">Aucun numéro Mobile Money. <button class="lk" data-act="phone">Ajouter un numéro</button></div>';
+  loadBanks();
   const L = LIMITS;
   $('#limits').innerHTML = `<div><small>Par opération</small><b>${L.perTxnUsd} $</b></div><div><small>Par jour</small><b>${L.dailyUsd} $</b></div><div><small>Solde maximum</small><b>${L.maxBalanceUsd} $</b></div>`;
   $('#limits-cta').innerHTML = `<div><h3>Niveau ${L.kyc_level} · ${esc(L.label)}</h3><p>Montants en contre-valeur dollar, tous wallets confondus.</p></div>${L.kyc_level < 2 && S.kyc.last_status !== 'pending' ? '<a class="btn btn-dark btn-sm" href="/app#kyc">Relever mes plafonds</a>' : ''}`;
 }
+
+// ---------------- Comptes bancaires : enregistrés pour recevoir l'argent ----------------
+const BANKS_RDC = ['Rawbank', 'Equity BCDC', 'TMB (Trust Merchant Bank)', 'Ecobank RDC', 'Access Bank RDC', 'FBNBank RDC', 'Afriland First Bank', 'BGFIBank RDC', 'UBA RDC', 'Standard Bank RDC', 'Sofibanque', 'Solidaire Banque', 'Advans Banque', 'BOA RDC'];
+let BANKS = [];
+async function loadBanks() {
+  BANKS = (await api('GET', '/v1/me/bank-accounts')).data;
+  $('#banks').innerHTML = BANKS.length
+    ? BANKS.map((b) => `<div class="item">${IC.bank}<div class="txt"><b>${esc(b.bank_name)} · ${esc(b.currency)}</b><small>${esc(b.holder_name)} · <span class="mono">${esc(b.account_number)}</span>${b.swift ? ` · ${esc(b.swift)}` : ''}</small></div><div class="acts"><button class="lk danger" data-bank="${esc(b.id)}">Supprimer</button></div></div>`).join('')
+    : '<div class="empty">Aucun compte bancaire. Enregistrez le compte, à votre nom, sur lequel vous recevrez votre argent.</div>';
+  $('#add-bank').hidden = BANKS.length >= 5;
+  $$('[data-bank]').forEach((x) => x.onclick = () => confirmBox('Supprimer ce compte bancaire ?', 'Vous pourrez le rajouter à tout moment.', 'Supprimer', async () => {
+    await api('DELETE', '/v1/me/bank-accounts/' + x.dataset.bank); loadBanks(); toast('Compte bancaire supprimé');
+  }));
+}
+$('#add-bank').onclick = () => {
+  const business = S.user.account_type === 'business';
+  const holder = business ? (S.merchant?.name || '') : S.user.full_name;
+  modal(`<h3>Ajouter un compte bancaire</h3><p class="sub">Le compte sur lequel vous recevrez votre argent. Il doit être ${business ? 'au nom de votre entreprise' : 'à votre nom'} : Pay243 ne verse jamais sur le compte d'un tiers.</p>
+    <div class="f"><label>Banque</label><input name="bank_name" list="banks-rdc" required maxlength="80" placeholder="Ex : Rawbank" autocomplete="off"><datalist id="banks-rdc">${BANKS_RDC.map((n) => `<option value="${esc(n)}">`).join('')}</datalist></div>
+    <div class="f"><label>Titulaire du compte</label><input name="holder_name" value="${esc(holder)}" required maxlength="100" autocomplete="${business ? 'organization' : 'name'}"><div class="hint">Comme sur votre relevé bancaire.</div></div>
+    <div class="f"><label>Numéro de compte</label><input name="account_number" required inputmode="text" maxlength="45" autocomplete="off" spellcheck="false" placeholder="Ex : 0501 0000 1234 5678"></div>
+    <div class="f2"><div class="f"><label>Devise du compte</label><select name="currency"><option value="USD">USD ($)</option><option value="CDF">CDF (FC)</option></select></div>
+    <div class="f"><label>SWIFT / BIC <small>(facultatif)</small></label><input name="swift" maxlength="11" autocomplete="off" spellcheck="false" placeholder="RAWBCDKI"></div></div>
+    <div class="f"><label>Code PIN</label><input name="pin" type="password" inputmode="numeric" maxlength="6" required autocomplete="off"></div>`, async (d) => {
+    await api('POST', '/v1/me/bank-accounts', { bank_name: d.bank_name, holder_name: d.holder_name, account_number: d.account_number, currency: d.currency, swift: d.swift || null, pin: d.pin });
+    closeModal(); loadBanks(); toast('Compte bancaire enregistré');
+  }, { submitLabel: 'Enregistrer le compte' });
+};
 
 async function loadSeller() {
   const box = $('#seller');

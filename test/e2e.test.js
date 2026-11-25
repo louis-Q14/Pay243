@@ -1018,6 +1018,64 @@ test('compte entreprise : relevés et export couvrent les opérations du compte 
   assert.ok(exp.body.transactions.length >= 5);
 });
 
+// ---------------- Comptes bancaires (paramètres) ----------------
+test('comptes bancaires : ajout avec le PIN, liste avec le numéro masqué', async () => {
+  const add = await api('POST', '/v1/me/bank-accounts', { token: state.bob, body: { bank_name: 'Rawbank', holder_name: 'Patrick Ilunga', account_number: '0501 0000 1234 5678', currency: 'USD', pin: '9137' } });
+  assert.equal(add.status, 201, JSON.stringify(add.body));
+  assert.equal(add.body.object, 'bank_account');
+  assert.equal(add.body.account_number, '•••• 5678');
+  const list = (await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data;
+  assert.deepEqual(list.map((b) => [b.bank_name, b.holder_name, b.currency, b.account_number]), [['Rawbank', 'Patrick Ilunga', 'USD', '•••• 5678']]);
+});
+
+test('comptes bancaires : champs vérifiés (banque, numéro, devise, SWIFT)', async () => {
+  const base = { bank_name: 'Equity BCDC', holder_name: 'Patrick Ilunga', account_number: '00011-22233344455', currency: 'CDF', pin: '9137' };
+  const code = async (body) => (await api('POST', '/v1/me/bank-accounts', { token: state.bob, body: { ...base, ...body } })).body.error?.code;
+  assert.equal(await code({ bank_name: ' ' }), 'invalid_bank_name');
+  assert.equal(await code({ account_number: '12AB' }), 'invalid_account_number');
+  assert.equal(await code({ account_number: '12345678901234567890123456789012345' }), 'invalid_account_number');
+  assert.equal(await code({ currency: 'EUR' }), 'invalid_currency');
+  assert.equal(await code({ swift: 'RAW' }), 'invalid_swift');
+  const ok = await api('POST', '/v1/me/bank-accounts', { token: state.bob, body: { ...base, swift: 'bcdccdki' } });
+  assert.equal(ok.status, 201, JSON.stringify(ok.body));
+  assert.equal(ok.body.swift, 'BCDCCDKI');
+  assert.equal((await api('POST', '/v1/me/bank-accounts', { token: state.bob, body: base })).body.error?.code, 'bank_account_exists');
+});
+
+test('comptes bancaires : le titulaire est l\'utilisateur, ou l\'entreprise pour un compte entreprise', async () => {
+  const add = (token, holder_name, pin, account_number) => api('POST', '/v1/me/bank-accounts', { token, body: { bank_name: 'TMB', holder_name, account_number, currency: 'USD', pin } });
+  const other = await add(state.bob, 'Jean Mukoko', '9137', '11112222333');
+  assert.equal(other.body.error?.code, 'holder_mismatch', 'POST /v1/me/bank-accounts (src/routes/settings.js) doit refuser un titulaire qui n\'est pas l\'utilisateur');
+  assert.equal((await add(state.bob, 'ILUNGA KABEYA Patrick', '9137', '11112222444')).status, 201); // ordre, casse, post-nom
+  assert.equal((await add(state.ruth, 'Kin Compte Unique', '5173', '55556666777')).status, 201); // raison sociale
+  assert.equal((await add(state.ruth, 'Ruth Tshala', '5173', '55556666888')).body.error?.code, 'holder_mismatch');
+});
+
+test('comptes bancaires : PIN requis, suppression par le seul titulaire', async () => {
+  const bad = await api('POST', '/v1/me/bank-accounts', { token: state.bob, body: { bank_name: 'Ecobank', holder_name: 'Patrick Ilunga', account_number: '99990000111', currency: 'USD', pin: '0000' } });
+  assert.equal(bad.status, 401);
+  const [first] = (await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data;
+  assert.equal((await api('DELETE', `/v1/me/bank-accounts/${first.id}`, { token: state.ruth })).status, 404, 'DELETE /v1/me/bank-accounts/:id (src/routes/settings.js) : seul le titulaire supprime son compte');
+  const del = await api('DELETE', `/v1/me/bank-accounts/${first.id}`, { token: state.bob });
+  assert.equal(del.status, 200, JSON.stringify(del.body));
+  assert.ok(!(await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data.some((b) => b.id === first.id));
+});
+
+test('comptes bancaires : alerte de sécurité à chaque ajout, 5 comptes au plus', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const ruth = (await api('GET', '/v1/me', { token: state.ruth })).body.user;
+  const before = outbox.filter((m) => m.to === ruth.email && /compte bancaire/i.test(m.subject)).length;
+  const add = (n) => api('POST', '/v1/me/bank-accounts', { token: state.ruth, body: { bank_name: 'Access Bank', holder_name: 'Kin Compte Unique', account_number: `7000000000${n}`, currency: 'CDF', pin: '5173' } });
+  for (const n of [1, 2, 3, 4]) assert.equal((await add(n)).status, 201);
+  assert.equal(outbox.filter((m) => m.to === ruth.email && /compte bancaire/i.test(m.subject)).length, before + 4, 'POST /v1/me/bank-accounts (src/routes/settings.js) doit envoyer une alerte de sécurité');
+  assert.equal((await add(5)).body.error?.code, 'too_many_bank_accounts');
+});
+
+test('comptes bancaires : inclus dans l\'export des données personnelles', async () => {
+  const exp = await api('GET', '/v1/me/export', { token: state.ruth });
+  assert.equal(exp.body.bank_accounts?.length, 5, 'GET /v1/me/export (src/routes/settings.js) doit inclure les comptes bancaires');
+});
+
 test('PIN bloqué après 5 erreurs', async () => {
   for (let i = 0; i < 5; i++) await api('POST', '/v1/transfers', { token: state.alice, body: { to_phone: '0971112222', amount: 100, currency: 'USD', pin: '1111' } });
   const r = await api('POST', '/v1/transfers', { token: state.alice, body: { to_phone: '0971112222', amount: 100, currency: 'USD', pin: '2580' } });
@@ -1464,7 +1522,7 @@ test('paramètres : notifications, relevé CSV, export, passage en entreprise, f
   assert.ok(exp.body.transactions.length >= 2);
 
   const biz = await api('POST', '/v1/me/business', { token: tok, body: { business_name: 'Sarah Couture' } });
-  assert.equal(biz.status, 200, JSON.stringify(biz.body));
+  assert.equal(biz.status, 200, `POST /v1/me/bank-accounts (src/routes/settings.js) ne doit pas consommer la limite partagée « sensitive » (par IP) : limite dédiée par utilisateur. ${JSON.stringify(biz.body)}`);
   assert.equal(biz.body.user.account_type, 'business');
   assert.equal(biz.body.merchant.secret_key, undefined);
   assert.equal(biz.body.merchant.access.status, 'none'); // l'espace marchand s'active sur demande

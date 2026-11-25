@@ -6,7 +6,7 @@ import { accountWalletIds, consolidateBusinessWallets } from '../accounts.js';
 import { rateLimit } from '../middleware.js';
 import { issueOtp, normalizeDeviceId, verifyOtp } from '../otp.js';
 import { accessOf, createMerchantAccount } from '../services/merchants.js';
-import { mergePrefs, notifyUser } from '../services/notify.js';
+import { appUrl, mergePrefs, notifyUser } from '../services/notify.js';
 import { HttpError, newId, normalizeEmail, normalizePhone, now } from '../util.js';
 import { serializeUser } from './auth.js';
 
@@ -242,6 +242,81 @@ settingsRouter.delete('/me/addresses/:id', async (req, res) => {
   res.json({ id: a.id, deleted: true });
 });
 
+// ---------- Comptes bancaires (pour recevoir l'argent ; pas encore de virement automatique) ----------
+const serializeBankAccount = (b) => ({
+  id: b.id, object: 'bank_account', bank_name: b.bank_name, holder_name: b.holder_name,
+  account_number: `•••• ${b.account_number.slice(-4)}`, swift: b.swift, currency: b.currency, created_at: b.created_at,
+});
+const listBankAccounts = async (userId) =>
+  (await q.all('SELECT * FROM bank_accounts WHERE user_id=? ORDER BY created_at ASC', userId)).map(serializeBankAccount);
+
+settingsRouter.get('/me/bank-accounts', async (req, res) => res.json({ data: await listBankAccounts(req.user.id) }));
+
+/** Champs d'un compte bancaire, contrôlés avant le PIN (une saisie erronée ne consomme pas d'essai). */
+function bankFields(b) {
+  const bank_name = String(b.bank_name ?? '').trim();
+  if (bank_name.length < 2 || bank_name.length > 80) throw new HttpError(400, 'invalid_bank_name', 'Indiquez le nom de la banque.');
+  const holder_name = String(b.holder_name ?? '').trim().replace(/\s+/g, ' ');
+  if (holder_name.length < 2 || holder_name.length > 100) throw new HttpError(400, 'invalid_holder_name', 'Indiquez le titulaire du compte.');
+  const account_number = String(b.account_number ?? '').replace(/[\s.-]/g, '').toUpperCase();
+  if (!/^[A-Z0-9]{8,34}$/.test(account_number)) throw new HttpError(400, 'invalid_account_number', 'Numéro de compte invalide : 8 à 34 chiffres ou lettres, comme sur votre relevé bancaire.');
+  const currency = String(b.currency ?? '');
+  if (!['CDF', 'USD'].includes(currency)) throw new HttpError(400, 'invalid_currency', 'Devise du compte : CDF ou USD.');
+  const swift = b.swift ? String(b.swift).replace(/\s/g, '').toUpperCase() : null;
+  if (swift && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(swift)) throw new HttpError(400, 'invalid_swift', 'Code SWIFT/BIC invalide (8 ou 11 caractères, ex. RAWBCDKI).');
+  return { bank_name, holder_name, account_number, currency, swift };
+}
+
+// Limite dédiée, par utilisateur : l'ajout d'un compte (PIN requis) ne consomme pas celle des autres réglages.
+const bankLimiter = rateLimit({ name: 'bank_accounts', max: 15, keyOf: (req) => req.user.id });
+/** Mots d'un nom, sans accents ni casse : « ILUNGA Kabeya Patrick » contient « Patrick Ilunga ». */
+const nameWords = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+/** Le titulaire du compte : le nom de l'utilisateur, ou la raison sociale pour un compte entreprise. */
+async function assertHolder(user, holder) {
+  const owner = user.account_type === 'business'
+    ? (await q.get('SELECT name FROM merchants WHERE owner_user_id=?', user.id))?.name
+    : user.full_name;
+  const words = new Set(nameWords(holder));
+  const ref = nameWords(owner);
+  if (!ref.length || !ref.every((w) => words.has(w))) {
+    throw new HttpError(400, 'holder_mismatch', user.account_type === 'business'
+      ? `Le compte doit être au nom de votre entreprise (${owner}).`
+      : `Le compte doit être à votre nom (${owner}). Pay243 ne verse pas l'argent sur le compte d'un tiers.`);
+  }
+}
+
+settingsRouter.post('/me/bank-accounts', bankLimiter, async (req, res) => {
+  const b = req.body || {};
+  const f = bankFields(b);
+  await assertHolder(req.user, f.holder_name);
+  await verifyPin(req.user, b.pin);
+  const { n } = await q.get('SELECT COUNT(*)::int AS n FROM bank_accounts WHERE user_id=?', req.user.id);
+  if (n >= 5) throw new HttpError(400, 'too_many_bank_accounts', '5 comptes bancaires maximum.');
+  const id = newId('bank');
+  try {
+    await q.run('INSERT INTO bank_accounts (id, user_id, bank_name, holder_name, account_number, swift, currency, created_at) VALUES (?,?,?,?,?,?,?,?)',
+      id, req.user.id, f.bank_name, f.holder_name, f.account_number, f.swift, f.currency, now());
+  } catch (e) {
+    if (isUniqueViolation(e)) throw new HttpError(409, 'bank_account_exists', 'Ce compte bancaire est déjà enregistré.');
+    throw e;
+  }
+  // Alerte de sécurité : un compte ajouté par un tiers serait la destination de futurs retraits.
+  const masked = `•••• ${f.account_number.slice(-4)}`;
+  notifyUser(req.user, 'security', 'Nouveau compte bancaire enregistré',
+    `Un compte ${f.bank_name} (${masked}, ${f.currency}) a été ajouté à votre compte Pay243. Si ce n'est pas vous, changez votre PIN et contactez le support.`, {
+      paragraphs: ["Un compte bancaire vient d'être ajouté à votre compte Pay243 pour recevoir de l'argent.", "Si vous n'êtes pas à l'origine de cet ajout, supprimez ce compte, changez votre PIN et contactez le support."],
+      details: [['Banque', f.bank_name], ['Titulaire', f.holder_name], ['Compte', masked], ['Devise', f.currency]],
+      cta: { label: 'Voir mes comptes bancaires', url: appUrl('/settings#paiements') },
+    });
+  res.status(201).json(serializeBankAccount(await q.get('SELECT * FROM bank_accounts WHERE id=?', id)));
+});
+
+settingsRouter.delete('/me/bank-accounts/:id', async (req, res) => {
+  const r = await q.run('DELETE FROM bank_accounts WHERE id=? AND user_id=?', req.params.id, req.user.id);
+  if (!r.changes) throw new HttpError(404, 'bank_account_not_found', 'Compte bancaire introuvable.');
+  res.json({ id: req.params.id, deleted: true });
+});
+
 // ---------- Sécurité ----------
 /** Change le mot de passe et déconnecte toutes les autres sessions ; renvoie un nouveau jeton pour celle-ci. */
 settingsRouter.post('/me/password', sensitive, async (req, res) => {
@@ -337,6 +412,7 @@ settingsRouter.get('/me/export', sensitive, async (req, res) => {
     addresses: await listAddresses(u.id),
     trusted_devices: await listDevices(u.id),
     cards: (await q.all('SELECT brand, last4, exp_month, exp_year, created_at FROM cards WHERE user_id=?', u.id)),
+    bank_accounts: await q.all('SELECT bank_name, holder_name, account_number, swift, currency, created_at FROM bank_accounts WHERE user_id=? ORDER BY created_at', u.id),
     kyc_submissions: (await q.all('SELECT id, status, document_type, created_at, reviewed_at, review_note FROM kyc_submissions WHERE user_id=? ORDER BY created_at', u.id)),
     merchant: await q.get('SELECT id, name, webhook_url, created_at FROM merchants WHERE owner_user_id=?', u.id) || null,
     transactions: await userTransactions(u),
