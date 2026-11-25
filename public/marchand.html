@@ -156,6 +156,8 @@
   }
 </style>
 <link rel="stylesheet" href="/assets/kuba.css">
+<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/rumba-app.css">
 </head>
 <body>
 <header class="top">
@@ -414,7 +416,7 @@ function drawChart(daily, p, cur) {
     ${ticks.map((t) => `<text class="axis" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${axisAmt(t)}</text>`).join('')}
     ${pts.map((x, i) => {
       const cx = L + i * slot + slot / 2; const h = Math.max(0, H - B - y(x.net));
-      const r = Math.min(4, bw / 2, h);
+      const r = 0; // barres à angles droits : le monde « pochette » n'arrondit que le disque
       const top = y(x.net);
       const path = h > 0 ? `M${cx - bw / 2},${H - B} V${top + r} Q${cx - bw / 2},${top} ${cx - bw / 2 + r},${top} H${cx + bw / 2 - r} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + r} V${H - B} Z` : '';
       return `<g class="col" data-i="${i}">${path ? `<path class="bar" d="${path}"/>` : ''}<rect class="hit" x="${L + i * slot}" y="${T}" width="${slot}" height="${H - B - T}"/>

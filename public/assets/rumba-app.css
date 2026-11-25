@@ -1,0 +1,126 @@
+/* Pay243 — peau commune des pages connectées dans le monde « pochette de rumba ».
+   À charger APRÈS kuba.css (qui garde les jetons --k-* et les pastilles ivoire des logos opérateurs).
+   Utilisée par : marchand.html (le wallet a sa propre feuille, wallet.css, sur les mêmes principes).
+   Formes : angles de 2 px et filets ; les cercles sont réservés au disque et aux avatars.
+   Libellés en casse normale, sans espacement de lettres ; chiffres en police d'affichage, tabulaires. */
+
+:root { --r-gutter: clamp(16px, 4vw, 56px); --r-ease: cubic-bezier(.16, 1, .3, 1); }
+body { background: var(--k-ground); }
+
+/* ---------- En-tête : la barre de l'accueil ---------- */
+header.top { min-height: 68px; padding: 0 var(--r-gutter); background: rgba(13, 12, 10, .96); border-bottom: 1px solid var(--k-line); box-shadow: none; }
+header.top .logo-img { height: 30px; box-shadow: none; border-radius: 0; }
+
+/* ---------- Titres et chiffres ---------- */
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -.025em; }
+
+/* ---------- Cartes de contenu : filets, angles de 2 px ---------- */
+.card { background: var(--k-panel); border: 1px solid var(--k-line); border-radius: 2px; padding: 24px 26px; margin-bottom: 18px; }
+.card h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 12px; }
+
+/* ---------- Onglets : soulignés d'or ---------- */
+.tabs { gap: 4px 28px; border-bottom: 1px solid var(--k-line); }
+.tabs button { padding: 14px 0 12px; font-size: 15px; font-weight: 600; color: var(--k-mute); border-radius: 0; }
+.tabs button:hover { color: var(--k-ivory); }
+.tabs button.on { color: var(--k-ivory); }
+.tabs:not(:has(.kuba-ind)) button.on { background: none; box-shadow: inset 0 -2px 0 var(--k-gold); }
+.tabs .kuba-ind { height: 2px; background: var(--k-gold); }
+
+/* ---------- Champs et boutons ---------- */
+input, select, textarea { border-radius: 2px; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]), select { min-height: 44px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--k-gold); box-shadow: 0 0 0 1px var(--k-gold); }
+button { border-radius: 2px; }
+button.full { min-height: 52px; font-size: 16px; }
+button.ghost { background: transparent; border: 1px solid var(--k-line-2); color: var(--k-ivory); }
+button.ghost:hover { background: var(--k-raise); border-color: var(--k-gold-deep); filter: none; }
+
+/* ---------- Statuts, messages ---------- */
+.pill { border-radius: 2px; }
+.toast, .notice, .secret, .warn { border-radius: 2px !important; }
+code, .mono { border-radius: 2px; }
+
+/* ---------- Fenêtres ---------- */
+.modal-bg { background: rgba(5, 4, 3, .78); }
+.modal { border-radius: 2px; border: 1px solid var(--k-line-2); }
+.modal h3 { font-family: var(--font-display); font-size: 24px; }
+
+/* ==================================================================
+   Espace marchand : le suivi des paiements (marchand.html, main.mon)
+   ================================================================== */
+main.mon { max-width: 1520px; padding: 0 var(--r-gutter) 56px; }
+main.mon .page-head { margin: 36px 0 28px; align-items: flex-end; }
+main.mon .page-head h1 { font-size: clamp(30px, 3vw, 42px); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
+main.mon .page-head .muted { margin-top: 6px; font-size: 15px; }
+header.top .hd-links { gap: 22px; font-size: 15px; }
+header.top .hd-links a, header.top .hd-links button { color: var(--k-mute); font-weight: 600; }
+header.top .hd-links a:hover, header.top .hd-links button:hover { color: var(--k-gold-hi); text-decoration: none; }
+
+/* Choix de devise : deux faces, comme la bascule de l'accueil */
+main.mon .seg { background: transparent; border: 1px solid var(--k-line-2); border-radius: 2px; padding: 0; }
+main.mon .seg button { min-height: 42px; padding: 0 18px; border-radius: 0; font-weight: 700; color: var(--k-mute); }
+main.mon .seg button + button { border-left: 1px solid var(--k-line-2); }
+main.mon .seg button.on { background: var(--k-raise); color: var(--k-gold); box-shadow: none; }
+main.mon .controls select, main.mon .controls input[type=date] { min-height: 42px; }
+main.mon .controls .ghost { min-height: 42px; }
+
+/* Les indicateurs : une bande filetée, pas des cartes ; le solde porte la pochette */
+main.mon .kpis { gap: 0; margin-bottom: 28px; border-top: 1px solid var(--k-line-2); border-bottom: 1px solid var(--k-line-2); }
+main.mon .kpi { background: transparent; border: 0; border-radius: 0; padding: 20px 22px; }
+main.mon .kpi + .kpi { border-left: 1px solid var(--k-line); }
+main.mon .kpi small { font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--k-mute); }
+main.mon .kpi .v { font-family: var(--font-display); font-size: clamp(22px, 1.9vw, 28px); font-weight: 700; letter-spacing: -.025em; margin: 6px 0 4px; color: var(--k-ivory); }
+main.mon .kpi .s { font-size: 13px; color: var(--k-faint); line-height: 1.45; }
+main.mon .kpi.main { position: relative; background: var(--k-panel); border: 0; padding: 22px 24px 30px; }
+main.mon .kpi.main::before { /* filet de dorure en retrait */
+  content: ""; position: absolute; inset: 8px 8px 14px; height: auto; border: 1px solid rgba(212, 173, 90, .38); background: none; pointer-events: none;
+}
+main.mon .kpi.main::after { /* fil RDC au pied, en trois tiers égaux */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; top: auto; height: 5px; border: 0;
+  background: linear-gradient(90deg, var(--rdc-blue) 0 33.3%, var(--rdc-yellow) 33.3% 66.6%, var(--rdc-red) 66.6%);
+}
+main.mon .kpi.main .v { color: var(--k-gold); font-size: clamp(26px, 2.3vw, 34px); font-weight: 800; }
+
+/* Graphique */
+main.mon .chart-card h2 span { font-family: var(--font-sans); font-size: 14px; letter-spacing: 0; }
+main.mon .tip { border-radius: 2px; }
+
+/* Tableau */
+main.mon .tabs { margin: -6px 0 16px; }
+main.mon .tabs .count { color: var(--k-faint); }
+main.mon .filters input[type=search] { min-height: 44px; }
+main.mon table.tx th { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--k-mute); padding: 10px 12px; border-bottom-color: var(--k-line-2); }
+main.mon table.tx td { padding: 13px 12px; }
+main.mon table.tx .num { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+main.mon .ref { border-radius: 2px; }
+main.mon .totals-line b { font-family: var(--font-display); }
+
+/* Revenus de la plateforme */
+main.mon .rev { border-radius: 2px; }
+main.mon .rev-main { background: var(--k-ok-bg); }
+main.mon .rev-main small, main.mon .rev-grid small { font-size: 14px; text-transform: none; letter-spacing: 0; }
+main.mon .rev-main .v, main.mon .rev-grid .v { font-family: var(--font-display); letter-spacing: -.025em; }
+
+/* Panneau de détail */
+.drawer { border-radius: 0; padding: 26px 26px 32px; }
+.drawer .x { border-radius: 2px; }
+.drawer h3 { font-size: 22px; }
+.drawer .big { font-family: var(--font-display); font-weight: 800; font-size: 34px; letter-spacing: -.03em; }
+.drawer section h4 { font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--k-gold-hi); }
+
+@media (max-width: 1080px) {
+  main.mon .kpi + .kpi { border-left: 0; }
+  main.mon .kpis { gap: 0; }
+  main.mon .kpi { border-bottom: 1px solid var(--k-line); }
+}
+@media (max-width: 760px) {
+  header.top { min-height: 60px; }
+  header.top .logo-img { height: 26px; }
+  main.mon { padding: 0 16px 40px; }
+  main.mon .page-head { margin: 22px 0 18px; }
+  main.mon .kpi { padding: 14px 4px; }
+  main.mon .kpi.main { padding: 18px 18px 26px; }
+  main.mon table.tx td { padding: 0; } /* sur téléphone, chaque ligne devient une fiche : la marge est portée par la ligne */
+  main.mon table.tx tr { padding: 14px 0; gap: 4px 12px; }
+  .card { padding: 18px 16px; }
+}
