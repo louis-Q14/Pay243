@@ -79,9 +79,8 @@
   aside .me { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid var(--side-2); font-size: 13px; }
   aside .me b { color: var(--ink); display: block; }
   aside .me button { border: 0; background: none; color: var(--muted); padding: 6px 0 0; font-weight: 600; }
-  main { padding: 26px max(30px, calc((100% - 1360px) / 2)) 60px; min-width: 0; }
-  /* Pages à grands tableaux : toute la largeur utile (plafonnée pour rester lisible sur très grand écran) */
-  main.wide { padding-left: max(30px, calc((100% - 2200px) / 2)); padding-right: max(30px, calc((100% - 2200px) / 2)); }
+  /* Toutes les pages : toute la largeur utile (plafonnée pour rester lisible sur très grand écran) */
+  main { padding: 26px max(30px, calc((100% - 2200px) / 2)) 60px; min-width: 0; }
   .m-tbl td { white-space: nowrap; }
   .m-tbl td.wrap { white-space: normal; min-width: 220px; }
   .m-tbl .actions { min-width: 230px; } /* sur une ligne quand la place le permet, sinon sur deux */
@@ -399,10 +398,10 @@ const IC = {
 const SECTIONS = [
   { id: 'dashboard', label: 'Tableau de bord', perm: 'dashboard.view', render: renderDashboard },
   { id: 'users', label: 'Utilisateurs', perm: 'users.view', render: renderUsers },
-  { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions, wide: true },
-  { id: 'commissions', label: 'Commissions', perm: 'commissions.view', render: renderCommissions, wide: true },
-  { id: 'bank', label: 'Virements bancaires', perm: 'transactions.view', render: renderBankWithdrawals, wide: true },
-  { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants, wide: true },
+  { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions },
+  { id: 'commissions', label: 'Commissions', perm: 'commissions.view', render: renderCommissions },
+  { id: 'bank', label: 'Virements bancaires', perm: 'transactions.view', render: renderBankWithdrawals },
+  { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants },
   { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
   { id: 'support', label: 'Support', perm: 'support.view', render: renderSupport },
   { id: 'recon', label: 'Rapprochement', perm: 'recon.view', render: renderRecon },
@@ -416,7 +415,6 @@ function go(id) {
   CURRENT = s.id; freeBlobs();
   $$('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.go === s.id));
   $('#page-title').textContent = s.label;
-  document.querySelector('main').classList.toggle('wide', !!s.wide);
   $('#view').innerHTML = '<p class="muted">Chargement…</p>';
   history.replaceState(null, '', '#' + s.id);
   $('#side').classList.remove('open');
