@@ -395,6 +395,7 @@
       <label>Code reçu par email</label><input name="otp_code" inputmode="numeric" maxlength="6" pattern="\d{6}" autocomplete="one-time-code" required>
       <label>Nouveau mot de passe</label><input name="new_password" type="password" minlength="8" required autocomplete="new-password">
       <label>Confirmez le mot de passe</label><input name="confirm" type="password" minlength="8" required autocomplete="new-password">
+      <div id="reset-qa" class="hidden"></div>
       <button class="full">Changer mon mot de passe</button>
     </form>
     <p class="alt"><button class="link" id="forgot-close" type="button">← Retour à la connexion</button></p>
@@ -513,6 +514,8 @@
 </main>
 
 <div id="modal" class="modal-bg hidden"><div class="modal" id="modal-body"></div></div>
+<!-- Informations obligatoires manquantes (comptes inscrits avant ces règles) : à compléter avant d'accéder au wallet -->
+<div id="complete" class="modal-bg hidden"><div class="modal" id="complete-body"></div></div>
 
 <script>
 const $ = (s, el = document) => el.querySelector(s);
@@ -584,7 +587,8 @@ $('#f-login').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async ()
 let resetEmail = null;
 const showForgot = (on) => { $('#forgot').classList.toggle('hidden', !on); $('#login-card').classList.toggle('hidden', on); };
 $('#forgot-open').onclick = () => { showForgot(true); const id = $('#f-login').identifier.value; if (id.includes('@')) $('#f-forgot').email.value = id; $('#f-forgot').email.focus(); };
-$('#forgot-close').onclick = () => { showForgot(false); $('#f-forgot').classList.remove('hidden'); $('#f-reset').classList.add('hidden'); };
+let resetQs = null; // questions de sécurité du compte, affichées après la vérification du code
+$('#forgot-close').onclick = () => { showForgot(false); $('#f-forgot').classList.remove('hidden'); $('#f-reset').classList.add('hidden'); resetQs = null; $('#reset-qa').classList.add('hidden'); $('#reset-qa').innerHTML = ''; };
 $('#f-forgot').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
   const r = await api('POST', '/v1/auth/password/forgot', { email: e.target.email.value });
   resetEmail = r.email;
@@ -596,7 +600,18 @@ $('#f-forgot').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async (
 $('#f-reset').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
   const d = formData(e.target);
   if (d.new_password !== d.confirm) throw new Error('Les deux mots de passe ne correspondent pas.');
-  const r = await api('POST', '/v1/auth/password/reset', { email: resetEmail, otp_code: d.otp_code, new_password: d.new_password, ...device() });
+  // Étape 2 : le code est vérifié, puis le client répond à ses 3 questions de sécurité
+  if (resetQs === null) {
+    resetQs = (await api('POST', '/v1/auth/password/verify', { email: resetEmail, otp_code: d.otp_code })).questions || [];
+    if (resetQs.length) {
+      $('#reset-qa').innerHTML = `<p class="notice">Répondez à vos questions de sécurité.</p>` + resetQs.map((x) => `<label>${esc(x.label)}</label><input name="ans_${esc(x.question)}" required autocomplete="off">`).join('');
+      $('#reset-qa').classList.remove('hidden'); $(`[name="ans_${resetQs[0].question}"]`).focus();
+      return;
+    }
+  }
+  const answers = resetQs.map((x) => ({ question: x.question, answer: e.target[`ans_${x.question}`]?.value || '' }));
+  const r = await api('POST', '/v1/auth/password/reset', { email: resetEmail, otp_code: d.otp_code, new_password: d.new_password, answers, ...device() });
+  resetQs = null;
   toast('Mot de passe modifié. Vos autres sessions ont été fermées.');
   showForgot(false); setSession(r.token);
 }); };
@@ -644,6 +659,7 @@ async function boot() {
       : 'Compte non activé : vérification d\'identité requise avant toute opération.';
     await Promise.all([loadWallets(), loadHistory(), loadCards(), loadKyc().catch(() => {})]);
     refreshSupportBadge(); startSupportPolling();
+    if (ME.missing?.length) { openComplete(ME.missing); return; }
     try { sessionStorage.removeItem('pay243_new_key'); } catch {}
     if (location.hash === '#merchant') {
       // Espace marchand activé par l'équipe : l'onglet ; sinon, la demande d'activation (paramètres)
@@ -982,6 +998,55 @@ function openModal(html, onSubmit) {
   if (f) f.onsubmit = (e) => { e.preventDefault(); busy(e.submitter, () => onSubmit(formData(f), f)); };
 }
 function closeModal() { $('#modal').classList.add('hidden'); }
+
+// ---------------- Informations obligatoires à compléter ----------------
+async function openComplete(missing) {
+  const need = (k) => missing.includes(k);
+  let qs = [];
+  if (need('security_questions')) { try { qs = (await api('GET', '/v1/auth/security-questions')).data; } catch {} }
+  const opts = qs.map((x) => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('');
+  const profile = need('phone') || need('security_questions') || need('emergency_contact');
+  $('#complete-body').innerHTML = `<h3>Complétez votre compte</h3>
+    <p class="muted">Pour la sécurité de votre compte, ces informations sont désormais obligatoires. Elles sont demandées une seule fois.</p>
+    <form id="f-complete">
+      ${need('phone') ? '<label>Numéro Mobile Money</label><input name="phone" type="tel" inputmode="tel" required placeholder="0812345678">' : ''}
+      ${need('security_questions') ? `<p class="notice">3 questions de sécurité : elles vous seront demandées, avec un code envoyé par email, pour réinitialiser votre mot de passe.</p>${[0, 1, 2].map((i) => `<label>Question ${i + 1}</label><select name="q${i}" required><option value="">Choisissez une question</option>${opts}</select>
+        <input name="a${i}" required autocomplete="off" placeholder="Réponse"><input name="c${i}" required autocomplete="off" placeholder="Confirmez la réponse">`).join('')}` : ''}
+      ${need('emergency_contact') ? `<p class="notice">Personne à contacter en cas d’urgence</p>
+        <label>Nom complet</label><input name="ec_name" required><label>Adresse</label><input name="ec_address" required placeholder="N°, avenue, commune, ville">
+        <label>Téléphone</label><input name="ec_phone" type="tel" inputmode="tel" required><label>Email</label><input name="ec_email" type="email" required>
+        <label>Lien avec vous</label><input name="ec_relation" required placeholder="Ex : sœur, conjoint, parent, ami">` : ''}
+      ${need('rccm_document') ? '<p class="notice">Compte entreprise : document RCCM</p><label>Document RCCM (PDF ou photo, 5 Mo maximum)</label><input name="rccm" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required>' : ''}
+      ${profile ? '<label>Votre mot de passe (confirmation)</label><input name="password" type="password" required autocomplete="current-password">' : ''}
+      <button class="full">Enregistrer</button>
+    </form>
+    <button class="link full" type="button" id="complete-logout">Me déconnecter</button>`;
+  $('#complete').classList.remove('hidden');
+  $('#complete-logout').onclick = () => { $('#complete').classList.add('hidden'); logout(); };
+  $('#f-complete').onsubmit = (e) => { e.preventDefault(); busy(e.submitter, async () => {
+    const f = e.target;
+    if (profile) {
+      const body = { password: f.password.value };
+      if (need('phone')) body.phone = f.phone.value;
+      if (need('security_questions')) {
+        body.security_questions = [0, 1, 2].map((i) => ({ question: f[`q${i}`].value, answer: f[`a${i}`].value, answer_confirm: f[`c${i}`].value }));
+        if (new Set(body.security_questions.map((x) => x.question)).size < 3) throw new Error('Choisissez 3 questions de sécurité différentes.');
+      }
+      if (need('emergency_contact')) body.emergency_contact = { full_name: f.ec_name.value, address: f.ec_address.value, phone: f.ec_phone.value, email: f.ec_email.value, relation: f.ec_relation.value };
+      await api('PUT', '/v1/me/security', body);
+    }
+    if (need('rccm_document')) {
+      const file = f.rccm.files[0];
+      if (!file) throw new Error('Joignez le document RCCM de l’entreprise.');
+      if (file.size > 5 * 1024 * 1024) throw new Error('Document RCCM trop lourd : 5 Mo maximum.');
+      const r = await fetch('/v1/me/business-document', { method: 'POST', headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': file.type }, body: file });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || 'Envoi du document impossible.');
+    }
+    $('#complete').classList.add('hidden');
+    toast('Merci, votre compte est complet.');
+    boot();
+  }); };
+}
 $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
 
 const curSelect = `<label>Devise</label><select name="currency"><option value="USD">USD — Dollar</option><option value="CDF">CDF — Franc congolais</option></select>`;

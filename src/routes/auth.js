@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { answersMatch, missingOf, parseEmergencyContact, parseSecurityQuestions, questionsOf } from '../services/accountSecurity.js';
+import { SECURITY_QUESTIONS, answersMatch, missingOf, parseEmergencyContact, parseSecurityQuestions, questionsOf } from '../services/accountSecurity.js';
 import { assertNewPassword, assertNewPin, hashSecret, requireUser, signToken, verificationStatus, verifySecret } from '../auth.js';
 import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
@@ -77,6 +77,9 @@ authRouter.post('/auth/otp', otpLimiter, async (req, res) => {
 });
 
 /** Étape 2 : création du compte (particulier ou entreprise) avec le code reçu par email. */
+/** Questions de sécurité proposées à l'inscription (le client en choisit 3). */
+authRouter.get('/auth/security-questions', (_req, res) => res.json({ data: Object.entries(SECURITY_QUESTIONS).map(([id, label]) => ({ id, label })) }));
+
 authRouter.post('/auth/register', limiter, async (req, res) => {
   if (config.registrationsEnabled === false) throw new HttpError(503, 'signup_closed', 'Les inscriptions sont momentanément fermées. Réessayez plus tard.');
   const { account_type, email, otp_code, full_name, password, pin, phone, business_name, device_id, device_label } = req.body || {};

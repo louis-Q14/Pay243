@@ -112,3 +112,9 @@ test('utilisateurs : le support ne peut ni modifier les informations ni supprime
   assert.equal((await support('PATCH', `/users/${u.user.id}`, { full_name: 'Rachel T.', reason: why })).status, 403, 'modifier : administrateur uniquement');
   assert.equal((await support('POST', `/users/${u.user.id}/delete`, { reason: why })).status, 403, 'supprimer : administrateur uniquement');
 });
+
+test('utilisateurs : la fiche montre le contact d’urgence du client', async () => {
+  const u = await register('Béatrice Lukusa', 'beatrice.lukusa@test.cd');
+  const d = (await support('GET', `/users/${u.user.id}`)).body;
+  assert.equal(d.emergency_contact?.full_name, 'Contact Urgence', `GET /v1/admin/users/:id (src/routes/admin.js) doit inclure le contact d’urgence : ${JSON.stringify(d.emergency_contact)}`);
+});

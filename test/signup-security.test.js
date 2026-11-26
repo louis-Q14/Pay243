@@ -149,3 +149,8 @@ test('mot de passe oublié : code email + bonnes réponses (sans tenir compte de
   } });
   assert.equal(r.status, 200, `réinitialisation acceptée : ${JSON.stringify(r.body)}`);
 });
+
+test('inscription : la liste des questions de sécurité est publique, pour le formulaire', async () => {
+  const r = await api('GET', '/v1/auth/security-questions');
+  assert.ok(r.body.data?.length >= 6 && r.body.data.every((x) => x.id && x.label), `GET /v1/auth/security-questions (src/routes/auth.js) : ${JSON.stringify(r.body)}`);
+});

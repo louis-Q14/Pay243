@@ -17,6 +17,8 @@ import {
 import { HttpError, formatMoney, newId, normalizeEmail, normalizePhone, now, parseJson } from '../util.js';
 import { normalizeHandle } from './settings.js';
 import { staffStartTicket } from '../services/support.js';
+import { businessDocumentDir, missingOf } from '../services/accountSecurity.js';
+import { readDecrypted } from '../services/kyc.js';
 import { isUniqueViolation } from '../db.js';
 import { markBankWithdrawalPaid, rejectBankWithdrawal } from '../services/bankWithdrawals.js';
 
@@ -158,6 +160,10 @@ backofficeRouter.get('/admin/users/:id', can('users.view'), async (req, res) => 
     devices: (await q.get('SELECT COUNT(*)::int AS n FROM trusted_devices WHERE user_id=?', u.id)).n,
     addresses: await q.all('SELECT line1, line2, city, province, country, is_primary FROM addresses WHERE user_id=? ORDER BY is_primary DESC', u.id),
     cards: (await q.get('SELECT COUNT(*)::int AS n FROM cards WHERE user_id=?', u.id)).n,
+    emergency_contact: parseJson(u.emergency_contact, null),
+    security_questions_set: !!u.security_questions,
+    missing: missingOf(u),
+    business_document: await q.get("SELECT id, mime, size, created_at FROM business_documents WHERE user_id=? AND kind='rccm' ORDER BY created_at DESC LIMIT 1", u.id) || null,
     notes: hasPermission(req.admin.role, 'users.notes')
       ? await q.all('SELECT id, author, body, created_at FROM user_notes WHERE user_id=? ORDER BY created_at DESC, id DESC LIMIT 100', u.id) : [],
   });
@@ -169,6 +175,17 @@ backofficeRouter.post('/admin/users/:id/message', can('support.reply'), async (r
   const t = await staffStartTicket(req.admin, u, req.body || {});
   await logAction(req, 'user.message', u.id, { ticket: t.id });
   res.status(201).json(t);
+});
+
+/** Document RCCM d'un compte entreprise (déchiffré pour l'équipe, consultation journalisée). */
+backofficeRouter.get('/admin/users/:id/business-document', can('users.view'), async (req, res) => {
+  const u = await findUser(req.params.id);
+  const doc = await q.get("SELECT * FROM business_documents WHERE user_id=? AND kind='rccm' ORDER BY created_at DESC LIMIT 1", u.id);
+  if (!doc) throw new HttpError(404, 'document_not_found', 'Aucun document RCCM pour ce compte.');
+  const data = readDecrypted(doc.storage_key, `${u.id}:rccm`, businessDocumentDir());
+  await logAction(req, 'user.view_business_document', u.id);
+  res.set({ 'Content-Type': doc.mime, 'Cache-Control': 'private, no-store', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Content-Disposition': `inline; filename="rccm-${u.id}.${doc.mime === 'application/pdf' ? 'pdf' : doc.mime.split('/')[1]}"` });
+  res.send(data);
 });
 
 /** Note interne de l'équipe sur un compte (jamais visible par l'utilisateur). */

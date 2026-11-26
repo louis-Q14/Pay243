@@ -79,6 +79,10 @@
   .field input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
   .hint { font-size: 13px; color: var(--faint); margin-top: 7px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field select { width: 100%; height: 52px; padding: 0 12px; font-size: 15px; color: var(--ivory); background: var(--board); border: 1px solid var(--hair-strong); border-radius: 2px; }
+  .field select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .field input[type=file] { height: auto; padding: 12px; font-size: 14px; }
+  .qa { border: 1px solid var(--hair); padding: 12px 14px 2px; margin-bottom: 10px; }
   .group { margin: 22px 0 12px; padding-top: 14px; border-top: 1px solid var(--hair); font-size: 14px; font-weight: 700; color: var(--gold-light); }
   .pw { position: relative; }
   .pw input { padding-right: 92px; }
@@ -250,9 +254,11 @@
           <div class="field"><label for="b-email">Email</label><input id="b-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="contact@entreprise.cd"></div>
         </div>
         <div class="row2">
-          <div class="field"><label for="b-fax">Fax <small>(facultatif)</small></label><input id="b-fax" name="fax" type="tel" inputmode="tel"></div>
-          <div class="field"><label for="b-web">Site web <small>(facultatif)</small></label><input id="b-web" name="website" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="www.entreprise.cd"></div>
+          <div class="field"><label for="b-fax">Fax</label><input id="b-fax" name="fax" type="tel" inputmode="tel" required placeholder="0812345679"></div>
+          <div class="field"><label for="b-web">Site web</label><input id="b-web" name="website" inputmode="url" autocapitalize="none" spellcheck="false" required placeholder="www.entreprise.cd"></div>
         </div>
+        <p class="group">Document légal</p>
+        <div class="field"><label for="b-doc">Document RCCM (PDF ou photo, 5 Mo maximum)</label><input id="b-doc" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required></div>
         <button class="btn btn-gold btn-lg full">Continuer</button>
       </form>
       <p class="back"><button type="button" class="linkbtn" data-back="1">← Retour</button></p>
@@ -283,7 +289,7 @@
         </div>
         <div class="rule"></div>
         <div class="field"><label for="full_name" id="name-label">Nom complet</label><input id="full_name" name="full_name" autocomplete="name" required placeholder="Ex : Grace Mbuyi"></div>
-        <div class="field"><label for="phone">Mobile Money <small>(facultatif)</small></label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0812345678"></div>
+        <div class="field"><label for="phone">Mobile Money</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="0812345678"></div>
         <div class="field"><label for="password">Mot de passe</label>
           <div class="pw"><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-toggle="password">Afficher</button></div>
           <div class="meter"><i id="meter"></i></div><div class="hint" id="pw-hint">8 caractères minimum.</div></div>
@@ -291,6 +297,17 @@
           <div class="field"><label for="pin">PIN</label><input id="pin" name="pin" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required placeholder="4 à 6 chiffres"></div>
           <div class="field"><label for="pin2">Confirmer le PIN</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
         </div>
+        <p class="group">Questions de sécurité</p>
+        <p class="hint" style="margin:-4px 0 12px">Elles vous seront demandées, avec un code envoyé par email, pour réinitialiser votre mot de passe. Choisissez 3 questions différentes et tapez chaque réponse deux fois.</p>
+        <div id="qas"></div>
+        <p class="group">Personne à contacter en cas d’urgence</p>
+        <div class="field"><label for="ec-name">Nom complet</label><input id="ec-name" required autocomplete="off" placeholder="Ex : Marie Kabila"></div>
+        <div class="field"><label for="ec-address">Adresse</label><input id="ec-address" required autocomplete="off" placeholder="N°, avenue, commune, ville"></div>
+        <div class="row2">
+          <div class="field"><label for="ec-phone">Téléphone</label><input id="ec-phone" type="tel" inputmode="tel" required autocomplete="off" placeholder="0812345678"></div>
+          <div class="field"><label for="ec-email">Email</label><input id="ec-email" type="email" inputmode="email" required autocomplete="off" placeholder="proche@exemple.com"></div>
+        </div>
+        <div class="field"><label for="ec-relation">Lien avec vous</label><input id="ec-relation" required autocomplete="off" placeholder="Ex : sœur, conjoint, parent, ami"></div>
         <label class="consent"><input type="checkbox" id="consent" required>
           <span>J'accepte les <a href="/legal#cgu" target="_blank" rel="noopener">conditions d'utilisation</a> et la <a href="/legal#confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>, et j'ai 18 ans ou plus.</span></label>
         <button class="btn btn-gold btn-lg full" id="create">Créer mon compte</button>
@@ -398,9 +415,14 @@ $('#f-biz').addEventListener('submit', (e) => {
   if (d.city.length < 2) return showErr('#errb', 'Indiquez la ville.');
   if (!phoneRe.test(d.phone)) return showErr('#errb', "Numéro de téléphone de l'entreprise invalide.");
   if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(d.email)) return showErr('#errb', "Adresse email de l'entreprise invalide.");
-  if (d.fax && !phoneRe.test(d.fax)) return showErr('#errb', 'Numéro de fax invalide.');
-  if (d.website && !/^(https?:\/\/)?[^\s/]+\.[^\s]{2,}$/i.test(d.website)) return showErr('#errb', 'Adresse du site web invalide.');
-  state.business = { name: d.name, rccm: d.rccm.toUpperCase(), address: d.address, city: d.city, country: 'CD', phone: d.phone, email: d.email, fax: d.fax || null, website: d.website || null };
+  if (!phoneRe.test(d.fax)) return showErr('#errb', "Indiquez un numéro de fax valide pour l'entreprise.");
+  if (!/^(https?:\/\/)?[^\s/]+\.[^\s]{2,}$/i.test(d.website)) return showErr('#errb', "Indiquez l'adresse du site web de l'entreprise.");
+  const doc = $('#b-doc').files[0];
+  if (!doc) return showErr('#errb', 'Joignez le document RCCM de l’entreprise (PDF ou photo).');
+  if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(doc.type)) return showErr('#errb', 'Document RCCM : PDF ou photo (JPEG, PNG, WebP) uniquement.');
+  if (doc.size > 5 * 1024 * 1024) return showErr('#errb', 'Document RCCM trop lourd : 5 Mo maximum.');
+  state.rccmFile = doc;
+  state.business = { name: d.name, rccm: d.rccm.toUpperCase(), address: d.address, city: d.city, country: 'CD', phone: d.phone, email: d.email, fax: d.fax, website: d.website };
   if (!$('#email').value) $('#email').value = d.email; // proposé comme email de connexion, modifiable
   go(2);
 });
@@ -454,6 +476,16 @@ $('#password').addEventListener('input', (e) => {
 });
 $('#otp').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); });
 
+// Questions de sécurité : 3 listes, une réponse et sa confirmation pour chacune
+const h = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let QUESTIONS = [];
+function renderQas() {
+  $('#qas').innerHTML = [0, 1, 2].map((i) => `<div class="qa"><div class="field"><label for="q${i}">Question ${i + 1}</label><select id="q${i}" required><option value="">Choisissez une question</option>${QUESTIONS.map((x) => `<option value="${h(x.id)}">${h(x.label)}</option>`).join('')}</select></div>
+    <div class="row2"><div class="field"><label for="a${i}">Réponse</label><input id="a${i}" autocomplete="off" required></div><div class="field"><label for="c${i}">Confirmer la réponse</label><input id="c${i}" autocomplete="off" required></div></div></div>`).join('');
+}
+fetch('/v1/auth/security-questions').then((r) => r.json()).then((j) => { QUESTIONS = j.data || []; renderQas(); }).catch(() => {});
+const normAns = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
 $('#f-account').addEventListener('submit', (e) => {
   e.preventDefault(); showErr('#err3');
   const d = Object.fromEntries(new FormData(e.target));
@@ -463,9 +495,20 @@ $('#f-account').addEventListener('submit', (e) => {
   if ((d.password || '').length < 8) return showErr('#err3', 'Le mot de passe doit contenir au moins 8 caractères.');
   if (!/^\d{4,6}$/.test(d.pin)) return showErr('#err3', 'Le PIN doit comporter 4 à 6 chiffres.');
   if (d.pin !== $('#pin2').value) return showErr('#err3', 'Les deux PIN ne correspondent pas.');
+  if (!(d.phone || '').trim()) return showErr('#err3', 'Indiquez votre numéro Mobile Money.');
+  const security_questions = [0, 1, 2].map((i) => ({ question: $(`#q${i}`)?.value || '', answer: ($(`#a${i}`)?.value || '').trim(), answer_confirm: ($(`#c${i}`)?.value || '').trim() }));
+  if (security_questions.some((x) => !x.question)) return showErr('#err3', 'Choisissez vos 3 questions de sécurité.');
+  if (new Set(security_questions.map((x) => x.question)).size < 3) return showErr('#err3', 'Choisissez 3 questions de sécurité différentes.');
+  if (security_questions.some((x) => x.answer.length < 2)) return showErr('#err3', 'Répondez à chacune des 3 questions de sécurité.');
+  if (security_questions.some((x) => normAns(x.answer) !== normAns(x.answer_confirm))) return showErr('#err3', 'Une réponse de sécurité et sa confirmation ne correspondent pas.');
+  const emergency_contact = { full_name: $('#ec-name').value.trim(), address: $('#ec-address').value.trim(), phone: $('#ec-phone').value.trim(), email: $('#ec-email').value.trim(), relation: $('#ec-relation').value.trim() };
+  if (emergency_contact.full_name.length < 3) return showErr('#err3', 'Contact d’urgence : indiquez son nom complet.');
+  if (emergency_contact.address.length < 5) return showErr('#err3', 'Contact d’urgence : indiquez son adresse.');
+  if (!/^\+?[0-9][0-9 ().-]{6,22}$/.test(emergency_contact.phone)) return showErr('#err3', 'Contact d’urgence : numéro de téléphone invalide.');
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(emergency_contact.email)) return showErr('#err3', 'Contact d’urgence : adresse email invalide.');
+  if (emergency_contact.relation.length < 2) return showErr('#err3', 'Contact d’urgence : précisez votre lien avec cette personne.');
   if (!$('#consent').checked) return showErr('#err3', "Acceptez les conditions d'utilisation pour continuer.");
-  const body = { account_type: state.type, email: state.email, otp_code: d.otp_code, full_name: d.full_name, password: d.password, pin: d.pin };
-  if (d.phone) body.phone = d.phone;
+  const body = { account_type: state.type, email: state.email, otp_code: d.otp_code, full_name: d.full_name, password: d.password, pin: d.pin, phone: d.phone, security_questions, emergency_contact };
   if (state.type === 'business') {
     const { name, ...business } = state.business;
     Object.assign(body, { business_name: name, business });
@@ -477,11 +520,15 @@ $('#f-account').addEventListener('submit', (e) => {
       try {
         sessionStorage.setItem('pay243_token', r.token);
       } catch {}
+      // Entreprise : le document RCCM est envoyé (chiffré) dès la création du compte ; s'il échoue, le wallet le redemandera.
+      if (state.type === 'business' && state.rccmFile) {
+        await fetch('/v1/me/business-document', { method: 'POST', headers: { Authorization: `Bearer ${r.token}`, 'Content-Type': state.rccmFile.type }, body: state.rccmFile }).catch(() => {});
+      }
       location.href = '/app'; // l'espace marchand s'active ensuite sur demande (Paramètres › Outils vendeur)
     } catch (x) {
       showErr('#err3', x.message);
       if (['email_taken'].includes(x.code)) go(2);
-      if (x.code === 'rccm_taken' || /^invalid_(rccm|business_|website)/.test(x.code || '')) { go('biz'); showErr('#errb', x.message); }
+      if (x.code === 'rccm_taken' || /^invalid_(rccm|business_|website)|^(fax|website)_required$/.test(x.code || '')) { go('biz'); showErr('#errb', x.message); }
     }
   });
 });

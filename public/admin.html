@@ -676,6 +676,9 @@ async function openUser(id) {
         <dt>Nationalité · fuseau</dt><dd>${esc(u.nationality)} · ${esc(u.timezone)}</dd>
         <dt>Inscrit le</dt><dd>${dt(u.created_at)}</dd>
         <dt>Appareils · cartes</dt><dd>${d.devices} appareil(s) de confiance · ${d.cards} carte(s)</dd>
+        <dt>Questions de sécurité</dt><dd>${d.security_questions_set ? '<span class="pill ok">enregistrées</span>' : '<span class="pill warn">à compléter</span>'}</dd>
+        <dt>Contact d’urgence</dt><dd>${d.emergency_contact ? `<b>${esc(d.emergency_contact.full_name)}</b> (${esc(d.emergency_contact.relation)}) · ${esc(d.emergency_contact.phone)} · ${esc(d.emergency_contact.email)}<div class="muted">${esc(d.emergency_contact.address)}</div>` : '<span class="pill warn">à compléter</span>'}</dd>
+        ${u.account_type === 'business' ? `<dt>Document RCCM</dt><dd>${d.business_document ? `<button class="lk" id="u-rccm">Voir le document</button> <span class="muted">reçu le ${dt(d.business_document.created_at)}</span>` : '<span class="pill warn">à envoyer</span>'}</dd>` : ''}
         ${d.merchant ? `<dt>Espace marchand</dt><dd>${esc(d.merchant.name)} <span class="mono muted">${esc(d.merchant.id)}</span> ${accessPill(d.merchant.access?.status)} ${d.merchant.suspended_at ? '<span class="pill err">suspendu</span>' : ''}${can('merchants.view') ? ' <button class="lk" id="u-merchant">Gérer</button>' : ''}</dd>` : ''}
         ${d.merchant?.business ? (() => { const b = d.merchant.business; return `<dt>RCCM</dt><dd class="mono">${esc(b.rccm || '—')}</dd>
           <dt>Adresse entreprise</dt><dd>${esc([b.address, b.city, b.country].filter(Boolean).join(', ') || '—')}</dd>
@@ -693,6 +696,13 @@ async function openUser(id) {
     ${d.kyc_submissions.length ? `<div class="card"><h2>Vérifications d'identité</h2><ul class="list">${d.kyc_submissions.map((k) => `<li><span>${pill(k.status)} ${esc(k.document_type)}</span><span class="muted">${dt(k.created_at)}${k.reviewer ? ' · ' + esc(k.reviewer) : ''}${k.review_note ? ' · ' + esc(k.review_note) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
   const after = async (msg) => { toast(msg); await loadUsers(); await openUser(id); };
   $('#u-merchant')?.addEventListener('click', () => { M_FILTER = { q: d.merchant.id, access: '' }; go('merchants'); });
+  $('#u-rccm')?.addEventListener('click', async () => {
+    try {
+      const r = await fetch(`/v1/admin/users/${id}/business-document`, { headers: { Authorization: 'Bearer ' + TOKEN } });
+      if (!r.ok) throw new Error('Document RCCM introuvable.');
+      const url = URL.createObjectURL(await r.blob()); blobs.push(url); window.open(url, '_blank', 'noopener');
+    } catch (e) { toast(e.message, true); }
+  });
   const noteForm = $('#u-note');
   if (noteForm) noteForm.onsubmit = (e) => { e.preventDefault(); run($('button', noteForm), async () => { await api('POST', `/users/${id}/notes`, { body: noteForm.body.value }); toast('Note ajoutée.'); await openUser(id); }); };
   $$('[data-ua]').forEach((b) => b.onclick = async () => {
