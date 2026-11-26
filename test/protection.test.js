@@ -182,3 +182,16 @@ test('litige : l’acheteuse peut le retirer ; sans remontée sous 20 jours il s
   assert.equal(await sellerUsd(), s0 + net(1000) + net(1500), 'les deux retenues sont rendues au vendeur');
   for (const row of await auditLedger()) assert.equal(Number(row.total), 0, `grand livre ${row.currency} déséquilibré`);
 });
+
+test('litige : le vendeur est prévenu par email à l’ouverture, les deux parties à la décision', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const n0 = outbox.length;
+  const mails = () => outbox.slice(n0);
+  const id = await purchase(1200, 'Montre');
+  const d = (await api('POST', '/v1/disputes', { token: S.buyer, body: { payment_id: id, reason: 'not_as_described', message: 'La montre reçue est rayée.' } })).body;
+  assert.ok(mails().some((m) => m.to === 'jean.mukendi@test.cd' && /litige/i.test(m.subject)), 'openDispute (src/services/disputes.js) doit prévenir le vendeur (notifyUser)');
+  await api('POST', `/v1/disputes/${d.id}/escalate`, { token: S.buyer });
+  await admin('POST', `/disputes/${d.id}/decide`, { winner: 'buyer', note: 'Photos de la montre rayée fournies.' });
+  assert.ok(mails().some((m) => m.to === 'esther.kalala@test.cd' && /rembours/i.test(m.subject)), 'l’acheteuse est prévenue de son remboursement');
+  assert.ok(mails().some((m) => m.to === 'jean.mukendi@test.cd' && /décision/i.test(m.subject)), 'le vendeur est prévenu de la décision');
+});

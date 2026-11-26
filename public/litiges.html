@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Litiges — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Protection des achats Pay243 : signalez un achat non reçu ou non conforme et suivez le règlement du litige.">
+<meta name="theme-color" content="#0b1424">
+<link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/fonts.css">
+<style>
+  /* Mêmes couleurs, polices et composants que le back-office */
+  :root {
+    /* univers « Raphia Kuba » (voir DESIGN.md) */
+    --ink: #f2ead8; --ink-2: #cfc5b0; --muted: #a79c86; --line: #2a2620; --soft: #1d1a14; --bg: #0d0c0a; --card: #15130f;
+    --blue: #d4ad5a; --navy: #9c7a35; --side: #0a0907; --side-2: #15130f; --red: #ce1021;
+    --ok: #86d6a4; --ok-bg: #11251a; --warn: #ecc46f; --warn-bg: #2d2310; --err: #ff948a; --err-bg: #2e1514;
+    --gold: #d4ad5a; --on-gold: #16120a; --line-2: #3d362b;
+    --rdc-thread: linear-gradient(90deg, #007fff 0 62%, #f7d618 62% 69%, #ce1021 69% 76%, #007fff 76%);
+    color-scheme: dark;
+    --r: 14px; --font: var(--font-sans);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 var(--font); color: var(--ink); background: var(--bg); }
+  [hidden] { display: none !important; }
+  .hidden { display: none !important; }
+  a { color: var(--blue); }
+  button { font: inherit; cursor: pointer; }
+  ::selection { background: var(--gold); color: var(--on-gold); }
+  body { caret-color: var(--gold); }
+  input, select, textarea { font: inherit; color: var(--ink); width: 100%; padding: 10px 12px; border: 1.5px solid var(--line-2); border-radius: 10px; background: #100e0b; }
+  input::placeholder, textarea::placeholder { color: #8d8576; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid rgba(212, 173, 90, .3); border-color: var(--blue); }
+  textarea { min-height: 76px; resize: vertical; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 12px 0 5px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 14px; background: var(--gold); color: var(--on-gold); white-space: nowrap; text-decoration: none; }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .btn.light { background: var(--soft); color: var(--ink); border: 1px solid var(--line-2); }
+  .btn svg { width: 16px; height: 16px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--soft); color: var(--ink-2); white-space: nowrap; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--soft); color: var(--ink); border: 1px solid var(--navy); padding: 12px 18px; border-radius: 12px; z-index: 95; max-width: 92vw; box-shadow: 0 12px 32px rgba(0, 0, 0, .55); font-size: 14.5px; }
+  .toast.bad { background: var(--err-bg); color: #ffd9d4; border-color: #7a2c26; }
+
+  /* ---------- Barre du haut : raphia profond, fil du drapeau en pied ---------- */
+  .top { position: relative; background: var(--side); color: var(--ink-2); border-bottom: 1px solid var(--line); }
+  .top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--rdc-thread); }
+  .top .in { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 18px; }
+  .top .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 700; text-decoration: none; }
+  .top .brand img { height: 30px; box-shadow: 0 0 0 1px rgba(212, 173, 90, .55); border-radius: 2px; }
+  .top .brand span { padding-left: 12px; border-left: 1px solid var(--line-2); font-size: 14.5px; }
+  .top nav { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .top nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; padding: 7px 12px; border-radius: 10px; }
+  .top nav a:hover { background: var(--soft); color: var(--ink); }
+
+  /* ---------- Page ---------- */
+  main { max-width: 1240px; margin: 0 auto; padding: 26px 24px 60px; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  h1, h2, h3 { font-family: var(--font-display); }
+  .page-head h1 { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -.025em; display: flex; align-items: center; gap: 10px; }
+  .page-head .right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .need { font-size: 14.5px; color: var(--ink-2); }
+  .need a { font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .need a:hover { text-decoration: underline; }
+  .need svg { width: 17px; height: 17px; }
+  .count { background: var(--red); color: #fff; border-radius: 99px; font-size: 12px; padding: 1px 8px; font-weight: 800; }
+
+  .split { display: grid; grid-template-columns: minmax(0, 370px) minmax(0, 1fr); gap: 22px; align-items: start; }
+
+  /* Liste des conversations (colonne de gauche) */
+  .inbox { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .conv { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; width: 100%; padding: 14px 16px; border: 1.5px solid transparent; border-radius: 16px; cursor: pointer; }
+  .conv:hover { background: var(--card); }
+  .conv:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .conv.sel { border-color: var(--navy); background: var(--card); }
+  .conv .ic { grid-row: span 2; width: 32px; height: 32px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line-2); display: grid; place-items: center; color: var(--gold); }
+  .conv .ic svg { width: 16px; height: 16px; }
+  .conv.closed .ic { background: var(--ok-bg); color: var(--ok); border-color: #1f4a30; }
+  .conv b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .conv.unread b { font-weight: 800; }
+  .conv .date { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
+  .conv .line { grid-column: 2 / 4; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--muted); }
+  .conv .line span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conv .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); flex: none; }
+  .inbox .none { padding: 20px 16px; color: var(--muted); font-size: 14px; }
+  .legal { margin: 18px 12px 0; text-align: center; color: var(--ink-2); font-size: 13px; line-height: 1.45; }
+
+  /* Conversation (colonne de droite) */
+  .pane { background: var(--card); border: 1px solid var(--line); border-radius: 12px; min-height: 620px; display: flex; flex-direction: column; }
+  .pane-head { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 2px 12px; padding: 22px 28px 18px; border-bottom: 1px solid var(--line); }
+  .pane-head .ic { grid-row: span 3; width: 32px; height: 32px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line-2); display: grid; place-items: center; color: var(--gold); }
+  .pane-head .ic svg { width: 16px; height: 16px; }
+  .pane-head .from { font-size: 14.5px; }
+  .pane-head .date { font-size: 14.5px; white-space: nowrap; }
+  .pane-head h2 { grid-column: 2 / 4; margin: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+  .pane-head .meta { grid-column: 2 / 4; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+  .back { display: none; border: 0; background: none; color: var(--blue); font-weight: 700; padding: 0; margin: 0 0 12px; font-size: 14px; }
+  .pane-body { flex: 1; padding: 22px 28px; }
+  .empty { flex: 1; display: grid; place-items: center; text-align: center; padding: 40px 24px; color: var(--muted); }
+  .empty svg { width: 54px; height: 54px; color: var(--navy); }
+  .empty h2 { color: var(--ink); margin: 12px 0 4px; font-size: 18px; }
+  .empty p { margin: 0 auto 16px; max-width: 42ch; font-size: 14px; }
+
+  .thread { display: flex; flex-direction: column; gap: 10px; max-height: 56vh; overflow-y: auto; padding: 2px; }
+  .bubble { max-width: 82%; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; line-height: 1.5; }
+  .bubble small { display: block; color: var(--muted); font-size: 11.5px; margin-bottom: 3px; white-space: normal; }
+  .bubble.them { align-self: flex-start; background: var(--soft); }
+  .bubble.me { align-self: flex-end; background: #221d12; border: 1px solid #3a2f18; }
+  .bubble.system { align-self: center; background: none; color: var(--muted); font-size: 12.5px; text-align: center; padding: 2px 8px; }
+  .reply { border-top: 1px solid var(--line); padding: 16px 28px 22px; }
+  .reply .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+  .reply .bar > div { display: flex; gap: 8px; flex-wrap: wrap; }
+  .closed-box { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; background: var(--soft); border-radius: 12px; padding: 14px 16px; }
+  .closed-box .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line-2); display: grid; place-items: center; color: var(--gold); }
+  .closed-box .ic svg { width: 18px; height: 18px; }
+  .closed-box b { display: block; font-size: 14.5px; }
+  .closed-box small { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; }
+  .safety { background: var(--warn-bg); color: #f3e3b0; border: 1px solid #5a4515; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin: 0 0 6px; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
+
+  /* Pièces jointes */
+  .sa-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .sa-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px dashed var(--line-2); border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--gold); cursor: pointer; background: var(--soft); margin: 0; }
+  .sa-btn svg { width: 15px; height: 15px; }
+  .sa-list { display: contents; }
+  .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 10px; border-radius: 99px; background: var(--soft); font-size: 12px; }
+  .sa-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+  .sa-chip.busy { opacity: .6; } .sa-chip.busy::after { content: "envoi…"; font-size: 11px; color: var(--muted); margin-right: 4px; }
+  .sa-chip button { all: unset; cursor: pointer; padding: 0 6px; font-size: 16px; line-height: 1; color: var(--muted); }
+  .sa-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; white-space: normal; }
+  .sa-files img { width: 128px; height: 96px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: var(--soft); }
+  .sa-doc { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 8px; background: var(--soft); color: var(--ink) !important; font-size: 12px; text-decoration: none; border: 1px solid var(--line-2); max-width: 220px; }
+  .sa-doc b { font-size: 10px; padding: 2px 5px; border-radius: 4px; background: var(--red); color: #fff; }
+  .sa-doc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sa-zoom { position: fixed; inset: 0; z-index: 90; background: rgba(5, 4, 3, .9); display: grid; place-items: center; padding: 16px; cursor: zoom-out; }
+  .sa-zoom div { display: grid; justify-items: center; }
+  .sa-zoom img { max-width: 94vw; max-height: 82vh; border-radius: 8px; }
+  .sa-zoom a { margin-top: 10px; color: #fff; font-size: 14px; font-weight: 600; }
+
+  /* ---------- Tablette et téléphone : une colonne, la liste puis la conversation ---------- */
+  @media (max-width: 860px) {
+    .top .in { padding: 0 16px; height: 54px; gap: 10px; }
+    .top .brand span { display: none; }
+    .top nav a { padding: 6px 9px; font-size: 13.5px; }
+    main { padding: 16px 16px 40px; }
+    .page-head { margin-bottom: 12px; }
+    .page-head h1 { font-size: 22px; }
+    .need { display: none; }
+    .split { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .split.reading .side { display: none; }
+    .split:not(.reading) .pane { display: none; }
+    .back { display: block; }
+    .conv { padding: 12px 12px; background: var(--card); border-radius: 14px; }
+    .pane { min-height: 0; }
+    .pane-head { padding: 16px 16px 14px; }
+    .pane-body { padding: 16px; }
+    .reply { padding: 14px 16px 16px; }
+    .thread { max-height: none; }
+    .bubble { max-width: 90%; font-size: 14px; }
+    .reply .bar { flex-direction: column; align-items: stretch; }
+    .closed-box { grid-template-columns: auto minmax(0, 1fr); }
+    .closed-box .btn { grid-column: 1 / -1; }
+    .reply .bar .btn { flex: 1; }
+    .sa-files img { width: 104px; height: 78px; }
+  }
+
+  /* ================= Monde « pochette de rumba » (voir DESIGN.md), comme l'accueil et le wallet =================
+     Angles de 2 px et filets ; seul le point « non lu » reste rond. Titres en police d'affichage. */
+  .top { background: rgba(13, 12, 10, .96); border-bottom: 1px solid var(--line); }
+  .top::after { display: none; }
+  .top .in, main { max-width: 1520px; padding-left: clamp(16px, 4vw, 56px); padding-right: clamp(16px, 4vw, 56px); }
+  .top .in { height: 68px; }
+  .top .brand img { box-shadow: none; border-radius: 0; }
+  .top .brand span { color: var(--ink-2); font-weight: 600; }
+  .top nav a { border-radius: 0; padding: 8px 4px; margin-left: 18px; }
+  .top nav a:hover { background: none; color: #ebcb84; }
+  main { padding-top: 40px; }
+  .page-head { margin-bottom: 28px; }
+  .page-head h1 { font-size: clamp(32px, 3vw, 44px); letter-spacing: -.03em; }
+  .count { border-radius: 2px; font-family: var(--font-sans); font-size: 13px; }
+  .need a { color: #ebcb84; }
+  .btn { border-radius: 2px; min-height: 44px; padding: 0 18px; }
+  .btn:hover { filter: none; background: #ebcb84; }
+  .btn.light { background: transparent; border: 1px solid var(--line-2); }
+  .btn.light:hover { background: var(--soft); border-color: var(--navy); }
+  input, select, textarea { border: 1px solid var(--line-2); border-radius: 2px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .pill, .toast, .safety { border-radius: 2px; }
+
+  /* la liste des conversations : des lignes filetées, comme une liste de titres */
+  .inbox { gap: 0; border-top: 1px solid var(--line-2); }
+  .conv { border: 1px solid transparent; border-bottom-color: var(--line); border-radius: 0; padding: 16px 14px; }
+  .conv:hover { background: var(--soft); }
+  .conv.sel { background: var(--soft); border-color: var(--gold); }
+  .conv .ic, .pane-head .ic, .closed-box .ic { border-radius: 2px; }
+  .conv b { font-size: 16px; }
+  .legal { text-align: left; margin: 18px 0 0; color: var(--muted); }
+
+  /* la conversation */
+  .pane { border-radius: 2px; }
+  .pane-head h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .empty h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .empty svg { color: var(--gold); }
+  .bubble { border-radius: 2px; }
+  .bubble.them { background: var(--soft); border: 1px solid var(--line-2); }
+  .bubble.me { background: #1d180e; border: 1px solid var(--navy); }
+  .closed-box { border-radius: 2px; border: 1px solid var(--line-2); background: transparent; }
+  .sa-btn, .sa-chip, .sa-doc, .sa-doc b, .sa-files img, .sa-zoom img { border-radius: 2px; }
+  @media (max-width: 860px) {
+    .top .in { height: 60px; }
+    .top nav a { margin-left: 12px; }
+    main { padding-top: 20px; }
+    .conv { background: transparent; border-radius: 0; }
+  }
+  /* téléphone compact */
+  @media (max-width: 560px) {
+    .top .in { height: 54px; }
+    .top .brand img { height: 24px; }
+    .top nav a { font-size: 13px; margin-left: 10px; }
+    main { padding-top: 14px; }
+    .page-head { margin-bottom: 14px; }
+    .page-head h1 { font-size: 26px; }
+    .btn { min-height: 40px; font-size: 13.5px; padding: 0 14px; }
+    .conv { padding: 12px 10px; }
+    .conv b { font-size: 15px; }
+    .pane-head h2 { font-size: 18px; }
+    .empty h2 { font-size: 19px; }
+    .bubble { font-size: 13.5px; padding: 8px 11px; }
+  }
+</style>
+<style>
+  /* Litiges : mêmes composants que le centre de messages, plus le choix du motif et les actions du litige */
+  .role { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
+  .reasons { display: grid; gap: 8px; margin-top: 6px; }
+  .reason { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: start; padding: 14px; border: 1px solid var(--line-2); border-radius: 2px; cursor: pointer; margin: 0; font-weight: 400; color: var(--ink); }
+  .reason input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--gold); grid-row: span 2; }
+  .reason b { font-size: 15px; }
+  .reason small { color: var(--muted); font-size: 13px; }
+  .reason:has(input:checked) { border-color: var(--gold); background: var(--soft); }
+  .buy { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 2px; margin-bottom: 6px; }
+  .buy b { font-size: 16px; } .buy .amt { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--gold); text-align: right; }
+  .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .acts .note { flex-basis: 100%; color: var(--muted); font-size: 13px; margin: 0; }
+  .pin-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pin-row input { width: 140px; }
+  .outcome { border: 1px solid var(--line-2); border-radius: 2px; padding: 14px 16px; margin-bottom: 12px; font-size: 14px; }
+  .outcome b { display: block; font-size: 15px; margin-bottom: 4px; }
+  @media (max-width: 560px) { .top nav a.opt { display: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <a class="brand" href="/app"><img src="/assets/logo.png" alt="Pay243"><span>Litiges</span></a>
+    <nav aria-label="Navigation">
+      <a href="/legal#protection" class="opt">Protection des achats</a>
+      <a href="/messages">Messages</a>
+      <a href="/app" data-member hidden>Mon wallet</a>
+      <a href="/app?next=%2Flitiges" data-guest>Se connecter</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <h1>Litiges</h1>
+    <div class="right">
+      <span class="need">Un achat qui pose problème ? <a href="/legal#protection">Comment fonctionne la Protection des achats</a></span>
+    </div>
+  </div>
+
+  <div class="split" id="split">
+    <div class="side">
+      <ul class="inbox" id="inbox"></ul>
+      <p class="legal">Pour ouvrir un litige, touchez un paiement dans l'historique de votre wallet, puis « Signaler un problème avec cet achat ». Un litige se signale dans les 180 jours qui suivent le paiement.</p>
+    </div>
+
+    <section class="pane" id="pane" aria-live="polite">
+      <div class="empty" id="v-guest" hidden><div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        <h2>Connectez-vous pour voir vos litiges</h2>
+        <p>Signalez un achat non reçu ou non conforme et suivez son règlement.</p>
+        <a class="btn" id="login-link" href="/app?next=%2Flitiges">Se connecter</a>
+      </div></div>
+
+      <div class="empty" id="v-empty" hidden><div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        <h2 id="empty-title">Sélectionnez un litige</h2>
+        <p id="empty-text">La conversation avec le vendeur ou l'acheteur s'affiche ici. Vous êtes aussi prévenu par email.</p>
+        <a class="btn light" href="/app">Retour au wallet</a>
+      </div></div>
+
+      <!-- Nouveau litige -->
+      <div id="v-new" hidden>
+        <div class="pane-head">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg></div>
+          <div class="from"><button class="back" type="button" data-back>← Litiges</button>Protection des achats</div><div></div>
+          <h2>Signaler un problème avec un achat</h2>
+        </div>
+        <div class="pane-body">
+          <div class="buy" id="n-buy"></div>
+          <form id="f-new">
+            <label>Quel est le problème ?</label>
+            <div class="reasons">
+              <label class="reason"><input type="radio" name="reason" value="not_received" required><b>Je n'ai pas reçu ma commande</b><small>Le vendeur ne vous a rien livré.</small></label>
+              <label class="reason"><input type="radio" name="reason" value="not_as_described"><b>L'article ne correspond pas à sa description</b><small>Article différent, contrefaçon, état mal décrit, pièces manquantes, endommagé à la livraison…</small></label>
+            </div>
+            <label for="n-amount">Montant contesté</label>
+            <input id="n-amount" name="amount" inputmode="decimal" required>
+            <label for="n-msg">Votre message au vendeur</label>
+            <textarea id="n-msg" name="message" rows="5" maxlength="2000" required placeholder="Expliquez ce qui s'est passé : date de commande, ce que vous avez reçu, ce que vous attendez du vendeur…"></textarea>
+            <p class="hint">Le vendeur est prévenu et le montant contesté est retenu sur son compte pendant le litige. Essayez d'abord de vous entendre avec lui ; sans accord, vous pourrez demander à Pay243 d'examiner le dossier.</p>
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn">Ouvrir le litige</button><a class="btn light" href="/app">Annuler</a></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Un litige -->
+      <div id="v-thread" hidden style="display:flex;flex-direction:column;flex:1">
+        <div class="pane-head">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg></div>
+          <div class="from"><button class="back" type="button" data-back>← Litiges</button><span id="t-with"></span></div><div class="date" id="t-date"></div>
+          <h2 id="t-title"></h2>
+          <div class="meta" id="t-meta"></div>
+        </div>
+        <div class="pane-body"><div class="thread" id="t-msgs"></div></div>
+        <div class="reply">
+          <div id="t-outcome"></div>
+          <div class="acts" id="t-acts"></div>
+          <form id="f-reply">
+            <textarea name="message" rows="3" maxlength="2000" placeholder="Votre message…"></textarea>
+            <div class="bar"><span class="hint" style="margin:0">Pay243 ne vous demandera jamais votre PIN ni un code de vérification.</span><div><button class="btn">Envoyer</button></div></div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let TOKEN = null; let ME = null;
+try { TOKEN = sessionStorage.getItem('pay243_token'); } catch {}
+
+function toast(msg, err) {
+  $$('.toast').forEach((x) => x.remove());
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' bad' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (r.status === 401 && !/pin/i.test(j.error?.code || '')) { TOKEN = null; ME = null; try { sessionStorage.removeItem('pay243_token'); } catch {} showGuest(); }
+    throw Object.assign(new Error(j.error?.message || 'Erreur réseau'), { code: j.error?.code });
+  }
+  return j;
+}
+async function busy(btn, fn) { if (btn) btn.disabled = true; try { await fn(); } catch (e) { toast(e.message, true); } finally { if (btn) btn.disabled = false; } }
+const fmt = (minor, cur) => (cur === 'USD'
+  ? (minor / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $'
+  : (minor / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' FC').replace(/ /g, ' ');
+const tz = () => ME?.timezone || undefined;
+const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { timeZone: tz(), dateStyle: 'short', timeStyle: 'short' }); } catch { return new Date(iso).toLocaleString('fr-FR'); } };
+const shortDate = (iso) => { try { return new Date(iso).toLocaleDateString('fr-FR', { timeZone: tz(), day: 'numeric', month: 'short' }); } catch { return ''; } };
+
+const STATUS = {
+  open: ['Conversation avec le vendeur', 'warn'], claim: ['Examiné par Pay243', 'warn'],
+  won_buyer: ['Acheteur remboursé', 'ok'], won_seller: ['Clos en faveur du vendeur', ''], closed: ['Clos', ''],
+};
+const pill = (s) => `<span class="pill ${STATUS[s]?.[1] || ''}">${esc(STATUS[s]?.[0] || s)}</span>`;
+const ACTIVE = ['open', 'claim'];
+const S = { list: [], open: null, view: 'empty', newPay: null };
+
+function show(v) {
+  S.view = v;
+  ['guest', 'empty', 'new', 'thread'].forEach((x) => { $('#v-' + x).hidden = x !== v; });
+  $('#v-thread').style.display = v === 'thread' ? 'flex' : 'none';
+  $('#split').classList.toggle('reading', v === 'new' || v === 'thread');
+  if (v !== 'thread') S.open = null;
+  renderInbox();
+}
+function showGuest() {
+  $$('[data-guest]').forEach((e) => { e.hidden = false; });
+  $$('[data-member]').forEach((e) => { e.hidden = true; });
+  $('#login-link').href = '/app?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
+  S.list = []; show('guest');
+}
+
+function renderInbox() {
+  const el = $('#inbox');
+  if (!ME) { el.innerHTML = ''; return; }
+  el.innerHTML = S.list.length ? S.list.map((d) => `<li><button type="button" class="conv ${S.open === d.id ? 'sel' : ''} ${ACTIVE.includes(d.status) ? '' : 'closed'}" data-dsp="${esc(d.id)}">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg></span>
+      <b>${esc(d.payment?.description || 'Achat')}</b><span class="date">${esc(shortDate(d.updated_at))}</span>
+      <span class="line"><span><span class="role">${d.role === 'buyer' ? 'Achat' : 'Vente'}</span> · ${esc(fmt(d.amount, d.currency))} · ${esc(STATUS[d.status]?.[0] || d.status)}</span></span>
+    </button></li>`).join('')
+    : '<li class="none">Aucun litige. Tant mieux ! Si un achat pose problème, ouvrez-le depuis l\'historique de votre wallet.</li>';
+  $$('[data-dsp]', el).forEach((b) => b.onclick = () => openDispute(b.dataset.dsp).catch((e) => toast(e.message, true)));
+}
+async function loadList() { S.list = (await api('GET', '/v1/disputes')).data; renderInbox(); }
+
+// ---------------- Un litige ----------------
+async function openDispute(id) {
+  const d = await api('GET', '/v1/disputes/' + encodeURIComponent(id));
+  S.open = d.id; history.replaceState(null, '', '/litiges#' + d.id);
+  const buyer = d.role === 'buyer';
+  $('#t-with').textContent = buyer ? `Vendeur : ${d.merchant_name || ''}` : `Acheteur : ${d.buyer_name || ''}`;
+  $('#t-date').textContent = when(d.created_at);
+  $('#t-title').textContent = d.payment?.description || 'Achat';
+  $('#t-meta').innerHTML = `${pill(d.status)} <span class="pill">${esc(d.reason_label)}</span> <span class="pill">${esc(fmt(d.amount, d.currency))} contestés</span>`
+    + (!buyer && ACTIVE.includes(d.status) && d.held_amount ? ` <span class="pill warn">${esc(fmt(d.held_amount, d.currency))} retenus sur votre compte</span>` : '');
+  const mine = (m) => (buyer && m.author === 'buyer') || (!buyer && m.author === 'seller');
+  const who = (m) => m.author === 'staff' ? (m.author_name || 'Équipe Pay243') : m.author === 'buyer' ? (buyer ? 'Vous' : `Acheteur · ${d.buyer_name || ''}`) : (buyer ? `Vendeur · ${d.merchant_name || ''}` : 'Vous');
+  $('#t-msgs').innerHTML = d.messages.map((m) => m.author === 'system'
+    ? `<div class="bubble system">${esc(m.body)} · ${esc(when(m.created_at))}</div>`
+    : `<div class="bubble ${mine(m) ? 'me' : 'them'}"><small>${esc(who(m))} · ${esc(when(m.created_at))}</small>${esc(m.body)}</div>`).join('');
+  const active = ACTIVE.includes(d.status);
+  $('#f-reply').hidden = !active;
+  $('#t-outcome').innerHTML = active ? '' : `<div class="outcome"><b>${esc(STATUS[d.status]?.[0] || 'Clos')}</b>${d.refunded_amount ? `${esc(fmt(d.refunded_amount, d.currency))} remboursés sur le wallet Pay243 de l'acheteur.` : 'Aucun remboursement.'}</div>`;
+  let acts = '';
+  if (buyer && d.status === 'open') acts = `<button class="btn" type="button" id="a-escalate">Demander l'intervention de Pay243</button><button class="btn light" type="button" id="a-close">Retirer mon litige</button>
+    <p class="note">Sans accord avec le vendeur, demandez l'intervention de Pay243 dans les 20 jours qui suivent l'ouverture du litige ; passé ce délai, il est clos automatiquement.</p>`;
+  if (buyer && d.status === 'claim') acts = `<button class="btn light" type="button" id="a-close">Retirer mon litige</button><p class="note">Notre équipe examine le dossier. Répondez à ses questions ici : sans réponse, la réclamation peut être rejetée.</p>`;
+  if (!buyer && active) acts = `<div class="pin-row"><input id="a-pin" type="password" inputmode="numeric" maxlength="6" placeholder="Votre PIN" aria-label="Votre PIN"><button class="btn" type="button" id="a-refund">Rembourser ${esc(fmt(d.amount, d.currency))} à l'acheteur</button></div>
+    <p class="note">Le remboursement est pris sur le montant retenu et clôt le litige. Vous pouvez aussi répondre à l'acheteur et joindre vos preuves (preuve de livraison, description de l'article).</p>`;
+  $('#t-acts').innerHTML = acts;
+  $('#a-escalate')?.addEventListener('click', (e) => busy(e.target, async () => { await api('POST', `/v1/disputes/${d.id}/escalate`); toast('Votre litige est transmis à Pay243.'); await refresh(d.id); }));
+  $('#a-close')?.addEventListener('click', (e) => { if (confirm('Retirer ce litige ? Le montant retenu sera rendu au vendeur.')) busy(e.target, async () => { await api('POST', `/v1/disputes/${d.id}/close`); toast('Litige retiré.'); await refresh(d.id); }); });
+  $('#a-refund')?.addEventListener('click', (e) => busy(e.target, async () => {
+    const pin = $('#a-pin').value.trim();
+    if (!pin) { $('#a-pin').focus(); throw new Error('Saisissez votre PIN pour confirmer le remboursement.'); }
+    await api('POST', `/v1/disputes/${d.id}/refund`, { pin }); toast('Acheteur remboursé, litige clos.'); await refresh(d.id);
+  }));
+  show('thread');
+  const t = $('#t-msgs'); t.scrollTop = t.scrollHeight;
+}
+async function refresh(id) { await loadList(); await openDispute(id); }
+
+$('#f-reply').onsubmit = (e) => {
+  e.preventDefault();
+  const f = e.target; const message = f.message.value.trim();
+  if (!message) return;
+  busy($('button', f), async () => { await api('POST', `/v1/disputes/${S.open}/messages`, { message }); f.reset(); await refresh(S.open); });
+};
+
+// ---------------- Nouveau litige (depuis l'historique du wallet : /litiges?new=<paiement>&txn=<opération>) ----------------
+async function startNew(paymentId, txnId) {
+  const existing = S.list.find((d) => d.payment_id === paymentId && ACTIVE.includes(d.status) && d.role === 'buyer');
+  if (existing) return openDispute(existing.id);
+  let t = null;
+  if (txnId) { try { t = await api('GET', '/v1/transactions/' + encodeURIComponent(txnId)); } catch {} }
+  S.newPay = { id: paymentId, currency: t?.currency || 'USD', amount: t?.amount || null };
+  $('#n-buy').innerHTML = t ? `<div><b>${esc(t.description || 'Achat')}</b><div class="muted">${esc(t.counterparty || '')} · ${esc(when(t.created_at))}</div></div><div class="amt">${esc(fmt(t.amount, t.currency))}</div>` : '<div><b>Achat</b></div>';
+  $('#n-amount').value = t ? (t.amount / 100).toLocaleString('fr-FR', { minimumFractionDigits: t.currency === 'USD' ? 2 : 0 }).replace(/\s/g, '') : '';
+  show('new');
+}
+$('#f-new').onsubmit = (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const amount = Math.round(Number(String(f.amount.value).replace(/\s/g, '').replace(',', '.')) * 100);
+  if (!(amount > 0)) return toast('Indiquez le montant contesté.', true);
+  busy($('button', f), async () => {
+    const d = await api('POST', '/v1/disputes', { payment_id: S.newPay.id, reason: f.reason.value, amount, message: f.message.value });
+    toast('Litige ouvert : le vendeur est prévenu.');
+    f.reset(); await loadList(); await openDispute(d.id);
+  });
+};
+
+$$('[data-back]').forEach((b) => b.onclick = () => { history.replaceState(null, '', '/litiges'); show('empty'); });
+
+(async () => {
+  if (!TOKEN) { showGuest(); return; }
+  try {
+    ME = (await api('GET', '/v1/me')).user;
+    $$('[data-guest]').forEach((e) => { e.hidden = true; });
+    $$('[data-member]').forEach((e) => { e.hidden = false; });
+    await loadList();
+    const p = new URLSearchParams(location.search);
+    if (p.get('new')) { await startNew(p.get('new'), p.get('txn')); return; }
+    const id = location.hash.slice(1);
+    if (id && S.list.some((d) => d.id === id)) { await openDispute(id); return; }
+    $('#empty-title').textContent = S.list.length ? 'Sélectionnez un litige' : 'Aucun litige';
+    show('empty');
+  } catch (e) { if (!ME) showGuest(); else toast(e.message, true); }
+})();
+</script>
+<script type="module" src="/assets/pull-refresh.js"></script>
+</body>
+</html>

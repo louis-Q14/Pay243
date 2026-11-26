@@ -164,6 +164,7 @@
   <a href="/app" aria-label="Pay243, mon wallet"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
   <nav class="hd-links">
     <a href="/app#merchant">Espace marchand</a>
+    <a href="/litiges">Litiges</a>
     <a href="/app" class="hide-sm">Mon wallet</a>
     <button id="logout" type="button">Déconnexion</button>
   </nav>
@@ -262,7 +263,7 @@ const FEE = { commission: 'Commission', protection: 'Frais de protection', fixed
 const feeLabel = (k) => FEE[k] || k.replace(/_/g, ' ');
 const toMinor = (v) => Math.round(parseFloat(String(v).replace(/[\s  ]/g, '').replace(',', '.')) * 100);
 const decStr = (minor) => (minor / 100).toFixed(2).replace('.', ',').replace(/,00$/, '');
-const TXN_TYPE = { payment: 'Encaissement', refund: 'Remboursement', payout: 'Versement' };
+const TXN_TYPE = { payment: 'Encaissement', refund: 'Remboursement', payout: 'Versement', dispute_hold: 'Retenue (litige)', dispute_release: 'Fin de retenue (litige)' };
 const pill = (s) => `<span class="pill ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
 const methodOf = (method, operator) => method === 'mobile_money' ? (OPS[operator] || 'Mobile Money') : method === 'card' ? 'Carte bancaire' : method === 'wallet' ? 'Wallet Pay243' : '—';
 const refsHtml = (refs) => refs?.length ? `<div class="refs">${refs.map((r) => `<span class="ref">${esc(r)}</span>`).join('')}</div>` : '<span class="ref none">N° de vente non rattaché</span>';
@@ -303,7 +304,7 @@ function setupFilters() {
     ? '<option value="">Tous les moyens</option><option value="wallet">Wallet Pay243</option><option value="mobile_money">Mobile Money</option><option value="card">Carte bancaire</option>'
     : '<option value="">Toutes les sorties</option><option value="refund">Remboursements clients</option><option value="payout">Versements des ventes</option>';
   $('#thead').innerHTML = S.view === 'in'
-    ? '<tr><th>N° de vente · Référence</th><th>Description</th><th>Payeur</th><th>Moyen</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Commission</th><th class="num">Net</th><th class="num" title="Net encaissé moins la part des vendeurs">Revenu</th></tr>'
+    ? '<tr><th>N° de vente · Référence</th><th>Description</th><th>Payeur</th><th>Moyen</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num" title="Commission 2,5 % + protection des achats">Frais Pay243</th><th class="num">Net</th><th class="num" title="Net encaissé moins la part des vendeurs">Revenu</th></tr>'
     : '<tr><th>Type · Référence</th><th>Paiement lié</th><th>Destination</th><th>Statut</th><th>Date</th><th class="num">Montant</th><th class="num">Frais</th><th class="num">Total débité</th></tr>';
 }
 
@@ -316,7 +317,7 @@ async function loadSummary() {
   const rate = c.attempts.success_rate == null ? '—' : Math.round(c.attempts.success_rate * 100) + ' %';
   $('#kpis').innerHTML = `
     <div class="kpi main"><small>Solde disponible</small><div class="v">${fmt(c.balance, cur)}</div><div class="s">Ventes non encore versées</div></div>
-    <div class="kpi"><small>Encaissé net</small><div class="v">${fmt(c.received.net, cur)}</div><div class="s">${fmt(c.received.gross, cur)} brut · ${fmt(c.received.fees, cur)} de commission</div></div>
+    <div class="kpi"><small>Encaissé net</small><div class="v">${fmt(c.received.net, cur)}</div><div class="s">${fmt(c.received.gross, cur)} brut · ${fmt(c.received.fees, cur)} de frais Pay243</div></div>
     <div class="kpi"><small>Paiements réussis</small><div class="v">${c.received.count.toLocaleString('fr-FR')}</div><div class="s">Taux de réussite ${rate} · ${c.attempts.failed} échoué${c.attempts.failed > 1 ? 's' : ''}, ${c.attempts.abandoned} abandonné${c.attempts.abandoned > 1 ? 's' : ''}</div></div>
     <div class="kpi"><small>Sorties</small><div class="v">${fmt(c.outflows.total, cur)}</div><div class="s">${fmt(c.outflows.payouts_wallet.amount + c.outflows.payouts_mobile_money.amount, cur)} versés · ${fmt(c.outflows.refunds.amount, cur)} remboursés${c.outflows.pending ? ` · ${c.outflows.pending} en attente` : ''}</div></div>
     <div class="kpi"><small>En attente de paiement</small><div class="v">${c.open.count.toLocaleString('fr-FR')}</div><div class="s">${fmt(c.open.amount, cur)} en liens ouverts</div></div>`;
@@ -563,7 +564,7 @@ async function openPayment(id) {
     ])}</section>
     <section><h4>Montants</h4>${kv([
       ['Montant payé', fmt(x.amount, c)],
-      ['Commission Pay243', x.net == null ? null : '−' + fmt(x.fee, c)],
+      ['Frais Pay243 (commission + protection des achats)', x.net == null ? null : '−' + fmt(x.fee, c)],
       ['Net encaissé', x.net == null ? null : `<b>${fmt(x.net, c)}</b>`],
       ['Remboursé', x.refunded_amount ? `<span class="neg">−${fmt(x.refunded_amount, c)}</span>` : null],
       ['Net après remb.', x.refunded_amount ? `<b>${fmt(x.net_after_refunds, c)}</b>` : null],
@@ -611,7 +612,7 @@ function splitHtml(x) {
     ${kv([
       ['Payé par l\'acheteur', fmt(x.amount, c)],
       ['Frais ajoutés', sp.extra ? `${fmt(sp.extra, c)} <span class="muted">(payés par l'acheteur)</span>` : null],
-      ['Commission Pay243', '−' + fmt(sp.pay243_fee, c)],
+      ['Frais Pay243 (commission + protection des achats)', '−' + fmt(sp.pay243_fee, c)],
       ['Remboursé', x.refunded_amount ? `<span class="neg">−${fmt(x.refunded_amount, c)}</span>` : null],
       ['Part des vendeurs', `−${fmt(sp.seller_total, c)}${sp.seller_due ? ` <span class="pill reserved">${fmt(sp.seller_due, c)} réservés</span>` : ''}`],
       ['Revenu plateforme', sp.platform_net == null ? null : `<b class="credit">${fmt(sp.platform_net, c)}</b>`],

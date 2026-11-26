@@ -4,7 +4,8 @@ import { isUniqueViolation, q, tx } from '../db.js';
 import { accountWallet } from '../accounts.js';
 import { verifyPin } from '../auth.js';
 import { createTxn, getWallet, lockWallet, move, systemWallet } from '../ledger.js';
-import { HttpError, assertAmount, newId, now } from '../util.js';
+import { HttpError, assertAmount, formatMoney, newId, now } from '../util.js';
+import { appUrl, notifyUser } from './notify.js';
 
 export const REASONS = { not_received: 'Objet non reçu', not_as_described: 'Ne correspond pas à la description' };
 const OPEN_DAYS = 180; // délai pour signaler un litige, à compter du paiement
@@ -77,6 +78,20 @@ export async function postMessage(user, id, text) {
   return disputeFor(user, d.id);
 }
 
+/** Emails aux parties (catégorie « compte » : toujours envoyés, un litige engage de l'argent). */
+async function tell(d, who, subject, paragraphs) {
+  const user = who === 'buyer'
+    ? await q.get('SELECT * FROM users WHERE id=?', d.user_id)
+    : await q.get('SELECT u.* FROM users u JOIN merchants m ON m.owner_user_id = u.id WHERE m.id=?', d.merchant_id);
+  if (!user) return;
+  const p = await q.get('SELECT description FROM payments WHERE id=?', d.payment_id);
+  notifyUser(user, 'account', subject, paragraphs[0], {
+    title: subject, paragraphs,
+    details: [['Achat', p?.description || d.payment_id], ['Montant contesté', formatMoney(Number(d.amount), d.currency)], ['Motif', REASONS[d.reason]]],
+    cta: { label: 'Voir le litige', url: appUrl(`/litiges#${d.id}`) },
+  });
+}
+
 const systemNote = (id, body, ts = now()) => q.run('INSERT INTO dispute_messages (id, dispute_id, author, body, created_at) VALUES (?,?,?,?,?)', newId('dmsg'), id, 'system', body, ts);
 
 /** L'acheteur remonte le litige à Pay243 quand il n'a pas trouvé d'accord avec le vendeur. */
@@ -92,6 +107,7 @@ export async function escalateDispute(user, id) {
   const ts = now();
   await q.run("UPDATE disputes SET status='claim', escalated_at=?, updated_at=? WHERE id=? AND status='open'", ts, ts, d.id);
   await systemNote(d.id, 'Litige remonté à Pay243 : notre équipe examine le dossier et pourra demander des justificatifs.', ts);
+  await tell(d, 'seller', 'Litige remonté à Pay243', ['L\'acheteur a demandé à Pay243 d\'examiner le litige ouvert sur votre vente.', 'Répondez dans la conversation et joignez vos preuves (preuve de livraison, description de l\'article) : notre équipe en tiendra compte pour sa décision.']);
   return disputeFor(user, d.id);
 }
 
@@ -156,7 +172,16 @@ export async function decideDispute(id, winner, note, actor) {
       winner === 'buyer' ? 'won_buyer' : 'won_seller', refunded, text.slice(0, 1000), actor, ts, ts, d.id);
     await systemNote(d.id, `Décision de Pay243 ${DECISION_LABELS[winner]} : ${text.slice(0, 1000)}`, ts);
   });
-  return getDispute(id);
+  const d = await getDispute(id);
+  const amount = formatMoney(Number(d.refunded_amount), d.currency);
+  if (winner === 'buyer') {
+    await tell(d, 'buyer', `Vous êtes remboursé : ${amount}`, [`Pay243 a examiné votre litige et vous donne raison. ${amount} ont été crédités sur votre wallet Pay243.`, `Motif de la décision : ${text}`]);
+    await tell(d, 'seller', 'Décision sur un litige : acheteur remboursé', [`Pay243 a examiné le litige et donné raison à l'acheteur, qui a été remboursé de ${amount} sur le montant retenu.`, `Motif de la décision : ${text}`]);
+  } else {
+    await tell(d, 'buyer', 'Décision sur votre litige', ['Pay243 a examiné votre litige et ne peut pas vous rembourser au titre de la Protection des achats.', `Motif de la décision : ${text}`, 'Si vous avez de nouvelles preuves, écrivez au support depuis le centre de messages.']);
+    await tell(d, 'seller', 'Décision sur un litige : en votre faveur', ['Pay243 a examiné le litige et vous donne raison : le montant retenu est revenu sur votre compte.', `Motif de la décision : ${text}`]);
+  }
+  return d;
 }
 
 /** Le vendeur rembourse l'acheteur depuis la conversation (PIN exigé) : le litige est clos. */
@@ -174,6 +199,9 @@ export async function sellerRefund(user, id, pin) {
       refunded, 'Remboursé par le vendeur', ts, ts, d.id);
     await systemNote(d.id, 'Le vendeur a remboursé l\'acheteur : le litige est clos.', ts);
   });
+  const done = await getDispute(id);
+  const amount = formatMoney(Number(done.refunded_amount), done.currency);
+  await tell(done, 'buyer', `Vous êtes remboursé : ${amount}`, [`Le vendeur vous a remboursé ${amount} sur votre wallet Pay243 : le litige est clos.`]);
   return disputeFor(user, id);
 }
 
@@ -268,5 +296,10 @@ export async function openDispute(user, body = {}) {
     if (isUniqueViolation(e)) throw new HttpError(409, 'dispute_exists', 'Un litige est déjà ouvert sur cet achat.');
     throw e;
   }
-  return getDispute(id);
+  const d = await getDispute(id);
+  await tell(d, 'seller', 'Un client a ouvert un litige', [
+    `Un client signale un problème sur une vente : ${REASONS[d.reason].toLowerCase()}.`,
+    `${formatMoney(Number(d.held_amount), d.currency)} sont retenus sur votre compte jusqu'à la fin du litige. Répondez au client dans la conversation : la plupart des litiges se règlent à l'amiable, ou par un remboursement.`,
+  ]);
+  return d;
 }

@@ -294,7 +294,7 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const dt = (s) => (s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
 const fmt = (minor, cur) => (minor == null ? '—' : (Number(minor) / 100).toLocaleString('fr-FR', { minimumFractionDigits: cur === 'USD' ? 2 : 0, maximumFractionDigits: 2 }).replace(/ /g, ' ') + (cur === 'USD' ? ' $' : ' FC')); // espace insécable lisible entre les milliers
-const TYPE = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement' };
+const TYPE = { topup: 'Recharge', transfer: 'Transfert', payment: 'Paiement', refund: 'Remboursement', withdrawal: 'Retrait', conversion: 'Conversion', payout: 'Versement', dispute_hold: 'Retenue (litige)', dispute_release: 'Fin de retenue (litige)' };
 const STATUS = { succeeded: 'Réussi', pending: 'En attente', failed: 'Échoué', processing: 'En cours', refunded: 'Remboursé', partially_refunded: 'Remb. partiel', canceled: 'Annulé', expired: 'Expiré', active: 'Actif', suspended: 'Suspendu', closed: 'Fermé', approved: 'Validée', rejected: 'Refusée' };
 const pill = (st) => `<span class="pill ${esc(st)}">${esc(STATUS[st] || st)}</span>`;
 let TOKEN = null; let ME = null; let PENDING = null; const blobs = [];
@@ -394,6 +394,7 @@ const IC = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   audit: '<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/>',
   support: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
+  disputes: '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
 };
 const SECTIONS = [
   { id: 'dashboard', label: 'Tableau de bord', perm: 'dashboard.view', render: renderDashboard },
@@ -404,6 +405,7 @@ const SECTIONS = [
   { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants },
   { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
   { id: 'support', label: 'Support', perm: 'support.view', render: renderSupport },
+  { id: 'disputes', label: 'Litiges', perm: 'support.view', render: renderDisputes },
   { id: 'recon', label: 'Rapprochement', perm: 'recon.view', render: renderRecon },
   { id: 'staff', label: 'Équipe', perm: 'staff.view', render: renderStaff },
   { id: 'settings', label: 'Paramètres', perm: 'settings.view', render: renderSettings },
@@ -432,6 +434,7 @@ async function start() {
   $('#nav').innerHTML = SECTIONS.filter((s) => can(s.perm)).map((s) => `<button data-go="${s.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s.id]}</svg>${s.label}<span class="count" data-count="${s.id}" hidden></span></button>`).join('');
   $$('#nav button').forEach((b) => b.onclick = () => go(b.dataset.go));
   if (can('support.view')) api('GET', '/support/summary').then((s) => badge('support', s.open)).catch(() => {});
+  if (can('support.view')) api('GET', '/disputes?status=claim').then((r) => badge('disputes', r.data.length)).catch(() => {});
   if (can('merchants.view')) api('GET', '/merchants?access=requested').then((r) => badge('merchants', r.summary.requested)).catch(() => {});
   if (can('transactions.view')) api('GET', '/bank-withdrawals?status=pending').then((r) => badge('bank', r.data.length)).catch(() => {});
   go(location.hash.slice(1) || 'dashboard');
@@ -950,6 +953,48 @@ async function renderBankWithdrawals() {
     const w = find(b.dataset.reject);
     const v = await dialog({ title: 'Rejeter ce virement ?', text: `${fmt(w.amount + w.fee, w.currency)} (frais compris) reviennent sur le compte Pay243 du client, qui reçoit le motif par email.`, fields: [reasonField()], confirm: 'Rejeter', danger: true });
     if (v) run(b, async () => { await api('POST', `/bank-withdrawals/${w.id}/reject`, v); toast('Virement rejeté, fonds rendus au client.'); await renderBankWithdrawals(); });
+  });
+}
+
+// =====================================================================
+//  Litiges : Protection des achats (réclamations remontées par les acheteurs)
+// =====================================================================
+let DS_STATUS = 'claim';
+const DS_LABEL = { claim: 'À trancher', open: 'Avec le vendeur', won_buyer: 'Acheteur remboursé', won_seller: 'Vendeur gagnant', closed: 'Clos' };
+async function renderDisputes() {
+  $('#view').innerHTML = `
+    <div class="card"><div class="toolbar" style="margin:0">${Object.entries(DS_LABEL).map(([k, l]) => `<button class="btn ${k === DS_STATUS ? '' : 'light'} sm" data-ds="${k}">${l}</button>`).join('')}</div>
+      <p class="muted" style="margin:12px 0 0">Protection des achats : sans accord avec le vendeur, l'acheteur remonte le litige à Pay243. Lisez la conversation, demandez des justificatifs si besoin (preuve de livraison, photos), puis tranchez. Rembourser l'acheteur prend le montant retenu chez le vendeur, puis son solde, puis le fonds de protection.</p></div>
+    <div class="card tbl" id="ds-list"><p class="muted">Chargement…</p></div><div id="ds-detail"></div>`;
+  $$('[data-ds]').forEach((b) => b.onclick = () => { DS_STATUS = b.dataset.ds; renderDisputes().catch((e) => toast(e.message, true)); });
+  const r = await api('GET', '/disputes?status=' + DS_STATUS);
+  if (DS_STATUS === 'claim') badge('disputes', r.data.length);
+  $('#ds-list').innerHTML = r.data.length ? `<table><thead><tr><th>Litige</th><th>Acheteur</th><th>Marchand</th><th>Achat</th><th class="num">Contesté</th><th></th></tr></thead><tbody>${r.data.map((d) => `<tr>
+      <td><span class="pill">${esc(DS_LABEL[d.status] || d.status)}</span><div class="muted">${dt(d.updated_at)}</div><div class="muted mono">${esc(d.id)}</div></td>
+      <td><b>${esc(d.buyer_name || '—')}</b></td><td>${esc(d.merchant_name || '—')}</td>
+      <td>${esc(d.payment?.description || '—')}<div class="muted">${esc(d.reason_label)}</div></td>
+      <td class="num"><b>${fmt(d.amount, d.currency)}</b><div class="muted">retenu ${fmt(d.held_amount, d.currency)}</div></td>
+      <td class="num"><button class="btn light sm" data-dsopen="${esc(d.id)}">Ouvrir</button></td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucun litige.</p>';
+  $$('[data-dsopen]').forEach((b) => b.onclick = () => openDisputeAdmin(b.dataset.dsopen).catch((e) => toast(e.message, true)));
+}
+async function openDisputeAdmin(id) {
+  const d = await api('GET', '/disputes/' + encodeURIComponent(id));
+  const active = ['open', 'claim'].includes(d.status);
+  const who = (m) => m.author === 'buyer' ? `Acheteur · ${d.buyer_name || ''}` : m.author === 'seller' ? `Vendeur · ${d.merchant_name || ''}` : m.author === 'staff' ? (m.author_name || 'Équipe Pay243') : 'Pay243';
+  $('#ds-detail').innerHTML = `<div class="card"><h3 style="margin:0 0 4px">${esc(d.payment?.description || 'Achat')} · ${fmt(d.amount, d.currency)}</h3>
+    <p class="muted" style="margin:0 0 12px">${esc(d.reason_label)} · acheteur ${esc(d.buyer_name || '')} · marchand ${esc(d.merchant_name || '')} · payé le ${dt(d.payment?.paid_at)}${d.outcome_note ? ` · décision : ${esc(d.outcome_note)}` : ''}</p>
+    <div style="display:grid;gap:8px;max-height:50vh;overflow:auto">${d.messages.map((m) => `<div style="border:1px solid var(--line);padding:10px 12px;border-radius:2px"><div class="muted">${esc(who(m))} · ${dt(m.created_at)}</div><div style="white-space:pre-wrap">${esc(m.body)}</div></div>`).join('')}</div>
+    ${active && can('support.reply') ? `<form id="ds-msg" style="margin-top:12px"><textarea name="message" required minlength="5" placeholder="Écrire aux deux parties (demande de justificatif…)"></textarea>
+      <div class="toolbar" style="margin:8px 0 0"><button class="btn light sm">Envoyer</button><span style="flex:1"></span><button type="button" class="btn ok sm" data-win="buyer">Rembourser l'acheteur</button><button type="button" class="btn danger sm" data-win="seller">Donner raison au vendeur</button></div></form>` : ''}</div>`;
+  $('#ds-detail').scrollIntoView({ behavior: 'smooth' });
+  const f = $('#ds-msg');
+  if (f) f.onsubmit = (e) => { e.preventDefault(); run($('button', f), async () => { await api('POST', `/disputes/${d.id}/messages`, { message: f.message.value }); await openDisputeAdmin(d.id); }); };
+  $$('[data-win]').forEach((b) => b.onclick = async () => {
+    const buyer = b.dataset.win === 'buyer';
+    const v = await dialog({ title: buyer ? `Rembourser ${fmt(d.amount, d.currency)} à l'acheteur ?` : 'Donner raison au vendeur ?',
+      text: buyer ? 'L’acheteur est crédité sur son wallet Pay243. La décision est définitive et envoyée aux deux parties.' : 'La retenue revient au vendeur. La décision est définitive et envoyée aux deux parties.',
+      fields: [{ name: 'note', label: 'Motif de la décision (envoyé aux deux parties)', type: 'textarea', required: true }], confirm: buyer ? 'Rembourser' : 'Donner raison au vendeur', danger: !buyer });
+    if (v) run(b, async () => { await api('POST', `/disputes/${d.id}/decide`, { winner: b.dataset.win, note: v.note }); toast('Décision enregistrée, les deux parties sont prévenues.'); await renderDisputes(); });
   });
 }
 
