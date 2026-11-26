@@ -33,9 +33,17 @@ async function register(body) {
     body.business = { rccm: `CD/KNG/RCCM/24-B-9${String(seq).padStart(4, '0')}`, address: '1, avenue du Port, Gombe', city: 'Kinshasa', phone: '0812345678', email: `contact${seq}@kinelectro.cd` };
   }
   const otp = await api('POST', '/v1/auth/otp', { body: { email, purpose: 'register' } });
-  const r = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', ...body, email, otp_code: otp.body.sandbox_code } });
+  seq += 1;
+  if (body.business) Object.assign(body.business, { fax: '0812345679', website: 'www.kinelectro.cd' });
+  const security_questions = [['birth_city', 'Goma'], ['first_school', 'Lycée Wima'], ['mother_maiden', 'Mbuyi']].map(([question, answer]) => ({ question, answer, answer_confirm: answer }));
+  const emergency_contact = { full_name: 'Contact Urgence', address: '1, avenue de la Paix, Kinshasa', phone: `08990000${String(seq).padStart(2, '0')}`, email: `urgence${seq}@proche.cd`, relation: 'Parent' };
+  const r = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', phone: `08980000${String(seq).padStart(2, '0')}`, security_questions, emergency_contact, ...body, email, otp_code: otp.body.sandbox_code } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   await q.run('UPDATE users SET activated_at=? WHERE id=?', new Date().toISOString(), r.body.user.id);
+  if (body.account_type === 'business') {
+    const up = await fetch(`${base}/v1/me/business-document`, { method: 'POST', headers: { Authorization: `Bearer ${r.body.token}`, 'Content-Type': 'application/pdf' }, body: Buffer.from('%PDF-1.4\n%%EOF\n') });
+    assert.equal(up.status, 201, 'document RCCM envoyé');
+  }
   return r.body;
 }
 

@@ -9,6 +9,7 @@ import { accessOf, createMerchantAccount } from '../services/merchants.js';
 import { appUrl, mergePrefs, notifyUser } from '../services/notify.js';
 import { HttpError, newId, normalizeEmail, normalizePhone, now } from '../util.js';
 import { serializeUser } from './auth.js';
+import { BUSINESS_DOCUMENT_TYPES, missingOf, parseEmergencyContact, parseSecurityQuestions, saveBusinessDocument } from '../services/accountSecurity.js';
 
 // =====================================================================
 //  Paramètres du compte : profil, coordonnées, adresses, sécurité,
@@ -17,6 +18,44 @@ import { serializeUser } from './auth.js';
 // =====================================================================
 export const settingsRouter = Router();
 settingsRouter.use('/me', requireUser);
+
+/**
+ * Questions de sécurité, contact d'urgence (et téléphone s'il manque) : à l'inscription pour les nouveaux comptes,
+ * ici pour compléter un ancien compte ou les mettre à jour. Mot de passe exigé.
+ */
+settingsRouter.put('/me/security', async (req, res) => {
+  const u = req.user;
+  const b = req.body || {};
+  await checkPassword(u, b.password);
+  const fields = {};
+  if (b.phone !== undefined || !u.phone) {
+    if (!String(b.phone || '').trim()) throw new HttpError(400, 'phone_required', 'Numéro Mobile Money obligatoire.');
+    const p = normalizePhone(b.phone);
+    const owner = await q.get('SELECT id FROM users WHERE phone=?', p);
+    if (owner && owner.id !== u.id) throw new HttpError(409, 'phone_taken', 'Ce numéro est déjà associé à un autre compte.');
+    if (p !== u.phone) fields.phone = p;
+  }
+  if (b.security_questions !== undefined || !u.security_questions) fields.security_questions = await parseSecurityQuestions(b.security_questions);
+  if (b.emergency_contact !== undefined || !u.emergency_contact) fields.emergency_contact = parseEmergencyContact(b.emergency_contact, { email: u.email, phone: fields.phone || u.phone });
+  if (!Object.keys(fields).length) throw new HttpError(400, 'nothing_to_update', 'Aucune modification.');
+  const cols = Object.keys(fields);
+  try {
+    await q.run(`UPDATE users SET ${cols.map((c) => `${c}=?`).join(',')} WHERE id=?`, ...cols.map((c) => fields[c]), u.id);
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new HttpError(409, 'phone_taken', 'Ce numéro est déjà associé à un autre compte.');
+    throw err;
+  }
+  if (fields.security_questions) {
+    notifyUser(u, 'security', 'Vos questions de sécurité Pay243 ont été enregistrées', 'Les questions de sécurité de votre compte viennent d’être enregistrées : elles vous seront demandées pour réinitialiser votre mot de passe.');
+  }
+  const fresh = await reload(u.id);
+  res.json({ user: serializeUser(fresh), missing: missingOf(fresh) });
+});
+
+/** Document RCCM (comptes entreprise) : corps brut PDF ou image, 5 Mo maximum, stocké chiffré. */
+settingsRouter.post('/me/business-document', rateLimit({ name: 'business_document', max: 20 }),
+  express.raw({ type: BUSINESS_DOCUMENT_TYPES, limit: 5 * 1024 * 1024 }),
+  async (req, res) => res.status(201).json(await saveBusinessDocument(req.user, req.body)));
 const sensitive = rateLimit({ name: 'settings_sensitive', max: 20 });
 const otpLimiter = rateLimit({ name: 'settings_otp', max: 10 });
 

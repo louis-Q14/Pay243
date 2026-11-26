@@ -26,9 +26,13 @@ async function api(method, path, { token, body } = {}) {
 const as = (key) => (method, path, body) => api(method, `/v1/admin${path}`, { token: key, body });
 const admin = as(ADMIN_KEY); const support = as(SUPPORT_KEY);
 
+let seq = 0;
 async function register(full_name, email, extra = {}) {
+  seq += 1;
   const otp = await api('POST', '/v1/auth/otp', { body: { email, purpose: 'register' } });
-  const r = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', full_name, email, password: 'motdepasse5', pin: '4826', device_id: `dev-${email}-0000000`, ...extra, otp_code: otp.body.sandbox_code } });
+  const security_questions = [['birth_city', 'Goma'], ['first_school', 'Lycée Wima'], ['mother_maiden', 'Mbuyi']].map(([question, answer]) => ({ question, answer, answer_confirm: answer }));
+  const emergency_contact = { full_name: 'Contact Urgence', address: '1, avenue de la Paix, Kinshasa', phone: `08990000${String(seq).padStart(2, '0')}`, email: `urgence${seq}@proche.cd`, relation: 'Parent' };
+  const r = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', full_name, email, password: 'motdepasse5', pin: '4826', device_id: `dev-${email}-0000000`, phone: `08980000${String(seq).padStart(2, '0')}`, security_questions, emergency_contact, ...extra, otp_code: otp.body.sandbox_code } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   await q.run('UPDATE users SET activated_at=? WHERE id=?', new Date().toISOString(), r.body.user.id);
   return r.body;

@@ -15,10 +15,14 @@ import { startBankWithdrawal } from '../services/bankWithdrawals.js';
 import { appUrl, notifyUser } from '../services/notify.js';
 import { HttpError, assertAmount, assertCurrency, formatMoney, isEmail, newId, normalizeEmail, normalizePhone, now, percentFee } from '../util.js';
 
+import { requireComplete } from '../services/accountSecurity.js';
+
 export const walletRouter = Router();
 walletRouter.use(['/wallets', '/transactions', '/topups', '/transfers', '/withdrawals', '/conversions', '/cards'], requireUser);
 // Aucune opération d'argent avant l'activation du compte (identité validée par l'équipe).
 walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], requireActivated);
+// … ni avant d'avoir complété les informations obligatoires (comptes inscrits avant ces règles).
+walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], requireComplete);
 // Débit maximal par utilisateur : freine l'automatisation (demandes USSD en rafale vers des numéros tiers, essais de PIN).
 walletRouter.use(['/topups', '/transfers', '/withdrawals', '/conversions'], rateLimit({
   name: 'money', max: config.rateLimits.money, keyOf: (req) => req.user.id,

@@ -584,4 +584,25 @@ CREATE TABLE user_notes (
 CREATE INDEX idx_user_notes_user ON user_notes (user_id, created_at);
 `,
   },
+  {
+    version: 17,
+    name: 'sécurité du compte : questions de sécurité, contact d\'urgence, document RCCM des entreprises',
+    // security_questions : JSON [{question, hash}] (réponses hachées) ; emergency_contact : JSON ;
+    // business_document_at : date d'envoi du document RCCM (comptes entreprise), fichier chiffré dans business_documents.
+    sql: `
+ALTER TABLE users ADD COLUMN security_questions TEXT;
+ALTER TABLE users ADD COLUMN emergency_contact TEXT;
+ALTER TABLE users ADD COLUMN business_document_at TEXT;
+CREATE TABLE business_documents (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  kind TEXT NOT NULL CHECK (kind IN ('rccm')),
+  storage_key TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_business_documents_user ON business_documents (user_id, created_at);
+`,
+  },
 ];

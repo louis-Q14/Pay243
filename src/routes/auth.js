@@ -1,11 +1,12 @@
 import { Router } from 'express';
+import { answersMatch, missingOf, parseEmergencyContact, parseSecurityQuestions, questionsOf } from '../services/accountSecurity.js';
 import { assertNewPassword, assertNewPin, hashSecret, requireUser, signToken, verificationStatus, verifySecret } from '../auth.js';
 import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
 import { getWallet } from '../ledger.js';
 import { describeLimits } from '../limits.js';
 import { rateLimit } from '../middleware.js';
-import { isTrustedDevice, issueOtp, normalizeDeviceId, trustDevice, verifyOtp } from '../otp.js';
+import { burnOtpAttempt, checkOtp, isTrustedDevice, issueOtp, normalizeDeviceId, trustDevice, verifyOtp } from '../otp.js';
 import { createMerchantAccount, parseBusinessProfile, rccmTaken } from '../services/merchants.js';
 import { appUrl, notificationPrefs, notifyUser } from '../services/notify.js';
 import { HttpError, detectOperator, isEmail, newId, normalizeEmail, normalizePhone, now } from '../util.js';
@@ -47,6 +48,7 @@ export function serializeUser(u) {
     nationality: u.nationality || 'CD',
     notifications: notificationPrefs(u),
     kyc_level: u.kyc_level,
+    missing: missingOf(u), // informations obligatoires à compléter (téléphone, questions de sécurité, contact d'urgence, RCCM)
     created_at: u.created_at,
   };
 }
@@ -82,7 +84,8 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
     throw new HttpError(400, 'invalid_account_type', 'Choisissez un type de compte : "personal" (particulier) ou "business" (entreprise).');
   }
   const e = normalizeEmail(email);
-  const p = phone ? normalizePhone(phone) : null;
+  if (await q.get('SELECT id FROM users WHERE email=?', e)) throw emailTaken();
+  const p = String(phone || '').trim() ? normalizePhone(phone) : null;
   const nameLen = String(full_name || '').trim().length;
   if (nameLen < 3 || nameLen > 80) throw new HttpError(400, 'invalid_name', 'Nom complet requis (3 à 80 caractères).');
   const bizLen = String(business_name || '').trim().length;
@@ -93,6 +96,9 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
   if (profile && await q.get('SELECT id FROM merchants WHERE rccm=?', profile.rccm)) throw rccmTaken();
   assertNewPassword(password);
   assertNewPin(pin);
+  if (!p) throw new HttpError(400, 'phone_required', 'Numéro Mobile Money obligatoire.');
+  const securityQuestions = await parseSecurityQuestions(req.body.security_questions);
+  const emergencyContact = parseEmergencyContact(req.body.emergency_contact, { email: e, phone: p });
   if (await q.get('SELECT id FROM users WHERE email=?', e)) throw emailTaken();
   if (p && await q.get('SELECT id FROM users WHERE phone=?', p)) throw phoneTaken();
   const deviceHash = normalizeDeviceId(device_id);
@@ -102,9 +108,9 @@ authRouter.post('/auth/register', limiter, async (req, res) => {
   let merchant = null;
   try {
     merchant = await tx(async () => {
-      await q.run(`INSERT INTO users (id, account_type, email, email_verified_at, phone, full_name, password_hash, pin_hash, created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?)`,
-      id, account_type, e, now(), p, String(full_name).trim(), passwordHash, pinHash, now());
+      await q.run(`INSERT INTO users (id, account_type, email, email_verified_at, phone, full_name, password_hash, pin_hash, security_questions, emergency_contact, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      id, account_type, e, now(), p, String(full_name).trim(), passwordHash, pinHash, securityQuestions, emergencyContact, now());
       await getWallet('user', id, 'CDF');
       await getWallet('user', id, 'USD');
       await trustDevice(id, deviceHash, device_label);
@@ -190,7 +196,16 @@ authRouter.post('/auth/password/forgot', otpLimiter, async (req, res) => {
   res.json({ sent: true, email: e, expires_in: config.otp.ttlSeconds, channel: 'email', ...(sent?.sandbox_code ? { sandbox_code: sent.sandbox_code } : {}) });
 });
 
-/** Étape 2 : nouveau mot de passe. Toutes les sessions ouvertes sont fermées ; cet appareil devient de confiance. */
+/** Étape 2 : le code reçu par email est vérifié (sans être consommé) ; on affiche les questions de sécurité du client. */
+authRouter.post('/auth/password/verify', limiter, accountLimiter('reset_account'), async (req, res) => {
+  const e = normalizeEmail(req.body?.email);
+  const user = await q.get("SELECT * FROM users WHERE email=? AND status='active'", e);
+  if (!user) throw new HttpError(400, 'invalid_otp', 'Code incorrect ou expiré. Demandez un nouveau code.');
+  await checkOtp(e, 'password_reset', req.body?.otp_code);
+  res.json({ questions: questionsOf(user) });
+});
+
+/** Étape 3 : nouveau mot de passe. Toutes les sessions ouvertes sont fermées ; cet appareil devient de confiance. */
 authRouter.post('/auth/password/reset', limiter, accountLimiter('reset_account'), async (req, res) => {
   const { otp_code, new_password, device_id, device_label } = req.body || {};
   const e = normalizeEmail(req.body?.email);
@@ -198,6 +213,12 @@ authRouter.post('/auth/password/reset', limiter, accountLimiter('reset_account')
   const user = await q.get("SELECT * FROM users WHERE email=? AND status='active'", e);
   if (!user) throw new HttpError(400, 'invalid_otp', 'Code incorrect ou expiré. Demandez un nouveau code.');
   const deviceHash = normalizeDeviceId(device_id);
+  // Le code email ET les réponses aux questions de sécurité : une mauvaise réponse compte comme un essai du code.
+  const otpRow = await checkOtp(e, 'password_reset', otp_code);
+  if (!(await answersMatch(user, req.body?.answers))) {
+    const left = await burnOtpAttempt(otpRow);
+    throw new HttpError(400, 'security_answers_invalid', `Réponses de sécurité incorrectes. Essais restants : ${left}.`);
+  }
   await verifyOtp(e, 'password_reset', otp_code);
   await q.run('UPDATE users SET password_hash=?, sessions_valid_after=? WHERE id=?', await hashSecret(new_password), Date.now(), user.id);
   await trustDevice(user.id, deviceHash, device_label);

@@ -54,7 +54,12 @@ const emailOf = (name) => `${name.toLowerCase().normalize('NFD').replace(/[^a-z]
 /** Inscription en deux étapes : code envoyé par email (exposé en sandbox) puis création du compte. */
 /** Par défaut, le compte est considéré comme validé par l'équipe (activate: false pour tester un compte non activé). */
 let rccmSeq = 0;
-const businessOf = (name) => ({ rccm: `CD/KNG/RCCM/24-B-${String(++rccmSeq).padStart(5, '0')}`, address: '12, avenue du Commerce, Gombe', city: 'Kinshasa', phone: '0812345678', email: `contact${rccmSeq}@${String(name || 'entreprise').toLowerCase().replace(/[^a-z]/g, '')}.cd` });
+const businessOf = (name) => ({ rccm: `CD/KNG/RCCM/24-B-${String(++rccmSeq).padStart(5, '0')}`, address: '12, avenue du Commerce, Gombe', city: 'Kinshasa', phone: '0812345678', email: `contact${rccmSeq}@${String(name || 'entreprise').toLowerCase().replace(/[^a-z]/g, '')}.cd`, fax: '0812345679', website: 'www.entreprise.cd' });
+// Informations désormais obligatoires à l'inscription : téléphone, 3 questions de sécurité, contact d'urgence (+ RCCM pour une entreprise).
+let phoneSeq = 0;
+const SECURITY = [['birth_city', 'Kinshasa'], ['first_school', 'Lycée Wima'], ['mother_maiden', 'Mbuyi']].map(([question, answer]) => ({ question, answer, answer_confirm: answer }));
+const emergencyOf = (n) => ({ full_name: 'Contact Urgence', address: '1, avenue de la Paix, Kinshasa', phone: `0899${String(n).padStart(6, '0')}`, email: `urgence${n}@proche.cd`, relation: 'Parent' });
+const RCCM_PDF = Buffer.from('%PDF-1.4\n%%EOF\n');
 
 /** Espace marchand activé par l'équipe (back-office), puis clé API de test, comme un titulaire après activation. */
 async function openMerchant(token, { direct = false } = {}) {
@@ -69,6 +74,10 @@ async function openMerchant(token, { direct = false } = {}) {
 
 async function register({ activate = true, ...body }) {
   if (body.account_type === 'business' && body.business === undefined) body.business = businessOf(body.business_name);
+  phoneSeq += 1;
+  if (body.phone === undefined) body.phone = `0898${String(phoneSeq).padStart(6, '0')}`;
+  if (body.security_questions === undefined) body.security_questions = SECURITY;
+  if (body.emergency_contact === undefined) body.emergency_contact = emergencyOf(phoneSeq);
   const email = body.email || emailOf(body.full_name);
   const otp = await api('POST', '/v1/auth/otp', { body: { email, purpose: 'register' } });
   assert.equal(otp.status, 201, JSON.stringify(otp.body));
@@ -76,6 +85,10 @@ async function register({ activate = true, ...body }) {
   assert.match(otp.body.sandbox_code, /^\d{6}$/);
   const r = await api('POST', '/v1/auth/register', { body: { account_type: 'personal', ...body, email, otp_code: otp.body.sandbox_code } });
   if (activate && r.status === 201) await q.run('UPDATE users SET activated_at=? WHERE id=?', new Date().toISOString(), r.body.user.id);
+  if (r.status === 201 && body.account_type === 'business') {
+    const up = await fetch(`${base}/v1/me/business-document`, { method: 'POST', headers: { Authorization: `Bearer ${r.body.token}`, 'Content-Type': 'application/pdf' }, body: RCCM_PDF });
+    assert.equal(up.status, 201, 'document RCCM envoyé');
+  }
   return r;
 }
 
@@ -148,7 +161,7 @@ test('type de compte obligatoire, email valide exigé', async () => {
   assert.equal(biz.body.error.code, 'invalid_business_name');
 });
 
-test('compte entreprise : RCCM, adresse et contact obligatoires, site web facultatif', async () => {
+test('compte entreprise : RCCM, adresse, contact, fax et site web obligatoires', async () => {
   const base = { account_type: 'business', business_name: 'Kin Bureautique', full_name: 'Aline Ngalula', password: 'motdepasse8', pin: '6402' };
   const without = await register({ ...base, email: 'sans.rccm@kinbureau.cd', business: { ...businessOf('x'), rccm: '' } });
   assert.equal(without.body.error.code, 'invalid_rccm');
@@ -175,7 +188,7 @@ test('compte entreprise : espace marchand non activé par défaut, activé sur d
   const r = await register({ account_type: 'business', email: 'contact@kinmode.cd', business_name: 'Kin Mode SARL', full_name: 'Mamie Lukusa', password: 'motdepasse7', pin: '6291' });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   assert.equal(r.body.user.account_type, 'business');
-  assert.equal(r.body.user.phone, null); // téléphone facultatif
+  assert.match(r.body.user.phone, /^\+243\d{9}$/); // téléphone obligatoire
   assert.equal(r.body.merchant.name, 'Kin Mode SARL');
   assert.equal(r.body.merchant.secret_key, undefined); // plus de clé API à l'inscription
   assert.equal(r.body.merchant.access.status, 'none');
@@ -233,14 +246,12 @@ test('connexion par email ; numéro Mobile Money demandé seulement quand il man
   assert.equal(ok.status, 200);
   const wrong = await api('POST', '/v1/auth/login', { body: { identifier: 'contact@kinmode.cd', password: 'mauvais-mdp' } });
   assert.equal(wrong.body.error.code, 'invalid_credentials');
-  const noPhone = await api('POST', '/v1/topups', { token: state.bizToken, body: { amount: 1000, currency: 'CDF' } });
-  assert.equal(noPhone.body.error.code, 'missing_phone');
   const withPhone = await api('POST', '/v1/topups', { token: state.bizToken, body: { amount: 1000, currency: 'CDF', phone: '0821234500' } });
   assert.equal(withPhone.status, 202);
 });
 
 test('OTP : inscription refusée sans code valide, essais limités, renvoi temporisé', async () => {
-  const body = { account_type: 'personal', email: 'jeanne.kabila@test.cd', full_name: 'Jeanne Kabila', password: 'motdepasse3', pin: '4826' };
+  const body = { account_type: 'personal', email: 'jeanne.kabila@test.cd', full_name: 'Jeanne Kabila', password: 'motdepasse3', pin: '4826', phone: '0987770001', security_questions: SECURITY, emergency_contact: emergencyOf(9001) };
   const none = await api('POST', '/v1/auth/register', { body });
   assert.equal(none.status, 400);
   assert.equal(none.body.error.code, 'invalid_otp');
@@ -461,7 +472,7 @@ test('marchand : création, paiement via wallet, webhook signé, remboursement',
   assert.equal((await api('POST', '/v1/merchants', { token: state.alice, body: { name: 'Boutique Kin Mode' } })).body.error.code, 'business_only');
   assert.equal((await api('POST', '/v1/merchants/me/access-request', { token: state.alice })).body.error.code, 'business_only');
   const aliceId = (await api('GET', '/v1/me', { token: state.alice })).body.user.id;
-  await q.run("UPDATE users SET account_type='business' WHERE id=?", aliceId);
+  await q.run("UPDATE users SET account_type='business', business_document_at=? WHERE id=?", new Date().toISOString(), aliceId); // document RCCM reçu
   const m = await api('POST', '/v1/merchants', { token: state.alice, body: { name: 'Boutique Kin Mode', webhook_url: hookUrl } });
   assert.equal(m.status, 201, JSON.stringify(m.body));
   assert.equal(m.body.secret_key, undefined);
@@ -1604,6 +1615,10 @@ test('paramètres : notifications, relevé CSV, export, passage en entreprise, f
   assert.equal(biz.body.merchant.access.status, 'none'); // l'espace marchand s'active sur demande
   const again = await api('POST', '/v1/me/business', { token: tok, body: { business_name: 'Sarah Couture' } });
   assert.equal(again.body.merchant.secret_key, undefined); // pas de second marchand
+  // Passée en entreprise, Sarah doit envoyer son document RCCM avant toute nouvelle opération
+  assert.deepEqual((await api('GET', '/v1/me', { token: tok })).body.user.missing, ['rccm_document']);
+  const doc = await fetch(`${base}/v1/me/business-document`, { method: 'POST', headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/pdf' }, body: RCCM_PDF });
+  assert.equal(doc.status, 201);
 
   // Fermeture refusée tant qu'il reste de l'argent
   await api('POST', '/v1/transfers', { token: state.bob, body: { to: '@sarah.mwamba', amount: 250, currency: 'USD', pin: '9137' } });
@@ -1669,7 +1684,8 @@ test('mot de passe oublié : code par email, sessions fermées, aucune fuite d\'
   assert.match(outbox.at(-1).subject, /réinitialisation/);
   assert.equal((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: '000000', new_password: 'nouveau-mdp-9' } })).body.error.code, 'invalid_otp');
   assert.equal((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'court' } })).body.error.code, 'weak_password');
-  const r = await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'nouveau-mdp-9', device_id: 'nadia-phone-000000001' } });
+  const answers = SECURITY.map(({ question, answer }) => ({ question, answer })); // code email + questions de sécurité
+  const r = await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'nouveau-mdp-9', device_id: 'nadia-phone-000000001', answers } });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal((await api('GET', '/v1/me', { token: state.nadia })).status, 401); // ancienne session fermée
   assert.equal((await api('GET', '/v1/me', { token: r.body.token })).status, 200);
@@ -1677,7 +1693,7 @@ test('mot de passe oublié : code par email, sessions fermées, aucune fuite d\'
   assert.equal((await api('POST', '/v1/auth/login', { body: { identifier: 'nadia.kasongo@test.cd', password: 'nouveau-mdp-9', device_id: 'nadia-phone-000000001' } })).status, 200);
   assert.match(outbox.filter((m) => m.to === 'nadia.kasongo@test.cd').at(-1).subject, /réinitialisé/);
   // Le code ne sert qu'une fois
-  assert.notEqual((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'encore-un-mdp' } })).status, 200);
+  assert.notEqual((await api('POST', '/v1/auth/password/reset', { body: { email: 'nadia.kasongo@test.cd', otp_code: f.body.sandbox_code, new_password: 'encore-un-mdp', answers } })).status, 200);
 });
 
 test('codes jamais renvoyés par l\'API quand un vrai fournisseur envoie les messages', async () => {

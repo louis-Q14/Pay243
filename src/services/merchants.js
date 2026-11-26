@@ -38,9 +38,11 @@ export function parseBusinessProfile(input) {
   const email = text(b.email, 160).toLowerCase();
   if (!EMAIL_RE.test(email)) throw bad('invalid_business_email', "Adresse email de l'entreprise invalide.");
   const fax = text(b.fax, 25) || null;
-  if (fax && !PHONE_RE.test(fax)) throw bad('invalid_business_fax', 'Numéro de fax invalide.');
+  if (!fax) throw bad('fax_required', "Indiquez le numéro de fax de l'entreprise.");
+  if (!PHONE_RE.test(fax)) throw bad('invalid_business_fax', 'Numéro de fax invalide.');
   let website = text(b.website, 200) || null;
-  if (website) {
+  if (!website) throw bad('website_required', "Indiquez le site web de l'entreprise.");
+  {
     if (!/^https?:\/\//i.test(website)) website = `https://${website}`;
     let u;
     try { u = new URL(website); } catch { throw bad('invalid_website', 'Adresse du site web invalide.'); }

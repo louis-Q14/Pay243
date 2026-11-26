@@ -102,6 +102,25 @@ export async function issueOtp(destination, purpose) {
 }
 
 /** Vérifie et consomme le code (consommation atomique : un code ne sert qu'une fois, même en concurrence). */
+/** Vérifie un code sans le consommer (une erreur compte comme un essai). Renvoie la ligne du code. */
+export async function checkOtp(destination, purpose, code) {
+  if (!/^\d{6}$/.test(String(code || ''))) throw new HttpError(400, 'invalid_otp', 'Code de vérification à 6 chiffres requis.');
+  const row = await q.get('SELECT * FROM otp_codes WHERE destination=? AND purpose=? AND consumed_at IS NULL ORDER BY created_at DESC LIMIT 1', destination, purpose);
+  if (!row || row.expires_at < now()) throw new HttpError(400, 'otp_expired', 'Code expiré ou inexistant. Demandez un nouveau code.');
+  if (row.attempts >= config.otp.maxAttempts) throw new HttpError(429, 'otp_locked', "Trop d'essais. Demandez un nouveau code.");
+  if (!safeEqual(row.code_hash, hashCode(destination, purpose, String(code)))) {
+    const { attempts } = await q.get('UPDATE otp_codes SET attempts = attempts + 1 WHERE id=? RETURNING attempts', row.id);
+    throw new HttpError(400, 'invalid_otp', `Code incorrect. Essais restants : ${Math.max(config.otp.maxAttempts - attempts, 0)}.`);
+  }
+  return row;
+}
+
+/** Compte un essai raté sur un code valide (ex. mauvaises réponses de sécurité) ; renvoie les essais restants. */
+export async function burnOtpAttempt(row) {
+  const { attempts } = await q.get('UPDATE otp_codes SET attempts = attempts + 1 WHERE id=? RETURNING attempts', row.id);
+  return Math.max(config.otp.maxAttempts - attempts, 0);
+}
+
 export async function verifyOtp(destination, purpose, code) {
   if (!/^\d{6}$/.test(String(code || ''))) throw new HttpError(400, 'invalid_otp', 'Code de vérification à 6 chiffres requis.');
   const row = await q.get('SELECT * FROM otp_codes WHERE destination=? AND purpose=? AND consumed_at IS NULL ORDER BY created_at DESC LIMIT 1', destination, purpose);
