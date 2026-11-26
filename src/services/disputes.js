@@ -1,5 +1,6 @@
 // Protection des achats Pay243 : litiges entre un acheteur (titulaire d'un compte Pay243) et un marchand.
 // À l'ouverture, le montant contesté est retenu sur le compte du marchand (compte système dispute_hold).
+import { config } from '../config.js';
 import { isUniqueViolation, q, tx } from '../db.js';
 import { accountWallet } from '../accounts.js';
 import { verifyPin } from '../auth.js';
@@ -264,6 +265,7 @@ export async function staffMessage(id, text, staffName) {
 
 /** L'acheteur signale un problème sur un achat payé depuis son compte Pay243. */
 export async function openDispute(user, body = {}) {
+  if (config.fees.protectionEnabled === false) throw new HttpError(409, 'protection_disabled', 'La Protection des achats est suspendue : écrivez au support depuis le centre de messages.');
   const p = await q.get('SELECT * FROM payments WHERE id=?', String(body.payment_id || ''));
   if (!p || p.customer_user_id !== user.id) throw new HttpError(404, 'payment_not_found', 'Achat introuvable.');
   if (!['succeeded', 'partially_refunded'].includes(p.status)) throw new HttpError(409, 'not_disputable', 'Seul un achat payé et non entièrement remboursé peut faire l\'objet d\'un litige.');

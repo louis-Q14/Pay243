@@ -170,7 +170,7 @@ async function claimPayment(p, fields) {
  * Protection des achats : 1,2 % payés par l'acheteur connecté à son compte Pay243, en plus du prix.
  * Un payeur sans compte (Mobile Money ou carte en invité) n'est pas couvert et ne paie rien de plus.
  */
-export const protectionFor = (amount, user) => (user ? percentFee(Number(amount), config.fees.protectionPercent) : 0);
+export const protectionFor = (amount, user) => (user && config.fees.protectionEnabled !== false ? percentFee(Number(amount), config.fees.protectionPercent) : 0);
 
 /**
  * Crédite le marchand (montant du paiement), prélève sa commission, verse la protection payée par l'acheteur

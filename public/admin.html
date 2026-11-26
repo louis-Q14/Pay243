@@ -962,11 +962,22 @@ async function renderBankWithdrawals() {
 let DS_STATUS = 'claim';
 const DS_LABEL = { claim: 'À trancher', open: 'Avec le vendeur', won_buyer: 'Acheteur remboursé', won_seller: 'Vendeur gagnant', closed: 'Clos' };
 async function renderDisputes() {
+  const prot = await api('GET', '/protection');
+  const toggle = can('protection.manage');
   $('#view').innerHTML = `
+    <div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><b>Protection des achats</b> <span class="pill ${prot.enabled ? 'ok' : ''}">${prot.enabled ? 'Activée' : 'Désactivée'}</span>
+      <div class="muted">${prot.enabled ? `L'acheteur connecté paie ${String(prot.percent).replace('.', ',')} % en plus du prix et peut ouvrir un litige.` : 'Aucun frais de protection, aucun nouveau litige. Les litiges déjà ouverts continuent.'}${toggle ? '' : ' Seul un administrateur peut changer ce réglage.'}</div></div>
+      ${toggle ? `<button class="btn ${prot.enabled ? 'danger' : 'ok'} sm" id="prot-toggle">${prot.enabled ? 'Désactiver' : 'Activer'}</button>` : ''}</div>
     <div class="card"><div class="toolbar" style="margin:0">${Object.entries(DS_LABEL).map(([k, l]) => `<button class="btn ${k === DS_STATUS ? '' : 'light'} sm" data-ds="${k}">${l}</button>`).join('')}</div>
       <p class="muted" style="margin:12px 0 0">Protection des achats : sans accord avec le vendeur, l'acheteur remonte le litige à Pay243. Lisez la conversation, demandez des justificatifs si besoin (preuve de livraison, photos), puis tranchez. Rembourser l'acheteur prend le montant retenu chez le vendeur, puis son solde, puis le fonds de protection.</p></div>
     <div class="card tbl" id="ds-list"><p class="muted">Chargement…</p></div><div id="ds-detail"></div>`;
   $$('[data-ds]').forEach((b) => b.onclick = () => { DS_STATUS = b.dataset.ds; renderDisputes().catch((e) => toast(e.message, true)); });
+  $('#prot-toggle')?.addEventListener('click', async (e) => {
+    const v = await dialog({ title: prot.enabled ? 'Désactiver la Protection des achats ?' : 'Activer la Protection des achats ?',
+      text: prot.enabled ? 'Les acheteurs ne paieront plus les frais de protection et ne pourront plus ouvrir de litige. Les litiges en cours continuent.' : `Les acheteurs connectés paieront ${String(prot.percent).replace('.', ',')} % en plus du prix et pourront ouvrir un litige.`,
+      confirm: prot.enabled ? 'Désactiver' : 'Activer', danger: prot.enabled });
+    if (v) run(e.target, async () => { await api('PUT', '/protection', { enabled: !prot.enabled }); toast(prot.enabled ? 'Protection des achats désactivée.' : 'Protection des achats activée.'); await renderDisputes(); });
+  });
   const r = await api('GET', '/disputes?status=' + DS_STATUS);
   if (DS_STATUS === 'claim') badge('disputes', r.data.length);
   $('#ds-list').innerHTML = r.data.length ? `<table><thead><tr><th>Litige</th><th>Acheteur</th><th>Marchand</th><th>Achat</th><th class="num">Contesté</th><th></th></tr></thead><tbody>${r.data.map((d) => `<tr>
@@ -1110,7 +1121,7 @@ async function renderSettings() {
   const r = await api('GET', '/settings');
   const manage = can('settings.manage');
   const by = (prefix) => r.data.filter((s) => s.key.startsWith(prefix));
-  const field = (s) => s.key === 'signup.enabled'
+  const field = (s) => typeof s.value === 'boolean'
     ? `<div class="setting"><label class="switch"><input type="checkbox" data-key="${s.key}" ${s.value ? 'checked' : ''} ${manage ? '' : 'disabled'}> ${esc(s.label)}</label><small>${s.overridden ? `Modifié par ${esc(s.updated_by)} le ${dt(s.updated_at)}` : 'Valeur par défaut'}</small></div>`
     : `<div class="setting"><label>${esc(s.label)}</label><div class="row"><input type="number" step="any" data-key="${s.key}" value="${s.value}" ${manage ? '' : 'disabled'}><span class="muted">${esc(s.unit)}</span>${manage && s.overridden ? `<button class="lk" data-reset="${s.key}" title="Revenir à ${s.default}">↺</button>` : ''}</div>
        <small>${s.overridden ? `Modifié par ${esc(s.updated_by)} le ${dt(s.updated_at)} · défaut ${s.default}` : 'Valeur par défaut (variables d’environnement)'}</small></div>`;

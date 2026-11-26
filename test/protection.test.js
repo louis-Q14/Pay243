@@ -7,7 +7,9 @@ process.env.RATE_LIMIT_AUTH = '1000';
 process.env.RATE_LIMIT_OTP = '1000';
 process.env.RATE_LIMIT_MONEY = '1000';
 const ADMIN_KEY = 'adm_test_protection_0123456789abc';
-process.env.ADMIN_KEYS = `litiges:${ADMIN_KEY}`;
+const ADMIN_ROLE_KEY = 'adm_test_role_admin_0123456789abc';
+const SUPPORT_KEY = 'adm_test_role_support_0123456789';
+process.env.ADMIN_KEYS = `litiges:${ADMIN_KEY},chef:${ADMIN_ROLE_KEY}:admin,guichet:${SUPPORT_KEY}:support`;
 
 const { openDb, closeDb, q } = await import('../src/db.js');
 const { createApp } = await import('../src/app.js');
@@ -202,4 +204,24 @@ test('litige : le vendeur est prévenu par email à l’ouverture, les deux part
   await admin('POST', `/disputes/${d.id}/decide`, { winner: 'buyer', note: 'Photos de la montre rayée fournies.' });
   assert.ok(mails().some((m) => m.to === 'esther.kalala@test.cd' && /rembours/i.test(m.subject)), 'l’acheteuse est prévenue de son remboursement');
   assert.ok(mails().some((m) => m.to === 'jean.mukendi@test.cd' && /décision/i.test(m.subject)), 'le vendeur est prévenu de la décision');
+});
+
+test('protection des achats : seul un administrateur l’active ou la désactive ; désactivée, ni frais ni nouveau litige', async () => {
+  const as = (key) => (method, path, body) => api(method, `/v1/admin${path}`, { token: key, body });
+  assert.equal((await as(SUPPORT_KEY)('PUT', '/protection', { enabled: false })).status, 403, 'le support ne peut pas désactiver la Protection des achats');
+  const off = await as(ADMIN_ROLE_KEY)('PUT', '/protection', { enabled: false });
+  assert.equal(off.status, 200, `PUT /v1/admin/protection (src/routes/disputes.js) : ${JSON.stringify(off.body)}`);
+  assert.equal(off.body.enabled, false);
+  assert.equal((await as(SUPPORT_KEY)('GET', '/protection')).body.enabled, false, 'tout le back-office voit l’état de la protection');
+
+  const pay = await api('POST', '/v1/payments', { token: S.sk, body: { amount: 2000, currency: 'USD', description: 'Lampe solaire' } });
+  assert.equal((await api('GET', `/v1/checkout/${pay.body.id}`, { token: S.buyer })).body.customer.protection_fee, 0, 'désactivée : aucun frais annoncé');
+  const b0 = await buyerUsd();
+  assert.equal((await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: S.buyer, body: { method: 'wallet', pin: '6284' } })).status, 200);
+  assert.equal(await buyerUsd(), b0 - 2000, 'désactivée : l’acheteur paie le prix seul');
+  const d = await api('POST', '/v1/disputes', { token: S.buyer, body: { payment_id: pay.body.id, reason: 'not_received', message: 'Rien reçu.' } });
+  assert.equal(d.body.error?.code, 'protection_disabled', 'désactivée : pas de nouveau litige');
+
+  const on = await as(ADMIN_ROLE_KEY)('PUT', '/protection', { enabled: true });
+  assert.equal(on.body.enabled, true);
 });

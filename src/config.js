@@ -46,6 +46,8 @@ export const config = {
     transferPercent: 0, // transferts entre wallets Pay243 gratuits
     // Protection des achats : payée par l'acheteur connecté à son compte, en plus du prix, versée au fonds qui rembourse les acheteurs.
     protectionPercent: Number(env.FEE_PROTECTION_PERCENT || 1.2),
+    // Activable / désactivable à chaud par un administrateur (back-office › Litiges). Désactivée : ni frais, ni nouveau litige.
+    protectionEnabled: env.PROTECTION_ENABLED !== 'false',
   },
 
   // Plafonds par niveau KYC, exprimés en USD (contre-valeur pour le CDF).

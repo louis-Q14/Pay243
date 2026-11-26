@@ -40,6 +40,7 @@ export const PERMISSIONS = {
   'staff.manage': ['admin'], // limité aux rangs inférieurs, voir canManageRole
   'settings.view': ['admin', 'finance', 'auditor'],
   'settings.manage': [], // super administrateur uniquement
+  'protection.manage': ['admin'], // activer / désactiver la Protection des achats (et le super administrateur)
 };
 
 export const permissionsOf = (role) => Object.keys(PERMISSIONS).filter((p) => role === 'super_admin' || PERMISSIONS[p].includes(role));

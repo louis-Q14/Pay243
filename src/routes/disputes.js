@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { requireUser } from '../auth.js';
 import { closeDispute, sellerRefund, decideDispute, disputeFor, disputeForStaff, escalateDispute, listDisputes, listForStaff, openDispute, postMessage, serializeDispute, staffMessage } from '../services/disputes.js';
 import { actorLabel, can, requireStaff } from '../staff.js';
+import { config } from '../config.js';
+import { updatePlatformSettings } from '../services/platformSettings.js';
+import { HttpError } from '../util.js';
 import { logAction } from './admin.js';
 
 // =====================================================================
@@ -42,7 +45,20 @@ disputesRouter.post('/disputes/:id/refund', async (req, res) => {
 //  Back-office : réclamations à trancher (équipe support)
 // =====================================================================
 export const disputesAdminRouter = Router();
-disputesAdminRouter.use('/admin/disputes', requireStaff);
+disputesAdminRouter.use(['/admin/disputes', '/admin/protection'], requireStaff);
+
+const protectionState = () => ({ enabled: config.fees.protectionEnabled !== false, percent: config.fees.protectionPercent });
+
+/** État de la Protection des achats : visible de toute l'équipe. */
+disputesAdminRouter.get('/admin/protection', can('dashboard.view'), (_req, res) => res.json(protectionState()));
+
+/** Activer / désactiver la Protection des achats : administrateur uniquement, journalisé. */
+disputesAdminRouter.put('/admin/protection', can('protection.manage'), async (req, res) => {
+  if (typeof req.body?.enabled !== 'boolean') throw new HttpError(400, 'invalid_setting', 'enabled : true ou false.');
+  const changes = await updatePlatformSettings({ 'protection.enabled': req.body.enabled }, actorLabel(req.admin));
+  await logAction(req, 'protection.toggle', null, { changes });
+  res.json(protectionState());
+});
 
 disputesAdminRouter.get('/admin/disputes', can('support.view'), async (req, res) => {
   res.json({ data: await listForStaff(req.query.status) });

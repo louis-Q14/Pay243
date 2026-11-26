@@ -19,6 +19,7 @@ export const SETTINGS = {
   'fx.usd_to_cdf': { label: 'Taux USD → CDF', unit: 'FC pour 1 $', parse: num(100, 100000), get: () => config.fx.usdToCdf, set: (v) => { config.fx.usdToCdf = v; } },
   'fx.spread_percent': { label: 'Marge de change', unit: '%', parse: num(0, 10), get: () => config.fx.spreadPercent, set: (v) => { config.fx.spreadPercent = v; } },
   'fees.merchant_percent': { label: 'Commission marchands', unit: '%', parse: num(0, 15), get: () => config.fees.merchantPercent, set: (v) => { config.fees.merchantPercent = v; } },
+  'protection.enabled': { label: 'Protection des achats activée', unit: '', parse: bool, get: () => config.fees.protectionEnabled !== false, set: (v) => { config.fees.protectionEnabled = v; } },
   'fees.protection_percent': { label: 'Protection des achats (payée par l\'acheteur)', unit: '%', parse: num(0, 10), get: () => config.fees.protectionPercent, set: (v) => { config.fees.protectionPercent = v; } },
   'fees.withdrawal_percent': { label: 'Frais de retrait Mobile Money', unit: '%', parse: num(0, 10), get: () => config.fees.withdrawalPercent, set: (v) => { config.fees.withdrawalPercent = v; } },
   ...Object.fromEntries([1, 2, 3].flatMap((lvl) => [

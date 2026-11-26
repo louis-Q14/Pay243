@@ -42,7 +42,7 @@ walletRouter.get('/wallets', async (req, res) => {
     const w = await accountWallet(req.user, c);
     data.push({ id: w.id, object: 'wallet', currency: c, balance: w.balance });
   }
-  res.json({ data, fx: { usd_to_cdf: config.fx.usdToCdf, spread_percent: config.fx.spreadPercent } });
+  res.json({ data, fx: { usd_to_cdf: config.fx.usdToCdf, spread_percent: config.fx.spreadPercent }, protection: { enabled: config.fees.protectionEnabled !== false, percent: config.fees.protectionPercent } });
 });
 
 walletRouter.get('/transactions', async (req, res) => {

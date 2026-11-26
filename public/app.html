@@ -666,6 +666,7 @@ async function boot() {
 }
 async function loadWallets() {
   const w = await api('GET', '/v1/wallets');
+  PROTECTION = w.protection || null; // Protection des achats activée ou non (back-office)
   w.data.forEach((x) => {
     const el = $('#bal-' + x.currency), v = fmt(x.balance, x.currency);
     if (el.textContent === v) return;
@@ -800,6 +801,7 @@ async function loadHistory() {
   }).join('') : '<li class="muted">Aucune opération pour l\'instant.</li>';
 }
 /** Une ligne du carnet : l'heure seule, le jour est déjà dans l'intitulé au-dessus. */
+let PROTECTION = null;
 /** Montant vu par ce compte : un marchand ne reçoit pas la protection des achats payée en plus par l'acheteur. */
 const seenAmount = (x) => (x.type === 'payment' && x.direction === 'credit' ? x.amount - (Number(x.metadata?.protection_fee) || 0) : x.amount);
 function histRow(x) {
@@ -866,7 +868,7 @@ function openTxn(id) {
       <h3>${esc(txnTitle(x))}</h3><div class="tx-amt ${x.status === 'failed' ? 'void' : x.direction}">${esc(big)}</div></div>
     <dl class="tx-dl">${rows.join('')}</dl>
     ${x.status === 'pending' ? '<button class="full" id="tx-refresh">Actualiser le statut</button>' : ''}
-    ${x.type === 'payment' && x.direction === 'debit' && x.status === 'succeeded' && x.payment_id
+    ${x.type === 'payment' && x.direction === 'debit' && x.status === 'succeeded' && x.payment_id && PROTECTION?.enabled !== false
       ? `<a class="link full tx-help" href="/litiges?new=${encodeURIComponent(x.payment_id)}&amp;txn=${encodeURIComponent(x.id)}">Signaler un problème avec cet achat (Protection des achats)</a>`
       : `<a class="link full tx-help" href="/messages?new=1&amp;txn=${encodeURIComponent(x.id)}">Un problème avec cette opération ? Contacter le support</a>`}
     <button class="link full" data-close>Fermer</button>`;
