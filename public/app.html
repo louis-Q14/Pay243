@@ -348,6 +348,16 @@
   #complete .modal { max-width: 794px; width: 100%; padding: 36px 44px 30px; }
   #complete .c2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
   #complete .c2 > div { min-width: 0; }
+  /* Respiration entre les champs : chaque question dans son cadre, un espace sous chaque champ et avant chaque section */
+  #complete label { display: block; margin: 16px 0 7px; }
+  #complete input, #complete select { margin: 0; }
+  #complete .cq { border: 1px solid var(--k-line-2, #3d362b); padding: 4px 16px 16px; margin: 0 0 14px; }
+  #complete .cq .c2 { margin-top: 12px; }
+  #complete .notice { margin: 26px 0 14px; }
+  #complete form > .notice:first-child { margin-top: 10px; }
+  #complete input[type=file] { padding: 10px 12px; }
+  #complete button.full { margin-top: 26px; }
+  @media (max-width: 640px) { #complete .cq .c2 { gap: 10px; } }
   @media (max-width: 640px) { #complete .modal { padding: 14px 18px 20px; } #complete .c2 { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -1017,12 +1027,12 @@ async function openComplete(missing) {
     <p class="muted">Pour la sécurité de votre compte, ces informations sont désormais obligatoires. Elles sont demandées une seule fois.</p>
     <form id="f-complete">
       ${need('phone') ? '<label>Numéro Mobile Money</label><input name="phone" type="tel" inputmode="tel" required placeholder="0812345678">' : ''}
-      ${need('security_questions') ? `<p class="notice">3 questions de sécurité : elles vous seront demandées, avec un code envoyé par email, pour réinitialiser votre mot de passe.</p>${[0, 1, 2].map((i) => `<label>Question ${i + 1}</label><select name="q${i}" required><option value="">Choisissez une question</option>${opts}</select>
-        <div class="c2"><div><input name="a${i}" required autocomplete="off" placeholder="Réponse"></div><div><input name="c${i}" required autocomplete="off" placeholder="Confirmez la réponse"></div></div>`).join('')}` : ''}
+      ${need('security_questions') ? `<p class="notice">3 questions de sécurité : elles vous seront demandées, avec un code envoyé par email, pour réinitialiser votre mot de passe.</p>${[0, 1, 2].map((i) => `<div class="cq"><label>Question ${i + 1}</label><select name="q${i}" required><option value="">Choisissez une question</option>${opts}</select>
+        <div class="c2"><div><input name="a${i}" required autocomplete="off" placeholder="Réponse"></div><div><input name="c${i}" required autocomplete="off" placeholder="Confirmez la réponse"></div></div></div>`).join('')}` : ''}
       ${need('emergency_contact') ? `<p class="notice">Personne à contacter en cas d’urgence</p>
         <div class="c2"><div><label>Nom complet</label><input name="ec_name" required autocomplete="off"></div><div><label>Lien avec vous</label><input name="ec_relation" required autocomplete="off" placeholder="Ex : sœur, conjoint, parent, ami"></div></div>
         <label>Adresse</label><input name="ec_address" required autocomplete="off" placeholder="N°, avenue, commune, ville">
-        <div class="c2"><div><label>Téléphone</label><input name="ec_phone" type="tel" inputmode="tel" required autocomplete="off"></div><div><label>Email</label><input name="ec_email" type="email" required autocomplete="off" placeholder="proche@exemple.com"></div></div>` : ''}
+        <div class="c2"><div><label>Téléphone</label><input name="ec_phone" type="tel" inputmode="tel" required autocomplete="off"></div><div><label>Email</label><input name="ec_email" type="text" inputmode="email" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="proche@exemple.com"></div></div>` : ''}
       ${need('rccm_document') ? '<p class="notice">Compte entreprise : document RCCM</p><label>Document RCCM (PDF ou photo, 5 Mo maximum)</label><input name="rccm" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required>' : ''}
       ${profile ? '<label>Votre mot de passe (confirmation)</label><input name="password" type="password" required autocomplete="current-password">' : ''}
       <button class="full">Enregistrer</button>
