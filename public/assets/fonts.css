@@ -44,3 +44,13 @@
 h1, h2 { word-spacing: .14em; }
 /* les champs et boutons n'héritent ni de la police ni de l'espacement des mots par défaut */
 button, input, select, textarea { font-family: inherit; word-spacing: inherit; }
+/* Menus déroulants, partout : flèche or dessinée et placée à l'intérieur du champ (la flèche du navigateur collait au bord),
+   et le texte s'arrête avant elle. !important : certaines pages redéfinissent le fond des champs avec « background ». */
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d4ad5a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important; background-position: right 16px center !important; background-size: 12px 8px !important;
+  padding-right: 44px !important; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; cursor: pointer;
+}
+select::-ms-expand { display: none; }
+select option { color: inherit; }

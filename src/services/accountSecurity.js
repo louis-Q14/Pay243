@@ -9,16 +9,17 @@ import { HttpError, newId, normalizeEmail, normalizePhone, now, parseJson } from
 
 /** Questions proposées : le client en choisit 3 différentes. */
 export const SECURITY_QUESTIONS = {
-  mother_maiden: 'Quel est le nom de jeune fille de votre mère ?',
-  birth_city: 'Dans quelle ville êtes-vous né(e) ?',
-  first_school: 'Quel est le nom de votre première école ?',
-  childhood_friend: 'Quel est le prénom de votre meilleur(e) ami(e) d’enfance ?',
-  father_second_name: 'Quel est le deuxième prénom de votre père ?',
-  favorite_teacher: 'Quel est le nom de votre enseignant(e) préféré(e) ?',
-  childhood_street: 'Sur quelle avenue avez-vous grandi ?',
-  first_job: 'Quel a été votre premier emploi ?',
-  favorite_dish: 'Quel est votre plat préféré ?',
-  first_phone: 'Quelle était la marque de votre premier téléphone ?',
+  // Libellés courts : la liste déroulante ne doit pas dépasser la largeur du champ, même sur téléphone.
+  mother_maiden: 'Nom de jeune fille de votre mère ?',
+  birth_city: 'Votre ville de naissance ?',
+  first_school: 'Nom de votre première école ?',
+  childhood_friend: 'Prénom de votre ami(e) d’enfance ?',
+  father_second_name: 'Deuxième prénom de votre père ?',
+  favorite_teacher: 'Votre enseignant(e) préféré(e) ?',
+  childhood_street: 'Avenue où vous avez grandi ?',
+  first_job: 'Votre premier emploi ?',
+  favorite_dish: 'Votre plat préféré ?',
+  first_phone: 'Marque de votre premier téléphone ?',
 };
 
 /** Réponse comparée sans tenir compte des majuscules, des accents ni des espaces en trop. */
