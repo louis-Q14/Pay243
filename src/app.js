@@ -15,6 +15,7 @@ import { settingsRouter } from './routes/settings.js';
 import { supportAdminRouter, supportRouter } from './routes/support.js';
 import { merchantAdminRouter, merchantApiRouter } from './routes/merchants.js';
 import { walletRouter } from './routes/wallet.js';
+import { disputesAdminRouter, disputesRouter } from './routes/disputes.js';
 import { handleProviderResult } from './services/mobileMoney.js';
 import { HttpError } from './util.js';
 
@@ -44,7 +45,7 @@ export function createApp() {
   // Réponses de l'API (jetons, données personnelles, soldes) : jamais conservées par un cache ou un proxy.
   app.use(['/v1', '/sandbox', '/webhooks'], (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
-  app.use('/v1', authRouter, settingsRouter, walletRouter, kycRouter, supportRouter, backofficeRouter, adminRouter, reconRouter, supportAdminRouter, merchantAdminRouter, merchantApiRouter, checkoutRouter);
+  app.use('/v1', authRouter, settingsRouter, walletRouter, disputesRouter, kycRouter, supportRouter, backofficeRouter, adminRouter, reconRouter, supportAdminRouter, disputesAdminRouter, merchantAdminRouter, merchantApiRouter, checkoutRouter);
   app.use(callbackRouter, sandboxRouter);
 
   app.get('/checkout/:id', checkoutFrameHeaders, (_req, res) => res.sendFile(path.join(publicDir, 'checkout.html')));

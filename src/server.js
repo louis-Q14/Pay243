@@ -4,6 +4,7 @@ import { consolidateBusinessWallets } from './accounts.js';
 import { createApp } from './app.js';
 import { purgeTechnicalTables } from './middleware.js';
 import { loadPlatformSettings } from './services/platformSettings.js';
+import { expireDisputes } from './services/disputes.js';
 import { startReconWorker } from './services/reconciliation.js';
 import { startWebhookWorker } from './services/webhooks.js';
 
@@ -16,6 +17,8 @@ setInterval(() => loadPlatformSettings().catch((e) => console.error('[settings]'
 startWebhookWorker();
 startReconWorker();
 setInterval(() => purgeTechnicalTables().catch((e) => console.error('[maintenance]', e.message)), 10 * 60_000).unref();
+// Protection des achats : litiges non remontés à Pay243 sous 20 jours clos, retenue rendue au vendeur.
+setInterval(() => expireDisputes().catch((e) => console.error('[litiges]', e.message)), 60 * 60_000).unref();
 
 const server = createApp().listen(config.port, () => {
   console.log(`Pay243 (${config.mode}) en écoute sur ${config.baseUrl}`);

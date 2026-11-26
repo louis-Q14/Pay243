@@ -521,4 +521,51 @@ CREATE INDEX idx_bank_accounts_user ON bank_accounts (user_id, created_at);
 CREATE UNIQUE INDEX uq_bank_accounts_number ON bank_accounts (user_id, account_number, currency);
 `,
   },
+  {
+    version: 14,
+    name: 'protection des achats : part des frais versée au fonds de protection',
+    // fee reste le total prélevé au marchand (commission + protection) : net = amount - fee partout.
+    sql: `
+ALTER TABLE payments ADD COLUMN protection_fee BIGINT NOT NULL DEFAULT 0;
+`,
+  },
+  {
+    version: 15,
+    name: 'protection des achats : litiges entre acheteurs et vendeurs',
+    // status : open (conversation avec le vendeur) -> claim (remonté à Pay243) -> won_buyer | won_seller | closed.
+    // held_amount : retenu sur le compte du vendeur (compte système dispute_hold) jusqu'à la décision.
+    sql: `
+CREATE TABLE disputes (
+  id TEXT PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES payments(id),
+  merchant_id TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  reason TEXT NOT NULL CHECK (reason IN ('not_received','not_as_described')),
+  status TEXT NOT NULL CHECK (status IN ('open','claim','won_buyer','won_seller','closed')),
+  amount BIGINT NOT NULL CHECK (amount > 0),
+  currency TEXT NOT NULL,
+  held_amount BIGINT NOT NULL DEFAULT 0,
+  refunded_amount BIGINT NOT NULL DEFAULT 0,
+  outcome_note TEXT,
+  decided_by TEXT,
+  escalated_at TEXT,
+  resolved_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX uq_disputes_active ON disputes (payment_id) WHERE status IN ('open','claim');
+CREATE INDEX idx_disputes_user ON disputes (user_id, created_at);
+CREATE INDEX idx_disputes_merchant ON disputes (merchant_id, created_at);
+CREATE INDEX idx_disputes_status ON disputes (status, created_at);
+CREATE TABLE dispute_messages (
+  id TEXT PRIMARY KEY,
+  dispute_id TEXT NOT NULL REFERENCES disputes(id),
+  author TEXT NOT NULL CHECK (author IN ('buyer','seller','staff','system')),
+  author_name TEXT,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_dispute_messages ON dispute_messages (dispute_id, created_at);
+`,
+  },
 ];

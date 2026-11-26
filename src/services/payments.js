@@ -30,6 +30,7 @@ export function serializePayment(p) {
     split: splitOf(p),
     status: p.status,
     fee: p.fee,
+    protection_fee: Number(p.protection_fee || 0), // part de fee versée à la protection des achats
     net: p.status === 'requires_payment' ? null : p.amount - p.fee,
     refunded_amount: p.refunded_amount,
     method: p.method,
@@ -165,7 +166,10 @@ async function claimPayment(p, fields) {
   }
 }
 
-/** Crédite le marchand (montant brut), prélève la commission, notifie. */
+/**
+ * Crédite le marchand (montant brut), prélève la commission et la protection des achats, notifie.
+ * La commission va au compte des revenus (fees), la protection au fonds qui rembourse les acheteurs (protection_fund).
+ */
 export async function settlePayment(paymentId, txn) {
   return tx(async () => {
     const p = await lockPayment(paymentId);
@@ -173,11 +177,14 @@ export async function settlePayment(paymentId, txn) {
       throw new HttpError(409, 'already_paid', `Paiement ${p.id} déjà réglé : encaissement ${txn.id} à rembourser au payeur.`);
     }
     const merchantWallet = await getWallet('merchant', p.merchant_id, p.currency);
-    const fee = percentFee(p.amount, config.fees.merchantPercent);
+    const commission = percentFee(p.amount, config.fees.merchantPercent);
+    const protection = percentFee(p.amount, config.fees.protectionPercent);
+    const fee = commission + protection;
     await move(txn.id, txn.from_wallet, merchantWallet.id, txn.amount);
-    await move(txn.id, merchantWallet.id, (await systemWallet('fees', p.currency)).id, fee);
+    await move(txn.id, merchantWallet.id, (await systemWallet('fees', p.currency)).id, commission);
+    await move(txn.id, merchantWallet.id, (await systemWallet('protection_fund', p.currency)).id, protection);
     await updateTxn(txn.id, { status: 'succeeded', fee, to_wallet: merchantWallet.id });
-    await setPayment(p.id, { status: 'succeeded', fee, txn_id: txn.id, method: txn.method, paid_at: now(), last_error: null });
+    await setPayment(p.id, { status: 'succeeded', fee, protection_fee: protection, txn_id: txn.id, method: txn.method, paid_at: now(), last_error: null });
     await enqueueEvent(p.merchant_id, 'payment.succeeded', serializePayment(await getPayment(p.id)));
   });
 }
