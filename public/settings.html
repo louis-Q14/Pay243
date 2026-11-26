@@ -994,5 +994,6 @@ async function loadStatements() {
 
 if (TOKEN) load().then(() => showTab(location.hash.slice(1))).catch((e) => { $('#loading').textContent = e.message; });
 </script>
+<script type="module" src="/assets/pull-refresh.js"></script>
 </body>
 </html>
