@@ -99,6 +99,7 @@
   .note-box { margin-bottom: 16px; padding: 12px 14px; border: 1px solid #5a4515; border-radius: 2px; background: var(--warn-ground); color: #f3e3b0; font-size: 14px; }
   .note-box.plain { border-color: var(--hair-strong); background: var(--board); color: var(--mute); }
   .consent { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0 20px; font-size: 14px; color: var(--mute); cursor: pointer; }
+  .consent a { color: var(--gold-light); font-weight: 600; }
   .consent input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--gold); flex: none; }
   .back { margin-top: 18px; }
   .rule { height: 1px; background: var(--hair); margin: 8px 0 22px; }
@@ -291,7 +292,7 @@
           <div class="field"><label for="pin2">Confirmer le PIN</label><input id="pin2" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" required></div>
         </div>
         <label class="consent"><input type="checkbox" id="consent" required>
-          <span>J'accepte les conditions et j'ai 18 ans ou plus.</span></label>
+          <span>J'accepte les <a href="/legal#cgu" target="_blank" rel="noopener">conditions d'utilisation</a> et la <a href="/legal#confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>, et j'ai 18 ans ou plus.</span></label>
         <button class="btn btn-gold btn-lg full" id="create">Créer mon compte</button>
       </form>
     </div>

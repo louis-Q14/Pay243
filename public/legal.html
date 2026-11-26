@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contrats d'utilisation — Pay243</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="description" content="Contrats d'utilisation, politique de confidentialité, tarifs et règlements des services Pay243 : wallet, paiements marchands, liens de paiement et API.">
+<meta name="theme-color" content="#0d0c0a">
+<link rel="preload" href="/assets/fonts/bricolage-grotesque-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/fonts.css">
+<link rel="stylesheet" href="/assets/home.css">
+<style>
+  /* Contrats d'utilisation — monde « pochette de rumba » : la barre, les boutons et le menu viennent de home.css.
+     La liste des contrats est en colonnes ; chaque document s'ouvre en lecture sur la même page (#cgu, #tarifs…). */
+
+  /* ---------- Bandeau ---------- */
+  .l-hero { position: relative; background: var(--board); border-bottom: 1px solid var(--hair); padding: clamp(48px, 7vw, 104px) 0 clamp(40px, 5vw, 72px); }
+  .l-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, var(--rdc-blue) 0 33.3%, var(--rdc-yellow) 33.3% 66.6%, var(--rdc-red) 66.6%); }
+  .l-hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 4.6vw, 64px); line-height: 1.02; letter-spacing: -.035em; max-width: 20ch; text-wrap: balance; }
+  .l-hero h1 span { color: var(--gold); }
+  .scope { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .scope div { min-width: 220px; padding: 10px 16px; border: 1px solid var(--hair-strong); border-radius: 2px; background: var(--ground); }
+  .scope small { display: block; font-size: 13px; color: var(--faint); }
+  .scope b { font-weight: 600; font-size: 16px; }
+
+  /* ---------- Liste des contrats ---------- */
+  .l-sec { padding: clamp(36px, 4.4vw, 56px) 0 0; }
+  .l-sec h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.025em; line-height: 1.1; margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--hair-strong); }
+  .cols { list-style: none; margin: 0; padding: 0; columns: 3 300px; column-gap: clamp(24px, 4vw, 56px); }
+  .cols li { break-inside: avoid; padding: 7px 0; }
+  .cols a { display: inline-flex; gap: 10px; color: var(--gold-light); font-weight: 600; font-size: 16px; line-height: 1.4; text-decoration: none; }
+  .cols a::before { content: ""; flex: none; width: 6px; height: 6px; margin-top: .55em; background: var(--gold); border-radius: 1px; }
+  .cols a:hover { color: var(--ivory); text-decoration: underline; }
+  .intro-end { margin: clamp(40px, 5vw, 64px) 0 0; padding-top: 22px; border-top: 1px solid var(--hair); color: var(--mute); max-width: 80ch; }
+
+  /* ---------- Lecture d'un document ---------- */
+  .doc { max-width: 820px; padding: clamp(32px, 4vw, 56px) 0 0; }
+  .back { display: inline-flex; align-items: center; gap: 8px; color: var(--gold-light); font-weight: 700; text-decoration: none; }
+  .back svg { width: 18px; height: 18px; }
+  .back:hover { color: var(--ivory); }
+  .doc h2 { margin: 22px 0 8px; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 3vw, 42px); line-height: 1.05; letter-spacing: -.03em; text-wrap: balance; }
+  .doc .date { color: var(--faint); font-size: 14px; margin-bottom: 26px; padding-bottom: 20px; border-bottom: 1px solid var(--hair-strong); }
+  .doc h3 { margin: 30px 0 10px; font-family: var(--font-display); font-weight: 700; font-size: 21px; letter-spacing: -.015em; color: var(--ivory); }
+  .doc p, .doc li { color: var(--mute); font-size: 16px; }
+  .doc p { margin: 0 0 12px; }
+  .doc ul, .doc ol { margin: 0 0 12px; padding-left: 22px; }
+  .doc li { margin: 5px 0; }
+  .doc b { color: var(--ivory); }
+  .doc a:not(.back) { color: var(--gold-light); font-weight: 600; }
+  .doc table { width: 100%; border-collapse: collapse; margin: 6px 0 16px; font-size: 15px; }
+  .doc th, .doc td { text-align: left; padding: 11px 8px; border-bottom: 1px solid var(--hair); color: var(--mute); }
+  .doc th { color: var(--faint); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; border-bottom-color: var(--hair-strong); }
+  .doc td:last-child { color: var(--gold); font-weight: 700; white-space: nowrap; }
+  .doc-foot { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--hair); }
+
+  .l-foot { margin-top: 72px; padding: 26px 0 40px; border-top: 1px solid var(--hair); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--faint); font-size: 14px; }
+  .l-foot a { color: var(--mute); text-decoration: none; margin-left: 18px; } .l-foot a:hover { color: var(--gold-light); }
+
+  @media (max-width: 560px) {
+    .l-hero { padding: 28px 0 30px; }
+    .l-hero h1 { font-size: 30px; }
+    .scope div { min-width: 0; flex: 1 1 140px; }
+    .l-sec h2 { font-size: 22px; }
+    .cols a { font-size: 15px; }
+    .doc h2 { font-size: 26px; }
+    .doc p, .doc li { font-size: 15px; }
+    .doc td, .doc th { padding: 9px 4px; }
+    .doc td:last-child { white-space: normal; }
+    .l-foot { margin-top: 40px; }
+    .l-foot a { margin: 0 16px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Pay243, accueil"><img src="/assets/logo.png" alt="Pay243" class="logo-img"></a>
+    <nav aria-label="Navigation principale">
+      <ul class="menu">
+        <li><a href="/#particuliers">Particuliers</a></li>
+        <li><a href="/#entreprises">Entreprises</a></li>
+        <li><a href="/docs">Développeurs</a></li>
+      </ul>
+    </nav>
+    <div class="nav-cta">
+      <a class="link-help" href="/aide">Aide</a>
+      <a class="btn btn-line" href="/app" data-guest>Se connecter</a>
+      <a class="btn btn-gold" href="/signup" data-guest>Créer un compte</a>
+      <a class="btn btn-gold" href="/app" data-member hidden>Mon wallet</a>
+    </div>
+    <button class="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu"><span></span></button>
+  </div>
+</header>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/#particuliers">Particuliers</a>
+  <a href="/#entreprises">Entreprises</a>
+  <a href="/docs">Développeurs</a>
+  <a href="/aide">Aide</a>
+  <div class="btns">
+    <a class="btn btn-line" href="/app" data-guest>Se connecter</a>
+    <a class="btn btn-gold" href="/signup" data-guest>Créer un compte</a>
+    <a class="btn btn-gold" href="/app" data-member hidden>Mon wallet</a>
+  </div>
+</div>
+
+<main>
+<section class="l-hero">
+  <div class="wrap">
+    <h1>Contrats d'utilisation des services <span>Pay243</span></h1>
+    <div class="scope">
+      <div><small>Pays</small><b>République démocratique du Congo</b></div>
+      <div><small>Langue</small><b>Français</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+<div class="index" id="index">
+  <section class="l-sec">
+    <h2>Mises à jour du règlement</h2>
+    <ul class="cols">
+      <li><a href="#mises-a-jour">Mises à jour du règlement</a></li>
+    </ul>
+  </section>
+
+  <section class="l-sec">
+    <h2>Pour tous les utilisateurs</h2>
+    <ul class="cols">
+      <li><a href="#cgu">Conditions d'utilisation du service Pay243</a></li>
+      <li><a href="#confidentialite">Politique de confidentialité de Pay243</a></li>
+      <li><a href="#usages">Règlement sur les utilisations autorisées</a></li>
+      <li><a href="#tarifs">Grille des frais Pay243</a></li>
+      <li><a href="#verification">Vérification d'identité et plafonds</a></li>
+      <li><a href="#securite">Sécurité du compte et opérations non autorisées</a></li>
+      <li><a href="#sans-compte">Conditions des paiements sans compte Pay243</a></li>
+      <li><a href="#navigateur">Cookies et stockage dans le navigateur</a></li>
+    </ul>
+  </section>
+
+  <section class="l-sec">
+    <h2>Pour les marchands et les entreprises</h2>
+    <ul class="cols">
+      <li><a href="#entreprise">Conditions du compte entreprise</a></li>
+      <li><a href="#marchand">Contrat d'utilisation des services marchands</a></li>
+      <li><a href="#liens">Conditions des liens de paiement</a></li>
+      <li><a href="#api">Conditions d'utilisation de l'API et des webhooks</a></li>
+      <li><a href="#remboursements">Remboursements et contestations</a></li>
+      <li><a href="#versements">Versements et retraits vers un compte bancaire</a></li>
+    </ul>
+  </section>
+
+  <section class="l-sec">
+    <h2>Informations complémentaires</h2>
+    <ul class="cols">
+      <li><a href="#signalement">Signaler une fraude ou un abus</a></li>
+      <li><a href="#explication">Nos conditions expliquées simplement</a></li>
+    </ul>
+  </section>
+
+  <p class="intro-end">Les présents contrats d'utilisation et règlements fournissent les conditions générales relatives aux services Pay243 : le wallet, les paiements marchands, les liens de paiement et l'API.</p>
+</div><!-- /index -->
+
+<!-- ============================ Documents ============================ -->
+
+<article class="doc" id="doc-mises-a-jour" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Mises à jour du règlement</h2>
+  <p class="date">Dernière mise à jour : 26 novembre 2026</p>
+  <p>Cette page recense les modifications apportées à nos contrats d'utilisation et règlements.</p>
+  <h3>Comment nous vous prévenons</h3>
+  <p>Pour toute modification importante (nouveaux frais, nouvelles obligations, réduction d'un droit), nous vous prévenons par email et dans votre wallet <b>au moins 30 jours</b> avant son entrée en vigueur. Les changements imposés par la loi ou par nos partenaires (opérateurs Mobile Money, réseaux de cartes) peuvent s'appliquer plus tôt.</p>
+  <p>Si vous n'acceptez pas une modification, vous pouvez fermer votre compte sans frais avant sa date d'entrée en vigueur. Continuer à utiliser Pay243 après cette date vaut acceptation.</p>
+  <h3>Historique</h3>
+  <ul>
+    <li><b>26 novembre 2026</b> : publication de l'ensemble des contrats d'utilisation et règlements Pay243 sur cette page.</li>
+  </ul>
+</article>
+
+<article class="doc" id="doc-cgu" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Conditions d'utilisation du service Pay243</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>1. Objet</h3>
+  <p>Les présentes conditions régissent l'utilisation du wallet Pay243 : ouvrir un compte, le recharger, envoyer et recevoir de l'argent, convertir entre francs congolais (CDF) et dollars américains (USD), payer en ligne et retirer vers le Mobile Money ou un compte bancaire. En créant un compte, vous acceptez ces conditions ainsi que la <a href="#confidentialite">politique de confidentialité</a>, le <a href="#usages">règlement sur les utilisations autorisées</a> et la <a href="#tarifs">grille des frais</a>.</p>
+  <h3>2. Qui peut ouvrir un compte</h3>
+  <ul>
+    <li>Toute personne âgée de <b>18 ans ou plus</b>, disposant d'une adresse email et d'un numéro de téléphone valides.</li>
+    <li>Un seul compte personnel par personne. Les entreprises ouvrent un <a href="#entreprise">compte entreprise</a>.</li>
+    <li>Les informations fournies doivent être exactes et tenues à jour.</li>
+  </ul>
+  <h3>3. Activation et vérification</h3>
+  <p>Avant toute opération d'argent, votre identité est vérifiée par notre équipe de conformité (voir <a href="#verification">Vérification d'identité et plafonds</a>). Nous pouvons refuser une ouverture ou demander des documents complémentaires.</p>
+  <h3>4. Votre solde</h3>
+  <ul>
+    <li>Votre wallet comporte un solde en CDF et un solde en USD. Les fonds vous appartiennent et sont inscrits dans notre grand livre en partie double.</li>
+    <li>Votre solde ne produit pas d'intérêts.</li>
+    <li>Une opération « en attente » attend la confirmation de l'opérateur ; elle ne peut pas être annulée à la main. Un retrait qui n'aboutit pas vous est restitué, frais compris.</li>
+  </ul>
+  <h3>5. Opérations</h3>
+  <ul>
+    <li><b>Recharger</b> : depuis M-Pesa, Airtel Money ou Orange Money, après validation sur votre téléphone.</li>
+    <li><b>Envoyer</b> : vers un autre wallet Pay243, par email, numéro ou identifiant @. Un transfert confirmé est définitif.</li>
+    <li><b>Convertir</b> : entre CDF et USD au taux affiché avant validation.</li>
+    <li><b>Payer</b> : chez les marchands qui acceptent Pay243.</li>
+    <li><b>Retirer</b> : vers votre Mobile Money ou un compte bancaire enregistré dans vos paramètres.</li>
+  </ul>
+  <p>Chaque opération qui fait sortir de l'argent est confirmée par votre <b>PIN de transaction</b>. Vérifiez toujours le destinataire et le montant : une erreur de destinataire ne peut être corrigée qu'avec l'accord de celui-ci.</p>
+  <h3>6. Frais</h3>
+  <p>Les frais sont détaillés dans la <a href="#tarifs">grille des frais</a> et toujours affichés avant que vous validiez une opération.</p>
+  <h3>7. Suspension et fermeture</h3>
+  <p>Vous pouvez fermer votre compte à tout moment depuis les <a href="/settings">paramètres</a> une fois votre solde à zéro. Nous pouvons limiter, suspendre ou fermer un compte en cas de risque de fraude, de non-respect de ces conditions, d'exigence légale ou de demande d'une autorité. Sauf interdiction légale, nous vous en indiquons le motif et vous restituons les fonds qui vous reviennent.</p>
+  <h3>8. Responsabilité</h3>
+  <p>Pay243 met en œuvre les moyens raisonnables pour assurer la disponibilité et la sécurité du service. Nous ne sommes pas responsables des interruptions dues aux réseaux des opérateurs, à une coupure d'électricité ou d'Internet, ni des pertes causées par la divulgation de vos codes (voir <a href="#securite">Sécurité du compte</a>).</p>
+  <h3>9. Réclamations et droit applicable</h3>
+  <p>Toute réclamation peut être adressée au support depuis le <a href="/messages">centre de messages</a>. Les présentes conditions sont régies par le droit de la République démocratique du Congo ; à défaut d'accord amiable, les tribunaux de Kinshasa sont compétents.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-confidentialite" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Politique de confidentialité de Pay243</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>Les données que nous recueillons</h3>
+  <ul>
+    <li><b>Identité et contact</b> : nom, email, numéro de téléphone, identifiant @, fuseau horaire.</li>
+    <li><b>Vérification d'identité</b> : photos de votre pièce d'identité et selfie.</li>
+    <li><b>Opérations</b> : montants, devises, destinataires, numéros Mobile Money, références des opérateurs.</li>
+    <li><b>Cartes</b> : uniquement la marque et les 4 derniers chiffres ; le numéro complet n'est jamais conservé par Pay243.</li>
+    <li><b>Comptes bancaires</b> que vous enregistrez pour recevoir vos retraits.</li>
+    <li><b>Sécurité</b> : appareils de confiance, adresses IP et journaux de connexion.</li>
+    <li><b>Support</b> : vos messages et les pièces jointes que vous envoyez.</li>
+  </ul>
+  <h3>Pourquoi nous les utilisons</h3>
+  <ul>
+    <li>Fournir le service : exécuter vos opérations et tenir votre historique.</li>
+    <li>Respecter la loi : vérification d'identité, lutte contre le blanchiment et le financement du terrorisme, conservation des preuves.</li>
+    <li>Vous protéger : détecter la fraude, les connexions inhabituelles et les changements de carte SIM.</li>
+    <li>Vous informer : emails liés à votre compte et à vos opérations.</li>
+  </ul>
+  <p>Nous ne vendons pas vos données et nous ne les utilisons pas pour de la publicité.</p>
+  <h3>Avec qui nous les partageons</h3>
+  <ul>
+    <li>Les opérateurs Mobile Money et les réseaux de cartes, uniquement pour exécuter vos opérations.</li>
+    <li>Le marchand que vous payez : votre nom et les informations du paiement.</li>
+    <li>Le destinataire d'un transfert : votre nom.</li>
+    <li>Les autorités, lorsque la loi l'exige.</li>
+  </ul>
+  <h3>Protection et conservation</h3>
+  <p>Vos documents d'identité sont chiffrés et seule l'équipe de conformité y a accès. Les données liées aux opérations sont conservées pendant la durée exigée par la réglementation financière, même après la fermeture du compte ; les autres sont supprimées lorsqu'elles ne sont plus nécessaires.</p>
+  <h3>Vos droits</h3>
+  <p>Vous pouvez consulter et corriger vos informations dans les <a href="/settings#confidentialite">paramètres</a>, et demander l'accès, la rectification ou la suppression de vos données en écrivant au support depuis le <a href="/messages">centre de messages</a>, dans les limites des obligations légales de conservation.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-usages" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Règlement sur les utilisations autorisées</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <p>Ce règlement s'applique aux particuliers comme aux marchands. Il est interdit d'utiliser Pay243 pour :</p>
+  <ul>
+    <li>toute activité illégale en République démocratique du Congo, ou dans le pays du payeur ;</li>
+    <li>le blanchiment d'argent, le financement du terrorisme ou le contournement de sanctions ;</li>
+    <li>la fraude, l'escroquerie, l'hameçonnage, la fausse identité ou l'usurpation d'un compte ;</li>
+    <li>la vente d'armes, de stupéfiants, de médicaments sans autorisation, de contrefaçons ou de biens volés ;</li>
+    <li>les jeux d'argent et loteries sans licence ;</li>
+    <li>les systèmes pyramidaux, les « tontines » frauduleuses et les promesses de gains garantis ;</li>
+    <li>le prêt de son compte ou de ses codes à un tiers, ou l'ouverture de comptes pour d'autres personnes ;</li>
+    <li>toute tentative de perturber le service : robots, attaques, contournement des plafonds ou des contrôles.</li>
+  </ul>
+  <h3>Conséquences</h3>
+  <p>En cas de manquement, nous pouvons refuser une opération, retenir les fonds concernés le temps de l'examen, suspendre ou fermer le compte et, lorsque la loi l'exige, informer les autorités compétentes.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-tarifs" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Grille des frais Pay243</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <p>Pay243 est sans abonnement : vous ne payez que les opérations ci-dessous. Les frais sont toujours affichés avant que vous validiez.</p>
+  <table>
+    <thead><tr><th>Opération</th><th>Frais Pay243</th></tr></thead>
+    <tbody>
+      <tr><td>Ouverture et tenue du compte</td><td>0 FC</td></tr>
+      <tr><td>Recharger depuis le Mobile Money</td><td>0 FC</td></tr>
+      <tr><td>Envoyer entre wallets Pay243</td><td>0 FC</td></tr>
+      <tr><td>Payer un marchand</td><td>0 FC</td></tr>
+      <tr><td>Retirer vers le Mobile Money</td><td>1 %</td></tr>
+      <tr><td>Retirer vers un compte bancaire</td><td>1 %</td></tr>
+      <tr><td>Convertir CDF ↔ USD</td><td>1 % inclus dans le taux</td></tr>
+      <tr><td>Recevoir un paiement marchand</td><td>2,5 %</td></tr>
+      <tr><td>Verser ses ventes sur son wallet</td><td>0 FC</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Votre opérateur Mobile Money ou votre banque peut appliquer ses propres frais, qui ne dépendent pas de Pay243.</li>
+    <li>Un retrait qui n'aboutit pas vous est restitué, frais compris.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-verification" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Vérification d'identité et plafonds</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>Pourquoi nous vérifions votre identité</h3>
+  <p>Comme tout service de paiement, Pay243 doit connaître ses clients pour lutter contre la fraude, le blanchiment d'argent et le financement du terrorisme. Votre compte est activé une fois votre identité vérifiée.</p>
+  <h3>Documents acceptés</h3>
+  <ul>
+    <li>Carte d'électeur (CENI), recto et verso</li>
+    <li>Carte nationale d'identité, recto et verso</li>
+    <li>Passeport</li>
+    <li>Permis de conduire, recto et verso</li>
+  </ul>
+  <p>Un selfie est également demandé. Les entreprises fournissent en plus les documents de la société demandés lors de l'ouverture.</p>
+  <h3>Plafonds</h3>
+  <p>Vos plafonds (montant par opération, montant sur 24 heures glissantes, solde maximum) dépendent de votre niveau de vérification. Ils sont affichés dans votre wallet et augmentent une fois votre pièce d'identité vérifiée. Une opération qui dépasserait un plafond est refusée avant tout débit.</p>
+  <h3>Décision</h3>
+  <p>Vous êtes prévenu par email de l'acceptation ou du refus de votre demande. En cas de refus, le motif vous est indiqué et vous pouvez envoyer une nouvelle demande.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-securite" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Sécurité du compte et opérations non autorisées</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>Vos engagements</h3>
+  <ul>
+    <li>Gardez secrets votre mot de passe, votre PIN de transaction et les codes de vérification reçus par email ou SMS.</li>
+    <li>Ne les communiquez à personne. <b>Pay243 ne vous les demandera jamais</b>, ni par téléphone, ni par WhatsApp, ni par le support.</li>
+    <li>Vérifiez que l'adresse du site est bien pay243.com avant de vous connecter.</li>
+    <li>Prévenez-nous sans attendre en cas de perte de votre téléphone ou de doute sur votre compte.</li>
+  </ul>
+  <h3>Nos protections</h3>
+  <ul>
+    <li>Un code de vérification est demandé à chaque connexion depuis un nouvel appareil.</li>
+    <li>Chaque sortie d'argent est confirmée par votre PIN, bloqué après 5 erreurs.</li>
+    <li>Nous surveillons les opérations inhabituelles et les changements de carte SIM, et pouvons suspendre une opération pour vérification.</li>
+  </ul>
+  <h3>Opération que vous n'avez pas faite</h3>
+  <p>Signalez-la au plus vite depuis le <a href="/messages">centre de messages</a> et changez votre mot de passe dans <a href="/settings#securite">Paramètres › Sécurité</a> : vos autres sessions sont alors fermées. Nous examinons chaque signalement. Une opération effectuée avec vos codes, parce que vous les avez communiqués, reste à votre charge.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-sans-compte" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Conditions des paiements sans compte Pay243</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <p>Ces conditions s'appliquent lorsque vous payez un marchand sur la page de paiement Pay243 (ou par un lien de paiement) avec votre <b>Mobile Money</b> ou votre <b>carte bancaire</b>, sans avoir de compte Pay243.</p>
+  <ul>
+    <li>Pay243 transmet votre paiement au marchand ; le contrat de vente (produit, livraison, garantie) est conclu entre vous et le marchand.</li>
+    <li>Le paiement par Mobile Money est confirmé sur votre téléphone avec votre code de l'opérateur. Sans confirmation, rien n'est débité.</li>
+    <li>Pour la carte, son numéro est traité par le réseau de cartes et n'est jamais conservé par Pay243.</li>
+    <li>Le paiement est gratuit pour vous ; votre opérateur ou votre banque peut appliquer ses propres frais.</li>
+    <li>Un remboursement se demande d'abord au marchand ; il revient sur le moyen de paiement utilisé (voir <a href="#remboursements">Remboursements et contestations</a>).</li>
+    <li>Les informations nécessaires au paiement (nom, numéro, montant) sont traitées selon notre <a href="#confidentialite">politique de confidentialité</a>.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-navigateur" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Cookies et stockage dans le navigateur</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <p>Pay243 n'utilise <b>aucun cookie publicitaire ni outil de suivi</b> d'une autre société.</p>
+  <p>Le site enregistre dans votre navigateur uniquement ce qui est nécessaire à son fonctionnement :</p>
+  <ul>
+    <li><b>votre session</b>, pour rester connecté le temps de votre visite ; elle s'efface quand vous fermez l'onglet ou vous déconnectez ;</li>
+    <li><b>la reconnaissance de votre appareil</b>, pour ne pas vous redemander un code de vérification à chaque connexion ;</li>
+    <li><b>quelques préférences d'affichage</b>, comme le dernier onglet ouvert.</li>
+  </ul>
+  <p>Vous pouvez effacer ces données dans les réglages de votre navigateur ; il vous faudra alors vous reconnecter et confirmer à nouveau votre appareil.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-entreprise" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Conditions du compte entreprise</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <p>Ces conditions complètent les <a href="#cgu">conditions d'utilisation du service</a> pour les entreprises, commerçants, indépendants et associations.</p>
+  <ul>
+    <li>Le compte entreprise est ouvert au nom de l'entreprise, par une personne habilitée à l'engager. Il est distinct de tout compte personnel.</li>
+    <li>Le compte entreprise est le compte marchand : il sert à encaisser les ventes, à les verser sur le wallet de l'entreprise et à les retirer.</li>
+    <li>L'entreprise fournit des informations exactes (raison sociale, activité, coordonnées) et nous prévient de tout changement.</li>
+    <li>L'entreprise reste responsable des opérations faites par les personnes à qui elle donne accès à son compte ou à ses clés API.</li>
+    <li>Les plafonds du compte entreprise sont fixés selon les documents fournis et l'activité déclarée.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-marchand" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Contrat d'utilisation des services marchands</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>1. Activation</h3>
+  <p>L'espace marchand est activé à la demande de l'entreprise, depuis <a href="/settings#vendeur">Paramètres › Outils vendeur</a>, après examen par notre équipe. Nous pouvons refuser ou retirer l'activation, notamment pour une activité contraire au <a href="#usages">règlement sur les utilisations autorisées</a>.</p>
+  <h3>2. Moyens de paiement acceptés</h3>
+  <p>Vos clients paient par wallet Pay243, par M-Pesa, Airtel Money, Orange Money ou par carte Visa et Mastercard, sur la page de paiement hébergée par Pay243, par un <a href="#liens">lien de paiement</a> ou par votre intégration de l'<a href="#api">API</a>.</p>
+  <h3>3. Commission</h3>
+  <p>Pay243 prélève <b>2,5 %</b> sur chaque paiement reçu, sans abonnement ni frais d'installation. La commission est déduite au moment de l'encaissement.</p>
+  <h3>4. Solde des ventes</h3>
+  <p>Les paiements réussis sont crédités sur le solde de vos ventes. Vous pouvez le verser sur votre wallet (gratuit et instantané) ou le retirer vers un compte bancaire (voir <a href="#versements">Versements et retraits</a>). En cas de risque (taux de contestation élevé, activité inhabituelle), nous pouvons retenir temporairement une partie du solde pour couvrir les remboursements à venir.</p>
+  <h3>5. Vos obligations</h3>
+  <ul>
+    <li>Décrire honnêtement ce que vous vendez, son prix et vos conditions de livraison et de retour.</li>
+    <li>Livrer ce qui a été payé, ou rembourser le client.</li>
+    <li>Ne jamais facturer à vos clients des frais pour avoir payé avec Pay243 sans les en informer clairement.</li>
+    <li>Protéger les données de vos clients et ne les utiliser que pour leur commande.</li>
+  </ul>
+  <h3>6. Fin du contrat</h3>
+  <p>Vous pouvez désactiver votre espace marchand à tout moment. Les remboursements et contestations des paiements déjà reçus restent à votre charge après la fin du contrat.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-liens" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Conditions des liens de paiement</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <ul>
+    <li>Un lien de paiement est créé par le marchand pour un montant et une devise donnés, et partagé avec son client (WhatsApp, SMS, email…).</li>
+    <li>Un lien ne peut être payé <b>qu'une seule fois</b>. Il reste valable au plus <b>7 jours</b> ; passé ce délai il expire et ne peut plus être réglé.</li>
+    <li>Le client choisit son moyen de paiement : wallet Pay243, Mobile Money ou carte.</li>
+    <li>La commission marchande de 2,5 % s'applique au paiement reçu.</li>
+    <li>Le marchand est seul responsable du contenu de son message et de ce qu'il vend. Il est interdit d'utiliser un lien pour se faire passer pour une autre personne ou entreprise.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-api" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Conditions d'utilisation de l'API et des webhooks</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>Clés API</h3>
+  <ul>
+    <li>Les clés de test (<code>sk_test_…</code>) fonctionnent avec des opérateurs simulés : aucun argent réel ne circule. Les clés de production (<code>sk_live_…</code>) font circuler de l'argent réel.</li>
+    <li>Une clé secrète ne doit jamais apparaître dans une application mobile, une page web ou un dépôt de code public. Révoquez-la immédiatement si elle a pu être exposée.</li>
+    <li>Toute opération faite avec votre clé est réputée faite par vous.</li>
+  </ul>
+  <h3>Webhooks</h3>
+  <ul>
+    <li>Votre adresse de webhook doit être en HTTPS et répondre par un code 2xx.</li>
+    <li>Chaque envoi est signé avec votre secret <code>whsec_…</code> : vérifiez la signature avant de traiter une notification.</li>
+    <li>Un envoi peut arriver plusieurs fois : traitez-le de façon idempotente.</li>
+  </ul>
+  <h3>Bon usage</h3>
+  <p>Respectez la <a href="/docs">documentation</a> et les limites de débit, utilisez une clé d'idempotence pour chaque paiement, et n'essayez pas de contourner les contrôles de sécurité. Nous pouvons suspendre une clé utilisée de façon abusive. L'API peut évoluer ; les changements incompatibles sont annoncés à l'avance.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-remboursements" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Remboursements et contestations</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <h3>Pour les marchands</h3>
+  <ul>
+    <li>Vous pouvez rembourser un paiement réussi, en totalité ou en partie, depuis votre espace marchand ou par l'API. Le total remboursé ne peut jamais dépasser le montant payé.</li>
+    <li>Le remboursement revient sur le moyen de paiement utilisé par le client et est prélevé sur le solde de vos ventes.</li>
+    <li>La commission prélevée sur le paiement initial n'est pas restituée.</li>
+  </ul>
+  <h3>Pour les clients</h3>
+  <ul>
+    <li>Pour un problème de commande (non livrée, non conforme), adressez-vous d'abord au marchand.</li>
+    <li>Sans réponse satisfaisante, écrivez au support depuis le <a href="/messages">centre de messages</a> en choisissant l'opération concernée. Nous examinons la contestation avec les deux parties et pouvons retenir le montant contesté chez le marchand le temps de l'examen.</li>
+    <li>Pour un paiement par carte, votre banque peut aussi ouvrir une contestation selon les règles du réseau de cartes.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-versements" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Versements et retraits vers un compte bancaire</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <ul>
+    <li>Le solde de vos ventes peut être versé sur votre wallet, gratuitement et instantanément.</li>
+    <li>Vous pouvez retirer vers un compte bancaire enregistré dans vos <a href="/settings">paramètres</a>. Le compte doit être au nom du titulaire du compte Pay243 (ou de l'entreprise).</li>
+    <li>Le montant et les frais (1 %) sont réservés dès la demande. Le virement est ensuite effectué par notre équipe Finance ; son délai d'arrivée dépend de votre banque.</li>
+    <li>Si la banque refuse le virement (compte fermé, coordonnées erronées), le montant et les frais reviennent sur votre compte Pay243.</li>
+    <li>Nous pouvons demander un justificatif avant un premier virement ou un montant inhabituel.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-signalement" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Signaler une fraude ou un abus</h2>
+  <p class="date">En vigueur le 26 novembre 2026</p>
+  <p>Vous pouvez nous signaler, même sans compte Pay243 :</p>
+  <ul>
+    <li>une tentative d'arnaque utilisant le nom Pay243 (faux site, faux conseiller, message demandant vos codes) ;</li>
+    <li>un marchand qui ne livre pas ou vend des produits interdits ;</li>
+    <li>une opération sur votre compte que vous ne reconnaissez pas.</li>
+  </ul>
+  <p>Écrivez au support depuis le <a href="/messages">centre de messages</a> en joignant les captures d'écran utiles. Chaque signalement est examiné ; nous pouvons suspendre le compte en cause pendant l'enquête. Ne répondez jamais à un message qui vous demande votre PIN ou un code de vérification.</p>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<article class="doc" id="doc-explication" hidden>
+  <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les contrats</a>
+  <h2>Nos conditions expliquées simplement</h2>
+  <p class="date">Ce résumé ne remplace pas les contrats : en cas de différence, ce sont eux qui s'appliquent.</p>
+  <ul>
+    <li><b>Votre argent reste à vous.</b> Il est inscrit dans notre grand livre et vous pouvez le retirer quand vous voulez.</li>
+    <li><b>Les frais sont annoncés avant.</b> Recharger, envoyer entre wallets et payer sont gratuits ; retirer coûte 1 % ; les marchands paient 2,5 % par vente.</li>
+    <li><b>Votre identité est vérifiée</b> avant toute opération : c'est une obligation légale et une protection.</li>
+    <li><b>Vos codes sont secrets.</b> Pay243 ne vous les demandera jamais.</li>
+    <li><b>Un problème ?</b> Le support répond depuis le <a href="/messages">centre de messages</a>.</li>
+    <li><b>Vous pouvez partir</b> quand vous voulez : fermez votre compte une fois votre solde à zéro.</li>
+  </ul>
+  <p class="doc-foot"><a class="back" href="#">Retour à tous les contrats</a></p>
+</article>
+
+<footer class="l-foot">
+  <span>© <span id="year"></span> Pay243 · Kinshasa, RDC</span>
+  <span><a href="/">Accueil</a><a href="/aide">Centre d'aide</a><a href="/docs">Développeurs</a></span>
+</footer>
+</div>
+</main>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// Menu téléphone
+const burger = document.querySelector('.burger'); const mobile = document.getElementById('mobile-menu');
+burger.onclick = () => { const open = mobile.classList.toggle('open'); burger.setAttribute('aria-expanded', String(open));
+  if (open) mobile.style.top = Math.round(document.querySelector('.nav').getBoundingClientRect().bottom) + 'px';
+};
+mobile.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { mobile.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); }));
+
+// Connecté : « Mon wallet » à la place de « Se connecter / Créer un compte »
+let member = false; try { member = !!sessionStorage.getItem('pay243_token'); } catch {}
+document.querySelectorAll('[data-guest]').forEach((e) => { e.hidden = member; });
+document.querySelectorAll('[data-member]').forEach((e) => { e.hidden = !member; });
+
+// Liste des contrats (#) ou lecture d'un document (#cgu, #tarifs…)
+const index = document.getElementById('index');
+function route() {
+  const doc = document.getElementById('doc-' + location.hash.slice(1));
+  document.querySelectorAll('.doc').forEach((d) => { d.hidden = d !== doc; });
+  index.hidden = !!doc;
+  document.title = (doc ? doc.querySelector('h2').textContent : "Contrats d'utilisation") + ' — Pay243';
+  window.scrollTo(0, 0);
+}
+addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
