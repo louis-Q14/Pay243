@@ -108,7 +108,8 @@ export async function paymentDetail(merchantId, id) {
   return {
     ...monitoringPayment(p),
     operations: txns.map((t) => ({
-      id: t.id, type: t.type, status: t.status, amount: Number(t.amount), fee: Number(t.fee), currency: t.currency,
+      // Encaissement : la protection des achats payée en plus par l'acheteur ne revient pas au marchand.
+      id: t.id, type: t.type, status: t.status, amount: Number(t.amount) - (t.type === 'payment' ? Number(parseJson(t.metadata, {}).protection_fee || 0) : 0), fee: Number(t.fee), currency: t.currency,
       method: t.method, operator: t.operator, phone: t.phone,
       provider_ref: t.provider_ref && !/^mock_/.test(t.provider_ref) ? t.provider_ref : null,
       failure_reason: t.failure_reason, reason: parseJson(t.metadata, {}).reason || null, created_at: t.created_at, updated_at: t.updated_at,

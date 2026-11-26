@@ -226,7 +226,7 @@
               <span class="c-text">Encaisser en ligne et sur WhatsApp.</span>
               <ul>
                 <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Wallet, Mobile Money et cartes</li>
-                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>2,5 % + 1,2 % de protection des achats par vente, sans abonnement</li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>2,5 % par vente, sans abonnement</li>
               </ul>
             </span>
           </label>
@@ -334,7 +334,7 @@ async function busy(btn, label, fn) {
 // =====================================================================
 //  La pochette (panneau de gauche) — décorative : face du disque et crédits
 // =====================================================================
-const KINDS = { personal: 'Compte personnel · gratuit', business: 'Compte entreprise · 2,5 % + 1,2 % par vente' };
+const KINDS = { personal: 'Compte personnel · gratuit', business: 'Compte entreprise · 2,5 % par vente' };
 function renderScene(type) {
   $('#rec').dataset.view = type;
   $('#card-kind').textContent = KINDS[type];

@@ -523,8 +523,8 @@ CREATE UNIQUE INDEX uq_bank_accounts_number ON bank_accounts (user_id, account_n
   },
   {
     version: 14,
-    name: 'protection des achats : part des frais versée au fonds de protection',
-    // fee reste le total prélevé au marchand (commission + protection) : net = amount - fee partout.
+    name: 'protection des achats : frais payés par l\'acheteur, versés au fonds de protection',
+    // Payés par l'acheteur connecté en plus du prix ; fee reste la seule commission du marchand (net = amount - fee).
     sql: `
 ALTER TABLE payments ADD COLUMN protection_fee BIGINT NOT NULL DEFAULT 0;
 `,

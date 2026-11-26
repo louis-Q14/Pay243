@@ -493,9 +493,9 @@ test('marchand : création, paiement via wallet, webhook signé, remboursement',
   assert.equal(again.status, 409);
 
   const got = await api('GET', `/v1/payments/${pay.body.id}`, { token: state.sk });
-  assert.equal(got.body.fee, 148); // 2,5 % de commission + 1,2 % de protection des achats
-  assert.equal(got.body.protection_fee, 48);
-  assert.equal(got.body.net, 3852);
+  assert.equal(got.body.fee, 100); // 2,5 % de commission, payés par le marchand
+  assert.equal(got.body.protection_fee, 48); // 1,2 % de protection des achats, payés par l'acheteur en plus du prix
+  assert.equal(got.body.net, 3900);
 
   await deliverDue();
   const hook = await waitFor(() => hooks.find((h) => JSON.parse(h.raw).type === 'payment.succeeded'));
@@ -560,7 +560,7 @@ test('marchand : n° de vente rattachés aux paiements, suivi des entrées et so
   assert.equal(found.status, 200, JSON.stringify(found.body));
   assert.deepEqual(found.body.data.map((p) => p.id), [pay.body.id]);
   assert.equal(typeof found.body.data[0].payer.name, 'string'); // payeur wallet : nom affiché au marchand
-  assert.equal(found.body.data[0].net, 1926); // 2 000 - 2,5 % - 1,2 % de protection des achats
+  assert.equal(found.body.data[0].net, 1950);
   const paidOnly = await api('GET', '/v1/merchants/me/payments?status=paid&currency=USD', { token: state.alice });
   assert.ok(paidOnly.body.data.every((p) => ['succeeded', 'partially_refunded', 'refunded'].includes(p.status)));
   assert.ok(paidOnly.body.total >= 2);
@@ -597,7 +597,7 @@ test('marchand : n° de vente rattachés aux paiements, suivi des entrées et so
   const text = await csv.text();
   assert.match(text, /N° de vente \/ commande/);
   assert.match(text, /514687-MHM-681749, 994807-IQT-953743/);
-  assert.match(text, /;20,00;0,74;19,26;/); // frais : 2,5 % + 1,2 % de protection des achats
+  assert.match(text, /;20,00;0,50;19,50;/);
 });
 
 test('place de marché : répartition des paiements, argent des vendeurs réservé, retrait des seuls revenus', async () => {
@@ -1000,7 +1000,7 @@ test('compte entreprise : un paiement au checkout part du compte marchand', asyn
   assert.equal(view.body.customer.balance, b0, 'GET /v1/checkout/:id (src/routes/checkout.js) doit afficher le solde de accountWallet(req.user)');
   const r = await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: state.ruth, body: { method: 'wallet', pin: '5173' } });
   assert.equal(r.body.status, 'succeeded', `payWithWallet (src/services/payments.js) doit payer depuis accountWallet(user) : ${JSON.stringify(r.body)}`);
-  assert.equal(await balance(), b0 - 200);
+  assert.equal(await balance(), b0 - 202, 'le prix + 1,2 % de protection des achats payés par l\'acheteur');
   state.ruthPayment = pay.body.id;
 });
 

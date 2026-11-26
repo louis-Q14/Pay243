@@ -167,8 +167,14 @@ async function claimPayment(p, fields) {
 }
 
 /**
- * Crédite le marchand (montant brut), prélève la commission et la protection des achats, notifie.
- * La commission va au compte des revenus (fees), la protection au fonds qui rembourse les acheteurs (protection_fund).
+ * Protection des achats : 1,2 % payés par l'acheteur connecté à son compte Pay243, en plus du prix.
+ * Un payeur sans compte (Mobile Money ou carte en invité) n'est pas couvert et ne paie rien de plus.
+ */
+export const protectionFor = (amount, user) => (user ? percentFee(Number(amount), config.fees.protectionPercent) : 0);
+
+/**
+ * Crédite le marchand (montant du paiement), prélève sa commission, verse la protection payée par l'acheteur
+ * au fonds qui rembourse les acheteurs (protection_fund), notifie. txn.amount = prix + protection.
  */
 export async function settlePayment(paymentId, txn) {
   return tx(async () => {
@@ -177,12 +183,11 @@ export async function settlePayment(paymentId, txn) {
       throw new HttpError(409, 'already_paid', `Paiement ${p.id} déjà réglé : encaissement ${txn.id} à rembourser au payeur.`);
     }
     const merchantWallet = await getWallet('merchant', p.merchant_id, p.currency);
-    const commission = percentFee(p.amount, config.fees.merchantPercent);
-    const protection = percentFee(p.amount, config.fees.protectionPercent);
-    const fee = commission + protection;
-    await move(txn.id, txn.from_wallet, merchantWallet.id, txn.amount);
-    await move(txn.id, merchantWallet.id, (await systemWallet('fees', p.currency)).id, commission);
-    await move(txn.id, merchantWallet.id, (await systemWallet('protection_fund', p.currency)).id, protection);
+    const fee = percentFee(p.amount, config.fees.merchantPercent);
+    const protection = Math.max(0, Number(txn.amount) - Number(p.amount));
+    await move(txn.id, txn.from_wallet, merchantWallet.id, Number(p.amount));
+    await move(txn.id, txn.from_wallet, (await systemWallet('protection_fund', p.currency)).id, protection);
+    await move(txn.id, merchantWallet.id, (await systemWallet('fees', p.currency)).id, fee);
     await updateTxn(txn.id, { status: 'succeeded', fee, to_wallet: merchantWallet.id });
     await setPayment(p.id, { status: 'succeeded', fee, protection_fee: protection, txn_id: txn.id, method: txn.method, paid_at: now(), last_error: null });
     await enqueueEvent(p.merchant_id, 'payment.succeeded', serializePayment(await getPayment(p.id)));
@@ -211,19 +216,21 @@ export async function payWithWallet(paymentId, user, pin) {
     const p = await lockPayment(paymentId); // revérifié sous verrou
     await assertPayable(p);
     await lockUsers(user.id);
-    await checkOutgoing(user, p.currency, p.amount);
+    const protection = protectionFor(p.amount, user);
+    const total = Number(p.amount) + protection;
+    await checkOutgoing(user, p.currency, total);
     const w = await lockWallet((await accountWallet(user, p.currency)).id);
-    if (w.balance < p.amount) {
+    if (w.balance < total) {
       throw new HttpError(402, 'insufficient_funds', `Solde ${p.currency} insuffisant. Rechargez votre wallet via Mobile Money ou carte.`);
     }
     // Payeur entreprise : le paiement part de son compte marchand (plafond du titulaire, argent des vendeurs réservé).
     const business = w.owner_type === 'merchant';
-    if (business) await assertWithdrawal(w.owner_id, p.currency, p.amount, 'platform_revenue', Number(w.balance));
+    if (business) await assertWithdrawal(w.owner_id, p.currency, total, 'platform_revenue', Number(w.balance));
     const txn = await createTxn({
-      type: 'payment', status: 'pending', amount: p.amount, currency: p.currency, method: 'wallet',
+      type: 'payment', status: 'pending', amount: total, currency: p.currency, method: 'wallet',
       from_wallet: w.id, to_wallet: (await getWallet('merchant', p.merchant_id, p.currency)).id,
       merchant_id: p.merchant_id, payment_id: p.id,
-      description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name, ...(business ? { initiated_by: user.id } : {}) },
+      description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name, protection_fee: protection, ...(business ? { initiated_by: user.id } : {}) },
     });
     await setPayment(p.id, { customer_user_id: user.id });
     await settlePayment(p.id, txn);
@@ -237,14 +244,15 @@ export async function payWithMobileMoney(paymentId, phone, operator, user = null
   await assertPayable(p);
   const r = resolveOperator(phone, operator);
   const merchant = await merchantOf(p);
+  const protection = protectionFor(p.amount, user);
   await claimPayment(p, { payer_phone: r.phone, payer_operator: r.operator, customer_user_id: user?.id || null, last_error: null });
   let txn;
   try {
     txn = await startCollection({
-      type: 'payment', phone: r.phone, operator: r.operator, amount: p.amount, currency: p.currency,
+      type: 'payment', phone: r.phone, operator: r.operator, amount: Number(p.amount) + protection, currency: p.currency,
       toWalletId: (await getWallet('merchant', p.merchant_id, p.currency)).id,
       paymentId: p.id, merchantId: p.merchant_id,
-      description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name },
+      description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name, protection_fee: protection },
     });
   } catch (e) {
     if (e.code !== 'provider_error') await onPaymentCollectionFailed(p.id, e.message); // erreur avant l'envoi : on libère
@@ -267,17 +275,19 @@ export async function payWithCard(paymentId, { user, cardId, token, pin }) {
   }
   if (!cardToken) throw new HttpError(400, 'missing_card', 'Fournissez card_id (carte enregistrée) ou token (jeton de carte).');
   const merchant = await merchantOf(p);
+  const protection = protectionFor(p.amount, user);
+  const total = Number(p.amount) + protection;
   await claimPayment(p, { customer_user_id: user?.id || null, last_error: null });
   const txn = await createTxn({
-    type: 'payment', status: 'pending', amount: p.amount, currency: p.currency, method: 'card',
+    type: 'payment', status: 'pending', amount: total, currency: p.currency, method: 'card',
     from_wallet: (await systemWallet('float_card', p.currency)).id,
     to_wallet: (await getWallet('merchant', p.merchant_id, p.currency)).id,
     merchant_id: p.merchant_id, payment_id: p.id, provider: cardProcessor().name,
-    description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name },
+    description: p.description || `Paiement ${merchant.name}`, metadata: { counterparty: merchant.name, protection_fee: protection },
   });
   let res;
   try {
-    res = await cardProcessor().charge({ token: cardToken, amount: p.amount, currency: p.currency, txnId: txn.id, description: p.description });
+    res = await cardProcessor().charge({ token: cardToken, amount: total, currency: p.currency, txnId: txn.id, description: p.description });
   } catch (e) {
     res = { status: 'failed', reason: e.message };
   }

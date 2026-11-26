@@ -479,7 +479,7 @@
   <section id="tab-merchant" class="hidden">
     <div id="m-yes">
       <div class="grid" id="m-bal"></div>
-      <p class="muted" id="m-bal-hint" style="margin:10px 0 0">Vos ventes arrivent ici, commission et protection des achats déduites. Versez-les sur votre wallet pour les retirer, les envoyer ou payer.</p>
+      <p class="muted" id="m-bal-hint" style="margin:10px 0 0">Vos ventes arrivent ici, commission déduite. Versez-les sur votre wallet pour les retirer, les envoyer ou payer.</p>
       <div class="card" style="margin-top:16px">
         <h2>Créer un lien de paiement</h2>
         <form id="f-link">
@@ -800,11 +800,13 @@ async function loadHistory() {
   }).join('') : '<li class="muted">Aucune opération pour l\'instant.</li>';
 }
 /** Une ligne du carnet : l'heure seule, le jour est déjà dans l'intitulé au-dessus. */
+/** Montant vu par ce compte : un marchand ne reçoit pas la protection des achats payée en plus par l'acheteur. */
+const seenAmount = (x) => (x.type === 'payment' && x.direction === 'credit' ? x.amount - (Number(x.metadata?.protection_fee) || 0) : x.amount);
 function histRow(x) {
   const who = x.type === 'transfer' ? transferPeer(x) : x.counterparty || x.description;
   const amount = x.type === 'conversion'
     ? `${fmt(x.amount, x.currency)} → ${fmt(x.metadata.to_amount, x.metadata.to_currency)}`
-    : `${signOf(x)}${fmt(x.amount, x.currency)}`;
+    : `${signOf(x)}${fmt(seenAmount(x), x.currency)}`;
   let hour; try { hour = new Date(x.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: ME?.timezone }); } catch { hour = shortWhen(x.created_at); }
   return `<li class="h-item" data-txn="${esc(x.id)}" role="button" tabindex="0" aria-label="${esc(txnTitle(x))}, ${esc(amount)} : voir le détail">
       <span class="h-ic ${x.direction || ''} ${x.status}" aria-hidden="true">${TXN_ICON[x.type] || '•'}</span>
@@ -843,8 +845,13 @@ function openTxn(id) {
     row('Reçu', esc(fmt(m.to_amount, m.to_currency)));
     if (m.rate) row('Taux du marché', `1 $ = ${Number(m.rate).toLocaleString('fr-FR')} FC${m.spread_percent ? ` · marge ${Number(m.spread_percent).toLocaleString('fr-FR')} %` : ''}`);
   } else {
-    row('Montant', esc(fmt(x.amount, x.currency)));
-    // Un paiement à un marchand : les frais (commission, protection des achats) sont payés par le marchand, pas par l'acheteur.
+    const prot = x.type === 'payment' ? Number(m.protection_fee) || 0 : 0;
+    if (prot && x.direction === 'debit') {
+      row('Prix', esc(fmt(x.amount - prot, x.currency)));
+      row('Protection des achats', `${esc(fmt(prot, x.currency))} · <a href="/legal#protection">en savoir plus</a>`);
+      row('Total débité', `<b>${esc(fmt(x.amount, x.currency))}</b>`);
+    } else row('Montant', esc(fmt(seenAmount(x), x.currency)));
+    // Un paiement à un marchand : la commission (x.fee) est payée par le marchand, pas par l'acheteur.
     if (x.fee && !(x.type === 'payment' && x.direction === 'debit')) {
       row('Frais', esc(fmt(x.fee, x.currency)));
       if (x.direction === 'debit') row('Total débité', `<b>${esc(fmt(x.amount + x.fee, x.currency))}</b>`);
@@ -854,7 +861,7 @@ function openTxn(id) {
   row('Référence', `<code>${esc(x.id)}</code> <button type="button" class="link h-copy" data-copy="${esc(x.id)}">Copier</button>`);
   if (x.provider_ref && !/^mock_/.test(x.provider_ref)) row('Réf. opérateur', `<code>${esc(x.provider_ref)}</code>`);
 
-  const big = x.type === 'conversion' ? `${fmt(x.amount, x.currency)} → ${fmt(m.to_amount, m.to_currency)}` : `${signOf(x)}${fmt(x.amount, x.currency)}`;
+  const big = x.type === 'conversion' ? `${fmt(x.amount, x.currency)} → ${fmt(m.to_amount, m.to_currency)}` : `${signOf(x)}${fmt(seenAmount(x), x.currency)}`;
   $('#modal-body').innerHTML = `<div class="tx-head"><span class="h-ic big ${x.direction || ''} ${x.status}" aria-hidden="true">${TXN_ICON[x.type] || '•'}</span>
       <h3>${esc(txnTitle(x))}</h3><div class="tx-amt ${x.status === 'failed' ? 'void' : x.direction}">${esc(big)}</div></div>
     <dl class="tx-dl">${rows.join('')}</dl>

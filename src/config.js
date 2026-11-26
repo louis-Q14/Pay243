@@ -44,7 +44,7 @@ export const config = {
     merchantPercent: Number(env.FEE_MERCHANT_PERCENT || 2.5), // commission sur les paiements marchands
     withdrawalPercent: Number(env.FEE_WITHDRAWAL_PERCENT || 1), // retrait wallet -> Mobile Money
     transferPercent: 0, // transferts entre wallets Pay243 gratuits
-    // Protection des achats : payée par le marchand sur chaque vente, versée au fonds qui rembourse les acheteurs.
+    // Protection des achats : payée par l'acheteur connecté à son compte, en plus du prix, versée au fonds qui rembourse les acheteurs.
     protectionPercent: Number(env.FEE_PROTECTION_PERCENT || 1.2),
   },
 

@@ -142,8 +142,12 @@ async function load() {
   render();
 }
 
+// Acheteur connecté : la Protection des achats (1,2 %) s'ajoute au prix ; un payeur sans compte ne la paie pas.
+const PROT = () => P.customer?.protection_fee || 0;
+const TOTAL = () => P.amount + PROT();
 function header() {
   return `<div class="sum"><div class="muted">Paiement à <b>${esc(P.merchant.name)}</b></div><div class="amt">${fmt(P.amount, P.currency)}</div>
+    ${PROT() ? `<div class="muted">+ ${fmt(PROT(), P.currency)} de <a href="/legal#protection" target="_blank">Protection des achats Pay243</a> (${String(P.customer.protection_percent).replace('.', ',')} %) · total <b>${fmt(TOTAL(), P.currency)}</b></div>` : ''}
     ${P.description ? `<div class="muted">${esc(P.description)}</div>` : ''}${P.sandbox ? '<span class="pill">MODE TEST</span>' : ''}</div>`;
 }
 
@@ -172,7 +176,7 @@ function pane() {
   if (METHOD === 'mobile_money') {
     el.innerHTML = `<form id="f"><label>Votre numéro Mobile Money</label><input name="phone" inputmode="tel" placeholder="0812345678" required id="ph">
       <div class="op" style="margin-top:10px">${P.operators.map((o) => `<label title="${esc(o.label.replace(' (Vodacom)', ''))}"><input type="radio" name="operator" value="${esc(o.id)}"><span>${BRAND_LOGO[o.id] ? `<img class="op-logo ${esc(o.id)}" src="${BRAND_LOGO[o.id]}" alt="${esc(o.label.replace(' (Vodacom)', ''))}">` : esc(o.label)}</span></label>`).join('')}</div>
-      <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
+      <button class="full">Payer ${fmt(TOTAL(), P.currency)}</button>
       ${P.sandbox ? '<p class="muted">Test : un numéro finissant par 0000 simule un refus.</p>' : ''}</form>`;
     $('#ph').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
     $('#f').onsubmit = submit((d) => ({ method: 'mobile_money', phone: d.phone, operator: d.operator }));
@@ -193,12 +197,12 @@ function pane() {
           err(x.message + (x.details?.sandbox_code ? ` (sandbox : ${x.details.sandbox_code})` : '')); e.submitter.disabled = false;
         } };
     } else {
-      const enough = P.customer.balance >= P.amount;
+      const enough = P.customer.balance >= TOTAL();
       el.innerHTML = `<form id="f"><p>Bonjour <b>${esc(P.customer.full_name)}</b>. Solde ${P.currency} : <b>${fmt(P.customer.balance, P.currency)}</b></p>
         <p class="muted" style="margin-top:-4px">Ce n'est pas vous ? <a href="#" id="switch">Se déconnecter et changer de compte</a></p>
         ${enough ? '' : '<p class="notice">Solde insuffisant. <a href="/app" target="_blank">Recharger mon wallet</a> puis réessayez.</p>'}
         <label>PIN de transaction</label><input name="pin" type="password" inputmode="numeric" required>
-        <button class="full" ${enough ? '' : 'disabled'}>Payer ${fmt(P.amount, P.currency)}</button></form>`;
+        <button class="full" ${enough ? '' : 'disabled'}>Payer ${fmt(TOTAL(), P.currency)}</button></form>`;
       $('#f').onsubmit = submit((d) => ({ method: 'wallet', pin: d.pin }));
       // Deconnexion du wallet sur cette page : on oublie le jeton et on recharge le paiement sans client.
       $('#switch').onclick = async (e) => { e.preventDefault();
@@ -212,7 +216,7 @@ function pane() {
       <div id="newcard"><label>Numéro de carte</label><input name="number" inputmode="numeric" autocomplete="cc-number">
       <div class="row"><div><label>MM</label><input name="exp_month" inputmode="numeric" maxlength="2" autocomplete="cc-exp-month"></div><div><label>AAAA</label><input name="exp_year" inputmode="numeric" maxlength="4" autocomplete="cc-exp-year"></div><div><label>CVC</label><input name="cvc" inputmode="numeric" maxlength="4" autocomplete="cc-csc"></div></div></div>
       <div id="pinbox" class="hidden"><label>PIN Pay243</label><input name="pin" type="password" inputmode="numeric"></div>
-      <button class="full">Payer ${fmt(P.amount, P.currency)}</button>
+      <button class="full">Payer ${fmt(TOTAL(), P.currency)}</button>
       ${P.sandbox ? '<p class="muted">Test : 4242 4242 4242 4242 (acceptée), 4000 0000 0000 0002 (refusée).</p>' : ''}</form>`;
     const sel = $('select[name=card_id]');
     if (sel) sel.onchange = () => { $('#newcard').classList.toggle('hidden', !!sel.value); $('#pinbox').classList.toggle('hidden', !sel.value); };

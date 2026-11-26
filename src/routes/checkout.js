@@ -7,7 +7,7 @@ import { publicCors, rateLimit } from '../middleware.js';
 import { cardProcessor } from '../providers/cards/index.js';
 import { getProvider } from '../providers/mobileMoney/index.js';
 import { handleProviderResult, refreshPending } from '../services/mobileMoney.js';
-import { getPayment, payWithCard, payWithMobileMoney, payWithWallet, publicCheckoutView } from '../services/payments.js';
+import { getPayment, payWithCard, payWithMobileMoney, payWithWallet, protectionFor, publicCheckoutView } from '../services/payments.js';
 import { can, requireStaff } from '../staff.js';
 import { HttpError, safeEqual } from '../util.js';
 
@@ -28,6 +28,9 @@ checkoutRouter.get('/checkout/:id', optionalUser, async (req, res) => {
     view.customer = {
       full_name: req.user.full_name,
       balance: (await accountWallet(req.user, view.currency)).balance,
+      // Protection des achats : 1,2 % en plus du prix pour un acheteur connecté (affiché avant de payer)
+      protection_fee: protectionFor(view.amount, req.user),
+      protection_percent: config.fees.protectionPercent,
       cards: await q.all('SELECT id, brand, last4 FROM cards WHERE user_id=?', req.user.id),
     };
   }

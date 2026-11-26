@@ -62,15 +62,23 @@ async function purchase(amount, description) {
   return pay.body.id;
 }
 
-test('protection des achats : 1,2 % payés par le marchand sur chaque vente, réglable au back-office', async () => {
+test('protection des achats : 1,2 % payés par l’acheteur connecté en plus du prix, le marchand ne paie que sa commission', async () => {
   const setting = (await admin('GET', '/settings')).body.data.find((s) => s.key === 'fees.protection_percent');
   assert.ok(setting, 'paramètre fees.protection_percent manquant (src/services/platformSettings.js)');
   assert.equal(setting.value, 1.2, 'protection des achats : 1,2 % par défaut');
-  const id = await purchase(5000, 'Téléphone reconditionné');
+  await shop();
+  const usd = async () => (await api('GET', '/v1/wallets', { token: S.buyer })).body.data.find((w) => w.currency === 'USD').balance;
+  const b0 = await usd();
+  const pay = await api('POST', '/v1/payments', { token: S.sk, body: { amount: 5000, currency: 'USD', description: 'Téléphone reconditionné' } });
+  const view = (await api('GET', `/v1/checkout/${pay.body.id}`, { token: S.buyer })).body;
+  assert.equal(view.customer?.protection_fee, 60, 'GET /v1/checkout/:id (src/routes/checkout.js) doit annoncer à l’acheteur connecté ses 1,2 % de protection');
+  assert.equal((await api('POST', `/v1/checkout/${pay.body.id}/pay`, { token: S.buyer, body: { method: 'wallet', pin: '6284' } })).status, 200);
+  assert.equal(await usd(), b0 - 5060, 'l’acheteur paie le prix + 1,2 % de protection');
+  const id = pay.body.id;
   const got = (await api('GET', `/v1/payments/${id}`, { token: S.sk })).body;
   assert.equal(got.protection_fee, 60, 'serializePayment (src/services/payments.js) doit indiquer protection_fee : 1,2 % de 50 $');
-  assert.equal(got.fee, 125 + 60, 'fee = commission 2,5 % + protection 1,2 %');
-  assert.equal(got.net, 5000 - 185);
+  assert.equal(got.fee, 125, 'le marchand ne paie que sa commission de 2,5 %');
+  assert.equal(got.net, 5000 - 125);
   const fund = await q.get("SELECT balance FROM wallets WHERE owner_type='system' AND owner_id='protection_fund' AND currency='USD'");
   assert.equal(Number(fund?.balance), 60, 'les 1,2 % vont au fonds de protection des achats (compte système protection_fund)');
   for (const row of await auditLedger()) assert.equal(Number(row.total), 0, `grand livre ${row.currency} déséquilibré`);
@@ -178,7 +186,7 @@ test('litige : l’acheteuse peut le retirer ; sans remontée sous 20 jours il s
   assert.equal(typeof expireDisputes, 'function', 'src/services/disputes.js doit exporter expireDisputes (clôture automatique)');
   await expireDisputes();
   assert.equal((await api('GET', `/v1/disputes/${db.id}`, { token: S.buyer })).body.status, 'closed', 'clos automatiquement après 20 jours sans remontée');
-  const net = (x) => x - Math.round(x * 0.025) - Math.round(x * 0.012);
+  const net = (x) => x - Math.round(x * 0.025);
   assert.equal(await sellerUsd(), s0 + net(1000) + net(1500), 'les deux retenues sont rendues au vendeur');
   for (const row of await auditLedger()) assert.equal(Number(row.total), 0, `grand livre ${row.currency} déséquilibré`);
 });
