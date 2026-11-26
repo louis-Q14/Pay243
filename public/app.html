@@ -343,6 +343,13 @@
 </style>
 <link rel="stylesheet" href="/assets/kuba.css">
 <link rel="stylesheet" href="/assets/wallet.css">
+<style>
+  /* Fenêtre « Complétez votre compte » : largeur d'une page A4 (210 mm), champs sur deux colonnes */
+  #complete .modal { max-width: 794px; width: 100%; padding: 36px 44px 30px; }
+  #complete .c2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  #complete .c2 > div { min-width: 0; }
+  @media (max-width: 640px) { #complete .modal { padding: 14px 18px 20px; } #complete .c2 { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 <header class="top">
@@ -1011,11 +1018,11 @@ async function openComplete(missing) {
     <form id="f-complete">
       ${need('phone') ? '<label>Numéro Mobile Money</label><input name="phone" type="tel" inputmode="tel" required placeholder="0812345678">' : ''}
       ${need('security_questions') ? `<p class="notice">3 questions de sécurité : elles vous seront demandées, avec un code envoyé par email, pour réinitialiser votre mot de passe.</p>${[0, 1, 2].map((i) => `<label>Question ${i + 1}</label><select name="q${i}" required><option value="">Choisissez une question</option>${opts}</select>
-        <input name="a${i}" required autocomplete="off" placeholder="Réponse"><input name="c${i}" required autocomplete="off" placeholder="Confirmez la réponse">`).join('')}` : ''}
+        <div class="c2"><div><input name="a${i}" required autocomplete="off" placeholder="Réponse"></div><div><input name="c${i}" required autocomplete="off" placeholder="Confirmez la réponse"></div></div>`).join('')}` : ''}
       ${need('emergency_contact') ? `<p class="notice">Personne à contacter en cas d’urgence</p>
-        <label>Nom complet</label><input name="ec_name" required><label>Adresse</label><input name="ec_address" required placeholder="N°, avenue, commune, ville">
-        <label>Téléphone</label><input name="ec_phone" type="tel" inputmode="tel" required><label>Email</label><input name="ec_email" type="email" required>
-        <label>Lien avec vous</label><input name="ec_relation" required placeholder="Ex : sœur, conjoint, parent, ami">` : ''}
+        <div class="c2"><div><label>Nom complet</label><input name="ec_name" required autocomplete="off"></div><div><label>Lien avec vous</label><input name="ec_relation" required autocomplete="off" placeholder="Ex : sœur, conjoint, parent, ami"></div></div>
+        <label>Adresse</label><input name="ec_address" required autocomplete="off" placeholder="N°, avenue, commune, ville">
+        <div class="c2"><div><label>Téléphone</label><input name="ec_phone" type="tel" inputmode="tel" required autocomplete="off"></div><div><label>Email</label><input name="ec_email" type="email" required autocomplete="off" placeholder="proche@exemple.com"></div></div>` : ''}
       ${need('rccm_document') ? '<p class="notice">Compte entreprise : document RCCM</p><label>Document RCCM (PDF ou photo, 5 Mo maximum)</label><input name="rccm" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required>' : ''}
       ${profile ? '<label>Votre mot de passe (confirmation)</label><input name="password" type="password" required autocomplete="current-password">' : ''}
       <button class="full">Enregistrer</button>
