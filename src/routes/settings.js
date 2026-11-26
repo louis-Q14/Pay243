@@ -312,6 +312,9 @@ settingsRouter.post('/me/bank-accounts', bankLimiter, async (req, res) => {
 });
 
 settingsRouter.delete('/me/bank-accounts/:id', async (req, res) => {
+  if (!/^[\w-]{1,64}$/.test(req.params.id)) throw new HttpError(404, 'bank_account_not_found', 'Compte bancaire introuvable.');
+  const pending = await q.get("SELECT id FROM transactions WHERE method='bank' AND status='pending' AND metadata LIKE ? LIMIT 1", `%"bank_account_id":"${req.params.id}"%`);
+  if (pending) throw new HttpError(409, 'withdrawal_pending', 'Un virement vers ce compte est en cours : vous pourrez le supprimer une fois le virement effectué.');
   const r = await q.run('DELETE FROM bank_accounts WHERE id=? AND user_id=?', req.params.id, req.user.id);
   if (!r.changes) throw new HttpError(404, 'bank_account_not_found', 'Compte bancaire introuvable.');
   res.json({ id: req.params.id, deleted: true });

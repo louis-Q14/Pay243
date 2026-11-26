@@ -1076,6 +1076,81 @@ test('comptes bancaires : inclus dans l\'export des données personnelles', asyn
   assert.equal(exp.body.bank_accounts?.length, 5, 'GET /v1/me/export (src/routes/settings.js) doit inclure les comptes bancaires');
 });
 
+// ---------------- Retrait vers un compte bancaire (virement fait par l'équipe Finance) ----------------
+test('retrait bancaire : les fonds sont réservés, l\'opération attend le virement', async () => {
+  const bank = (await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data.find((b) => b.currency === 'USD');
+  const usd = async () => (await api('GET', '/v1/wallets', { token: state.bob })).body.data.find((w) => w.currency === 'USD').balance;
+  const b0 = await usd();
+  const w = await api('POST', '/v1/withdrawals', { token: state.bob, body: { method: 'bank', bank_account_id: bank.id, amount: 100, pin: '9137' } });
+  assert.equal(w.status, 202, `POST /v1/withdrawals method=bank (src/routes/wallet.js) : ${JSON.stringify(w.body)}`);
+  assert.equal(w.body.status, 'pending');
+  assert.equal(w.body.method, 'bank');
+  assert.equal(w.body.currency, 'USD'); // devise du compte bancaire
+  assert.equal(await usd(), b0 - 100 - w.body.fee);
+  state.bankWithdrawal = w.body.id;
+});
+
+test('retrait bancaire : la Finance voit les coordonnées complètes du compte', async () => {
+  const list = await api('GET', '/v1/admin/bank-withdrawals?status=pending', { token: ADMIN_KEY });
+  assert.equal(list.status, 200, `GET /v1/admin/bank-withdrawals (src/routes/admin.js) : ${JSON.stringify(list.body)}`);
+  const row = list.body.data.find((x) => x.id === state.bankWithdrawal);
+  assert.equal(row.bank.account_number, '11112222444'); // numéro complet pour faire le virement
+  assert.equal(row.bank.holder_name, 'ILUNGA KABEYA Patrick');
+  assert.equal(row.user.full_name, 'Patrick Ilunga');
+});
+
+test('retrait bancaire : la Finance marque le virement payé, une seule fois', async () => {
+  const paid = await api('POST', `/v1/admin/bank-withdrawals/${state.bankWithdrawal}/paid`, { token: ADMIN_KEY, body: { reference: 'VIR-TMB-000123' } });
+  assert.equal(paid.status, 200, `POST /v1/admin/bank-withdrawals/:id/paid (src/routes/admin.js) manquant : ${JSON.stringify(paid.body)}`);
+  const t = await api('GET', `/v1/transactions/${state.bankWithdrawal}`, { token: state.bob });
+  assert.equal(t.body.status, 'succeeded');
+  assert.equal((await api('POST', `/v1/admin/bank-withdrawals/${state.bankWithdrawal}/paid`, { token: ADMIN_KEY, body: { reference: 'VIR-TMB-000999' } })).status, 409); // une seule fois
+});
+
+test('retrait bancaire : l\'utilisateur est prévenu du virement, avec sa référence', async () => {
+  const { outbox } = await import('../src/providers/email/index.js');
+  const bob = (await api('GET', '/v1/me', { token: state.bob })).body.user;
+  assert.ok(bob.email, 'Patrick doit avoir un email');
+  assert.ok(outbox.some((m) => m.to === bob.email && /Virement/.test(m.subject) && (m.text || '').includes('VIR-TMB-000123')),
+    'POST /v1/admin/bank-withdrawals/:id/paid (src/routes/admin.js) doit prévenir l\'utilisateur (notifyUser)');
+});
+
+test('retrait bancaire : un virement rejeté rend tout l\'argent, frais compris, avec le motif', async () => {
+  const bank = (await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data.find((b) => b.currency === 'USD');
+  const usd = async () => (await api('GET', '/v1/wallets', { token: state.bob })).body.data.find((w) => w.currency === 'USD').balance;
+  const b0 = await usd();
+  const w = await api('POST', '/v1/withdrawals', { token: state.bob, body: { method: 'bank', bank_account_id: bank.id, amount: 50, pin: '9137' } });
+  assert.equal(w.status, 202, JSON.stringify(w.body));
+  assert.equal((await api('POST', `/v1/admin/bank-withdrawals/${w.body.id}/reject`, { token: ADMIN_KEY, body: {} })).body.error?.code, 'reason_required',
+    'POST /v1/admin/bank-withdrawals/:id/reject (src/routes/admin.js) : motif obligatoire');
+  const rej = await api('POST', `/v1/admin/bank-withdrawals/${w.body.id}/reject`, { token: ADMIN_KEY, body: { reason: 'Numéro de compte refusé par la banque' } });
+  assert.equal(rej.status, 200, `POST /v1/admin/bank-withdrawals/:id/reject : src/routes/admin.js doit importer rejectBankWithdrawal depuis src/services/bankWithdrawals.js (ReferenceError côté serveur) : ${JSON.stringify(rej.body)}`);
+  assert.equal(await usd(), b0);
+  const t = (await api('GET', `/v1/transactions/${w.body.id}`, { token: state.bob })).body;
+  assert.equal(t.status, 'failed');
+});
+
+test('retrait bancaire : le compte ne se supprime pas tant qu\'un virement vers lui est en attente', async () => {
+  const bank = (await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data.find((b) => b.currency === 'USD');
+  const w = await api('POST', '/v1/withdrawals', { token: state.bob, body: { method: 'bank', bank_account_id: bank.id, amount: 30, pin: '9137' } });
+  assert.equal(w.status, 202, JSON.stringify(w.body));
+  const del = await api('DELETE', `/v1/me/bank-accounts/${bank.id}`, { token: state.bob });
+  assert.equal(del.body.error?.code, 'withdrawal_pending', 'DELETE /v1/me/bank-accounts/:id (src/routes/settings.js) : refusé si un retrait bancaire vers ce compte est en attente');
+  await api('POST', `/v1/admin/bank-withdrawals/${w.body.id}/paid`, { token: ADMIN_KEY, body: { reference: 'VIR-TMB-000124' } });
+});
+
+test('retrait bancaire : une entreprise retire depuis son compte marchand', async () => {
+  const bank = (await api('GET', '/v1/me/bank-accounts', { token: state.ruth })).body.data.find((b) => b.currency === 'CDF');
+  const cdf = async () => (await api('GET', '/v1/merchants/me', { token: state.ruth })).body.balances.find((b) => b.currency === 'CDF').balance;
+  const b0 = await cdf();
+  const w = await api('POST', '/v1/withdrawals', { token: state.ruth, body: { method: 'bank', bank_account_id: bank.id, amount: 1000, pin: '5173' } });
+  assert.equal(w.status, 202, JSON.stringify(w.body));
+  assert.equal(w.body.type, 'payout');
+  assert.equal(await cdf(), b0 - 1000 - w.body.fee);
+  const other = await api('POST', '/v1/withdrawals', { token: state.ruth, body: { method: 'bank', bank_account_id: (await api('GET', '/v1/me/bank-accounts', { token: state.bob })).body.data[0].id, amount: 1000, pin: '5173' } });
+  assert.equal(other.body.error?.code, 'bank_account_not_found'); // jamais le compte d'un autre
+});
+
 test('PIN bloqué après 5 erreurs', async () => {
   for (let i = 0; i < 5; i++) await api('POST', '/v1/transfers', { token: state.alice, body: { to_phone: '0971112222', amount: 100, currency: 'USD', pin: '1111' } });
   const r = await api('POST', '/v1/transfers', { token: state.alice, body: { to_phone: '0971112222', amount: 100, currency: 'USD', pin: '2580' } });

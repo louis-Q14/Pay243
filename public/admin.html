@@ -388,6 +388,7 @@ const IC = {
   transactions: '<path d="M4 7h14l-3-3M20 17H6l3 3"/>',
   commissions: '<circle cx="12" cy="12" r="9"/><path d="M15 9.2c-.5-1-1.6-1.6-3-1.6-1.8 0-3 .9-3 2.2 0 3.1 6 1.6 6 4.5 0 1.3-1.3 2.2-3 2.2-1.5 0-2.7-.7-3.1-1.8M12 6v1.6M12 16.5V18"/>',
   merchants: '<path d="M3 9l1.5-5h15L21 9M4 9v11h16V9M3 9h18M9 20v-6h6v6"/>',
+  bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M4 20h16M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/>',
   kyc: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.5 1.8-2.3 3.2-2.3s2.6.8 3.2 2.3M14.5 10h4M14.5 13.5h3"/>',
   recon: '<path d="M4 4h16v16H4zM4 9h16M9 9v11"/>',
   staff: '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
@@ -400,6 +401,7 @@ const SECTIONS = [
   { id: 'users', label: 'Utilisateurs', perm: 'users.view', render: renderUsers },
   { id: 'transactions', label: 'Transactions', perm: 'transactions.view', render: renderTransactions, wide: true },
   { id: 'commissions', label: 'Commissions', perm: 'commissions.view', render: renderCommissions, wide: true },
+  { id: 'bank', label: 'Virements bancaires', perm: 'transactions.view', render: renderBankWithdrawals, wide: true },
   { id: 'merchants', label: 'Marchands', perm: 'merchants.view', render: renderMerchants, wide: true },
   { id: 'kyc', label: 'Vérification d’identité', perm: 'kyc.view', render: renderKyc },
   { id: 'support', label: 'Support', perm: 'support.view', render: renderSupport },
@@ -433,6 +435,7 @@ async function start() {
   $$('#nav button').forEach((b) => b.onclick = () => go(b.dataset.go));
   if (can('support.view')) api('GET', '/support/summary').then((s) => badge('support', s.open)).catch(() => {});
   if (can('merchants.view')) api('GET', '/merchants?access=requested').then((r) => badge('merchants', r.summary.requested)).catch(() => {});
+  if (can('transactions.view')) api('GET', '/bank-withdrawals?status=pending').then((r) => badge('bank', r.data.length)).catch(() => {});
   go(location.hash.slice(1) || 'dashboard');
 }
 
@@ -917,6 +920,40 @@ async function openKyc(id) {
   if ($('#k-reject')) $('#k-reject').onclick = (e) => run(e.currentTarget, async () => { await api('POST', `/kyc/submissions/${id}/reject`, { reason: $('#k-note').value }); await done('Demande refusée. L’utilisateur est prévenu par email.'); });
 }
 $('#zoom').onclick = () => { $('#zoom').hidden = true; };
+
+// =====================================================================
+//  Virements bancaires : retraits vers un compte bancaire, virés à la main par la Finance
+// =====================================================================
+let BW_STATUS = 'pending';
+async function renderBankWithdrawals() {
+  const manage = can('recon.manage');
+  const tabs = [['pending', 'À virer'], ['succeeded', 'Virés'], ['failed', 'Rejetés']];
+  $('#view').innerHTML = `
+    <div class="card"><div class="toolbar" style="margin:0">${tabs.map(([k, l]) => `<button class="btn ${k === BW_STATUS ? '' : 'light'} sm" data-bw="${k}">${l}</button>`).join('')}</div>
+      <p class="muted" style="margin:12px 0 0">Faites le virement depuis le compte bancaire de Pay243 vers le compte indiqué, puis saisissez la référence du relevé. Les fonds (montant + frais) sont déjà réservés ; un rejet les rend au client.</p></div>
+    <div class="card tbl" id="bw-list"><p class="muted">Chargement…</p></div>`;
+  $$('[data-bw]').forEach((b) => b.onclick = () => { BW_STATUS = b.dataset.bw; renderBankWithdrawals().catch((e) => toast(e.message, true)); });
+  const r = await api('GET', '/bank-withdrawals?status=' + BW_STATUS);
+  if (BW_STATUS === 'pending') badge('bank', r.data.length);
+  $('#bw-list').innerHTML = r.data.length ? `<table><thead><tr><th>Demande</th><th>Client</th><th>Compte à créditer</th><th class="num">Montant à virer</th><th></th></tr></thead><tbody>${r.data.map((w) => `<tr>
+      <td>${pill(w.status)}<div class="muted">${dt(w.created_at)}</div><div class="muted mono">${esc(w.id)}</div></td>
+      <td><b>${esc(w.user?.full_name || '—')}</b>${w.user?.account_type === 'business' ? ' <span class="pill">entreprise</span>' : ''}<div class="muted">${esc(w.user?.email || w.user?.phone || '')}</div></td>
+      <td><b>${esc(w.bank.bank_name)}</b><div>${esc(w.bank.holder_name)}</div><div class="mono">${esc(w.bank.account_number)}</div>${w.bank.swift ? `<div class="muted mono">SWIFT ${esc(w.bank.swift)}</div>` : ''}</td>
+      <td class="num"><b>${fmt(w.amount, w.currency)}</b><div class="muted">frais ${fmt(w.fee, w.currency)}</div>${w.reference ? `<div class="muted mono">réf. ${esc(w.reference)}</div>` : ''}${w.failure_reason ? `<div class="muted">${esc(w.failure_reason)}</div>` : ''}</td>
+      <td class="num">${manage && w.status === 'pending' ? `<button class="btn ok sm" data-paid="${esc(w.id)}">Marquer viré</button> <button class="btn danger sm" data-reject="${esc(w.id)}">Rejeter</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table>` : `<p class="muted">${BW_STATUS === 'pending' ? 'Aucun virement à faire.' : 'Aucun virement.'}</p>`;
+  const find = (id) => r.data.find((w) => w.id === id);
+  $$('[data-paid]').forEach((b) => b.onclick = async () => {
+    const w = find(b.dataset.paid);
+    const v = await dialog({ title: `Virement de ${fmt(w.amount, w.currency)} effectué ?`, text: `Vers ${esc(w.bank.bank_name)} · ${esc(w.bank.holder_name)} · <span class="mono">${esc(w.bank.account_number)}</span>. Le client est prévenu par email avec la référence.`, fields: [{ name: 'reference', label: 'Référence du virement (relevé bancaire)', required: true }], confirm: 'Marquer viré' });
+    if (v) run(b, async () => { await api('POST', `/bank-withdrawals/${w.id}/paid`, v); toast('Virement enregistré, client prévenu.'); await renderBankWithdrawals(); });
+  });
+  $$('[data-reject]').forEach((b) => b.onclick = async () => {
+    const w = find(b.dataset.reject);
+    const v = await dialog({ title: 'Rejeter ce virement ?', text: `${fmt(w.amount + w.fee, w.currency)} (frais compris) reviennent sur le compte Pay243 du client, qui reçoit le motif par email.`, fields: [reasonField()], confirm: 'Rejeter', danger: true });
+    if (v) run(b, async () => { await api('POST', `/bank-withdrawals/${w.id}/reject`, v); toast('Virement rejeté, fonds rendus au client.'); await renderBankWithdrawals(); });
+  });
+}
 
 // =====================================================================
 //  Rapprochement et cantonnement

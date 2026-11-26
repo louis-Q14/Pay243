@@ -13,7 +13,8 @@ import {
   ROLES, actorLabel, assertNotLastSuperAdmin, can, canManageRole, checkStaffPassword, createStaff, markLogin, permissionsOf,
   requireStaff, serializeStaff, signStaffToken, temporaryPassword,
 } from '../staff.js';
-import { HttpError, now, parseJson } from '../util.js';
+import { HttpError, formatMoney, now, parseJson } from '../util.js';
+import { markBankWithdrawalPaid, rejectBankWithdrawal } from '../services/bankWithdrawals.js';
 
 export const backofficeRouter = Router();
 const loginLimiter = rateLimit({ name: 'staff_login', max: config.rateLimits.auth });
@@ -292,6 +293,64 @@ backofficeRouter.get('/admin/transactions', can('transactions.view'), async (req
     total: totals.reduce((s, r) => s + r.n, 0),
     totals: totals.map((r) => ({ currency: r.currency, count: r.n, volume: Number(r.volume), fees: Number(r.fees) })),
   });
+});
+
+// =====================================================================
+//  Virements bancaires : retraits vers un compte bancaire, faits à la main par l'équipe Finance
+// =====================================================================
+async function bankWithdrawalRow(t) {
+  const meta = parseJson(t.metadata, {});
+  const bank = await q.get('SELECT * FROM bank_accounts WHERE id=?', meta.bank_account_id);
+  const user = bank ? await q.get('SELECT id, full_name, email, phone, account_type FROM users WHERE id=?', bank.user_id) : null;
+  return {
+    id: t.id, status: t.status, amount: Number(t.amount), fee: Number(t.fee), currency: t.currency,
+    reference: t.provider_ref, failure_reason: t.failure_reason, created_at: t.created_at, updated_at: t.updated_at,
+    bank: {
+      bank_name: bank?.bank_name ?? meta.bank_name, holder_name: bank?.holder_name ?? meta.holder_name,
+      account_number: bank?.account_number ?? `•••• ${meta.account_last4}`, swift: bank?.swift ?? null,
+    },
+    user,
+  };
+}
+
+backofficeRouter.get('/admin/bank-withdrawals', can('transactions.view'), async (req, res) => {
+  const status = ['pending', 'succeeded', 'failed'].includes(req.query.status) ? req.query.status : 'pending';
+  const rows = await q.all("SELECT * FROM transactions WHERE method='bank' AND status=? ORDER BY created_at ASC LIMIT 200", status);
+  res.json({ data: await Promise.all(rows.map(bankWithdrawalRow)) });
+});
+
+backofficeRouter.post('/admin/bank-withdrawals/:id/paid', can('recon.manage'), async (req, res) => {
+  const t = await markBankWithdrawalPaid(req.params.id, req.body?.reference);
+  const row = await bankWithdrawalRow(t);
+  await logAction(req, 'bank_withdrawal.paid', t.id, { reference: t.provider_ref, amount: row.amount, currency: row.currency });
+  const u = row.user && await q.get('SELECT * FROM users WHERE id=?', row.user.id);
+  if (u) {
+    const amount = formatMoney(row.amount, row.currency);
+    const acct = `${row.bank.bank_name} •••• ${row.bank.account_number.slice(-4)}`;
+    notifyUser(u, 'payments', `Virement de ${amount} envoyé`, `Votre retrait de ${amount} a été viré sur votre compte ${acct}. Référence du virement : ${t.provider_ref}.`, {
+      title: `Virement de ${amount} envoyé`,
+      paragraphs: ['Votre retrait a été viré sur votre compte bancaire. Selon votre banque, il apparaît sous 1 à 2 jours ouvrés.'],
+      details: [['Montant', amount], ['Compte', acct], ['Référence du virement', t.provider_ref]],
+    });
+  }
+  res.json(row);
+});
+
+backofficeRouter.post('/admin/bank-withdrawals/:id/reject', can('recon.manage'), async (req, res) => {
+  const reason = reasonOf(req.body);
+  const t = await rejectBankWithdrawal(req.params.id, reason);
+  const row = await bankWithdrawalRow(t);
+  await logAction(req, 'bank_withdrawal.reject', t.id, { reason, amount: row.amount, currency: row.currency });
+  const u = row.user && await q.get('SELECT * FROM users WHERE id=?', row.user.id);
+  if (u) {
+    const amount = formatMoney(row.amount + row.fee, row.currency);
+    notifyUser(u, 'payments', 'Virement bancaire impossible', `Votre retrait vers ${row.bank.bank_name} n'a pas pu être viré : ${reason}. ${amount} sont revenus sur votre compte Pay243.`, {
+      title: 'Virement bancaire impossible',
+      paragraphs: [`Votre retrait n'a pas pu être viré sur votre compte bancaire. Motif : ${reason}.`, `Les ${amount} (frais compris) sont revenus sur votre compte Pay243. Vérifiez vos coordonnées bancaires dans les paramètres, puis refaites la demande.`],
+      cta: { label: 'Mes comptes bancaires', url: appUrl('/settings#paiements') },
+    });
+  }
+  res.json(row);
 });
 
 // =====================================================================

@@ -11,6 +11,7 @@ import { listOperators } from '../providers/mobileMoney/index.js';
 import { refreshPending, startCollection, startPayout } from '../services/mobileMoney.js';
 import { assertNoRecentSimSwap } from '../services/simSwap.js';
 import { assertWithdrawal, purposeOf } from '../services/paymentSplit.js';
+import { startBankWithdrawal } from '../services/bankWithdrawals.js';
 import { appUrl, notifyUser } from '../services/notify.js';
 import { HttpError, assertAmount, assertCurrency, formatMoney, isEmail, newId, normalizeEmail, normalizePhone, now, percentFee } from '../util.js';
 
@@ -160,6 +161,13 @@ walletRouter.post('/transfers', idem, async (req, res) => {
 walletRouter.post('/withdrawals', idem, async (req, res) => {
   const { phone, operator, pin } = req.body || {};
   const amount = assertAmount(req.body?.amount);
+  // Vers un compte bancaire enregistré : virement fait par l'équipe Finance (devise du compte).
+  if (req.body?.method === 'bank') {
+    await verifyPin(req.user, pin);
+    await assertNoRecentSimSwap(req.user, 'withdrawal');
+    const txn = await startBankWithdrawal(req.user, { bankAccountId: req.body.bank_account_id, amount, purpose: req.body.purpose });
+    return res.status(202).json(serializeTxn(txn, [txn.from_wallet]));
+  }
   const currency = assertCurrency(req.body?.currency);
   await verifyPin(req.user, pin);
   await assertNoRecentSimSwap(req.user, 'withdrawal');

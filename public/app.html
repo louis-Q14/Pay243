@@ -775,7 +775,7 @@ const TXN_ICON = {
   payout: ico('<path d="M12 4v13M6 11l6 6 6-6M5 20h14"/>'),
 };
 const signOf = (x) => (x.direction === 'credit' ? '+' : x.direction === 'internal' ? '' : '−');
-const txnTitle = (x) => (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '');
+const txnTitle = (x) => (TYPE_LABEL[x.type] || x.type) + (x.operator ? ' · ' + OPS[x.operator] : '') + (x.method === 'card' ? ' · Carte' : '') + (x.method === 'bank' ? ' · Virement bancaire' : '');
 /** Transfert : seulement l'autre personne (« À … » ou « De … »), pas « Moi → Lui ». */
 const transferPeer = (x) => {
   const [from, to] = String(x.counterparty || '').split(' → ');
@@ -827,7 +827,7 @@ function openTxn(id) {
   row('Statut', `<span class="pill ${x.status}">${STATUS_LABEL[x.status] || x.status}</span>`);
   row('Date', esc(when(x.created_at)));
   if (x.updated_at && x.status !== 'pending' && new Date(x.updated_at) - new Date(x.created_at) >= 60_000) row(x.status === 'failed' ? 'Échouée le' : 'Confirmée le', esc(when(x.updated_at)));
-  row('Moyen', esc(x.method === 'mobile_money' ? `Mobile Money${x.operator ? ' · ' + OPS[x.operator] : ''}` : x.method === 'card' ? 'Carte bancaire' : 'Wallet Pay243'));
+  row('Moyen', esc(x.method === 'mobile_money' ? `Mobile Money${x.operator ? ' · ' + OPS[x.operator] : ''}` : x.method === 'card' ? 'Carte bancaire' : x.method === 'bank' ? 'Virement bancaire (1 à 3 jours ouvrés)' : 'Wallet Pay243'));
   if (x.phone) row('Numéro', esc(x.phone));
   if (x.type === 'transfer') {
     const [from, to] = String(x.counterparty || '').split(' → ');
@@ -1019,13 +1019,31 @@ const ACTIONS = {
         closeModal(); toast('Transfert effectué'); loadWallets(); loadHistory();
       });
   },
-  withdraw() {
-    openModal(`<h3>Retirer vers Mobile Money</h3><p class="muted">Frais : 1 %. Vous pouvez aussi envoyer vers le numéro d'un proche.</p>
-      <form>${opPicker(detectOp(ME.phone))}<label>Numéro bénéficiaire</label><input name="phone" value="${ME.phone || ''}" placeholder="0812345678" inputmode="tel" required id="wp">
-      ${amountInput}${curSelect}${pinInput}<button class="full">Retirer</button></form>`, async (d) => {
-        const t = await api('POST', '/v1/withdrawals', { ...d, amount: toMinor(d.amount) }, { 'Idempotency-Key': crypto.randomUUID() });
+  async withdraw() {
+    // Comptes bancaires enregistrés dans les paramètres : le virement est fait par l'équipe Pay243.
+    let banks = [];
+    try { banks = (await api('GET', '/v1/me/bank-accounts')).data; } catch { banks = []; }
+    const bankOpts = banks.map((b) => `<option value="${esc(b.id)}">${esc(b.bank_name)} · ${esc(b.currency)} · ${esc(b.account_number)}</option>`).join('');
+    openModal(`<h3>Retirer</h3><p class="muted">Frais : 1 %. Vers Mobile Money (instantané) ou vers votre compte bancaire (virement sous 1 à 3 jours ouvrés).</p>
+      <form><label>Vers</label><select name="method" id="wm"><option value="mobile_money">Mobile Money</option><option value="bank" ${banks.length ? '' : 'disabled'}>Compte bancaire${banks.length ? '' : ' (aucun enregistré)'}</option></select>
+      <div id="wmm">${opPicker(detectOp(ME.phone))}<label>Numéro bénéficiaire</label><input name="phone" value="${ME.phone || ''}" placeholder="0812345678" inputmode="tel" required id="wp"></div>
+      <div id="wbk" class="hidden"><label>Compte bancaire</label><select name="bank_account_id">${bankOpts}</select>
+        <p class="muted" style="font-size:13px;margin:6px 0 0">Le montant est retiré dans la devise du compte. <a href="/settings#paiements">Gérer mes comptes bancaires</a></p></div>
+      ${!banks.length ? '<p class="muted" style="font-size:13px;margin:6px 0 0">Pour retirer vers votre banque, <a href="/settings#paiements">enregistrez d\'abord votre compte bancaire</a>.</p>' : ''}
+      ${amountInput}<div id="wcur">${curSelect}</div>${pinInput}<button class="full">Retirer</button></form>`, async (d) => {
+        if (d.method === 'bank') {
+          await api('POST', '/v1/withdrawals', { method: 'bank', bank_account_id: d.bank_account_id, amount: toMinor(d.amount), pin: d.pin }, { 'Idempotency-Key': crypto.randomUUID() });
+          closeModal(); toast('Demande de virement enregistrée : 1 à 3 jours ouvrés. Vous serez prévenu par email.'); loadWallets(); loadHistory();
+          return;
+        }
+        const t = await api('POST', '/v1/withdrawals', { phone: d.phone, operator: d.operator, currency: d.currency, pin: d.pin, amount: toMinor(d.amount) }, { 'Idempotency-Key': crypto.randomUUID() });
         closeModal(); toast('Retrait en cours de traitement…'); loadWallets(); loadHistory(); pollTxn(t.id);
       });
+    $('#wm').onchange = (e) => {
+      const bank = e.target.value === 'bank';
+      $('#wmm').classList.toggle('hidden', bank); $('#wbk').classList.toggle('hidden', !bank); $('#wcur').classList.toggle('hidden', bank);
+      $('#wp').required = !bank;
+    };
     $('#wp').oninput = (e) => { const op = detectOp(e.target.value); if (op) $(`input[name=operator][value=${op}]`).checked = true; };
   },
   convert() {
