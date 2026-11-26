@@ -366,6 +366,28 @@ export async function staffReply(admin, id, body) {
   return getTicket(id);
 }
 
+/** L'équipe écrit la première : nouvelle conversation dans le centre de messages du client, prévenu par email. */
+export async function staffStartTicket(admin, user, body) {
+  if (user.status === 'closed') throw new HttpError(409, 'account_closed', 'Ce compte est fermé.');
+  const subject = cleanText(body?.subject, SUBJECT, 'subject');
+  const message = cleanText(body?.message, BODY, 'message');
+  const id = newId('tkt');
+  const ts = now();
+  await tx(async () => {
+    await q.run(`INSERT INTO support_tickets (id, user_id, subject, category, status, user_unread, staff_unread, last_author, last_message_at, created_at, updated_at, assigned_staff_id, assigned_name)
+                 VALUES (?,?,?,'other','answered',1,0,'staff',?,?,?,?,?)`, id, user.id, subject, ts, ts, ts, admin.id || null, admin.name);
+    await addMessage(id, { type: 'staff', authorId: admin.id || null, authorName: admin.name, body: message });
+  });
+  const t = await q.get('SELECT * FROM support_tickets WHERE id=?', id);
+  notifyUser(user, 'account', `Message du support Pay243 — ${subject}`, `Le support Pay243 vous a écrit : « ${subject} ».`, {
+    title: 'Le support Pay243 vous a écrit',
+    paragraphs: [`Un conseiller vous a écrit (demande #${t.number}, « ${subject} ») :`, message.length > 400 ? `${message.slice(0, 400)}…` : message, 'Répondez directement depuis votre espace Pay243 (pas par email).'],
+    cta: { label: 'Lire et répondre', url: appUrl(`/messages?t=${encodeURIComponent(id)}`) },
+    footer: 'Pay243 ne vous demandera jamais votre mot de passe, votre PIN ni un code de vérification, y compris par le support.',
+  });
+  return getTicket(id);
+}
+
 /** Propriétaire des fichiers envoyés par un membre de l'équipe (une clé de service n'a pas d'id). */
 export const staffOwner = (admin) => ({ type: 'staff', id: admin.id || `key:${admin.name}` });
 

@@ -25,6 +25,9 @@ export const PERMISSIONS = {
   'users.support': ['admin', 'support'], // débloquer le PIN, déconnecter les sessions
   'users.suspend': ['admin'], // suspendre / réactiver un compte
   'users.kyc_override': ['admin'], // changer le niveau KYC sans demande
+  'users.delete': ['admin'], // supprimer un compte : fermeture et effacement des données personnelles
+  'users.edit': ['admin'], // corriger nom, email, téléphone, identifiant @
+  'users.notes': ['admin', 'support', 'compliance', 'finance'], // notes internes sur un compte
   'transactions.view': ['admin', 'finance', 'support', 'auditor', 'compliance'],
   'commissions.view': ['admin', 'finance', 'auditor'], // revenus de Pay243 (frais encaissés)
   'merchants.view': ['admin', 'finance', 'support', 'auditor', 'compliance'],

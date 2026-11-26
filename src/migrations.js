@@ -568,4 +568,20 @@ CREATE TABLE dispute_messages (
 CREATE INDEX idx_dispute_messages ON dispute_messages (dispute_id, created_at);
 `,
   },
+  {
+    version: 16,
+    name: 'back-office : notes internes de l\'équipe sur un compte',
+    // Jamais montrées à l'utilisateur.
+    sql: `
+CREATE TABLE user_notes (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  staff_id TEXT,
+  author TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_user_notes_user ON user_notes (user_id, created_at);
+`,
+  },
 ];

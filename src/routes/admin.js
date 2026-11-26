@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ACCESS_LABELS, accessOf, businessProfileOf } from '../services/merchants.js';
+import crypto from 'node:crypto';
 import { assertNewPassword, hashSecret, verifySecret } from '../auth.js';
 import { config } from '../config.js';
 import { q, tx } from '../db.js';
@@ -10,10 +11,13 @@ import { emailProvider, layoutHtml, layoutText } from '../providers/email/index.
 import { appUrl, notifyUser } from '../services/notify.js';
 import { listPlatformSettings, updatePlatformSettings } from '../services/platformSettings.js';
 import {
-  ROLES, actorLabel, assertNotLastSuperAdmin, can, canManageRole, checkStaffPassword, createStaff, markLogin, permissionsOf,
+  ROLES, actorLabel, assertNotLastSuperAdmin, can, canManageRole, hasPermission, checkStaffPassword, createStaff, markLogin, permissionsOf,
   requireStaff, serializeStaff, signStaffToken, temporaryPassword,
 } from '../staff.js';
-import { HttpError, formatMoney, now, parseJson } from '../util.js';
+import { HttpError, formatMoney, newId, normalizeEmail, normalizePhone, now, parseJson } from '../util.js';
+import { normalizeHandle } from './settings.js';
+import { staffStartTicket } from '../services/support.js';
+import { isUniqueViolation } from '../db.js';
 import { markBankWithdrawalPaid, rejectBankWithdrawal } from '../services/bankWithdrawals.js';
 
 export const backofficeRouter = Router();
@@ -154,7 +158,28 @@ backofficeRouter.get('/admin/users/:id', can('users.view'), async (req, res) => 
     devices: (await q.get('SELECT COUNT(*)::int AS n FROM trusted_devices WHERE user_id=?', u.id)).n,
     addresses: await q.all('SELECT line1, line2, city, province, country, is_primary FROM addresses WHERE user_id=? ORDER BY is_primary DESC', u.id),
     cards: (await q.get('SELECT COUNT(*)::int AS n FROM cards WHERE user_id=?', u.id)).n,
+    notes: hasPermission(req.admin.role, 'users.notes')
+      ? await q.all('SELECT id, author, body, created_at FROM user_notes WHERE user_id=? ORDER BY created_at DESC, id DESC LIMIT 100', u.id) : [],
   });
+});
+
+/** Écrire à un client : la conversation s'ouvre dans son centre de messages (et dans la file du support). */
+backofficeRouter.post('/admin/users/:id/message', can('support.reply'), async (req, res) => {
+  const u = await findUser(req.params.id);
+  const t = await staffStartTicket(req.admin, u, req.body || {});
+  await logAction(req, 'user.message', u.id, { ticket: t.id });
+  res.status(201).json(t);
+});
+
+/** Note interne de l'équipe sur un compte (jamais visible par l'utilisateur). */
+backofficeRouter.post('/admin/users/:id/notes', can('users.notes'), async (req, res) => {
+  const u = await findUser(req.params.id);
+  const body = String(req.body?.body || '').trim();
+  if (body.length < 3 || body.length > 2000) throw new HttpError(400, 'invalid_note', 'Note : 3 à 2 000 caractères.');
+  const note = { id: newId('note'), author: actorLabel(req.admin), body, created_at: now() };
+  await q.run('INSERT INTO user_notes (id, user_id, staff_id, author, body, created_at) VALUES (?,?,?,?,?,?)', note.id, u.id, req.admin.id || null, note.author, body, note.created_at);
+  await logAction(req, 'user.note', u.id);
+  res.status(201).json(note);
 });
 
 const reasonOf = (b, min = 5) => {
@@ -200,6 +225,111 @@ backofficeRouter.post('/admin/users/:id/revoke-sessions', can('users.support'), 
   });
   await logAction(req, 'user.revoke_sessions', u.id, { reason: String(req.body?.reason || '').slice(0, 300) || null });
   res.json({ revoked: true });
+});
+
+/**
+ * Réinitialiser le mot de passe : code envoyé à l'email du client (même parcours que « mot de passe oublié »),
+ * toutes ses sessions sont fermées. Le client choisit lui-même son nouveau mot de passe.
+ */
+backofficeRouter.post('/admin/users/:id/password-reset', can('users.support'), async (req, res) => {
+  const u = await findUser(req.params.id);
+  if (u.status !== 'active') throw new HttpError(409, 'not_active', 'Ce compte n’est pas actif.');
+  if (!u.email) throw new HttpError(409, 'no_email', 'Ce compte n’a pas d’adresse email : corrigez-la d’abord.');
+  const reason = reasonOf(req.body);
+  await q.run('UPDATE users SET sessions_valid_after=? WHERE id=?', Date.now(), u.id);
+  const sent = await issueOtp(u.email, 'password_reset').catch((e) => {
+    if (e.code === 'otp_too_soon' || e.code === 'otp_rate_limited') throw new HttpError(429, e.code, 'Un code vient déjà d’être envoyé à ce client : patientez avant d’en renvoyer un.');
+    throw e;
+  });
+  await logAction(req, 'user.password_reset', u.id, { reason });
+  res.json({ sent: true, email: u.email, ...(sent?.sandbox_code ? { sandbox_code: sent.sandbox_code } : {}) });
+});
+
+/**
+ * Corriger les informations d'un compte (nom, email, téléphone, identifiant @) : administrateur, motif journalisé.
+ * Un champ vide pour le téléphone ou l'identifiant les retire. L'ancienne adresse email est prévenue.
+ */
+backofficeRouter.patch('/admin/users/:id', can('users.edit'), async (req, res) => {
+  const u = await findUser(req.params.id);
+  if (u.status === 'closed') throw new HttpError(409, 'account_closed', 'Ce compte est fermé.');
+  const b = req.body || {};
+  const reason = reasonOf(b);
+  const fields = {};
+  if (b.full_name !== undefined) {
+    const n = String(b.full_name).trim().replace(/\s+/g, ' ');
+    if (n.length < 3 || n.length > 80) throw new HttpError(400, 'invalid_name', 'Nom : 3 à 80 caractères.');
+    fields.full_name = n;
+  }
+  if (b.email !== undefined) fields.email = normalizeEmail(b.email);
+  if (b.phone !== undefined) fields.phone = String(b.phone).trim() ? normalizePhone(b.phone) : null;
+  if (b.handle !== undefined) fields.handle = String(b.handle).trim() ? normalizeHandle(b.handle) : null;
+  for (const k of Object.keys(fields)) if (fields[k] === u[k]) delete fields[k];
+  if (!Object.keys(fields).length) throw new HttpError(400, 'nothing_to_update', 'Aucune modification.');
+  if ((fields.email === undefined ? u.email : fields.email) == null && (fields.phone === undefined ? u.phone : fields.phone) == null) throw new HttpError(400, 'identifier_required', 'Le compte doit garder un email ou un téléphone.');
+  const taken = { email: ['email_taken', 'Cette adresse email est déjà utilisée par un autre compte.'], phone: ['phone_taken', 'Ce numéro est déjà associé à un autre compte.'], handle: ['handle_taken', 'Cet identifiant est déjà pris.'] };
+  for (const k of Object.keys(taken)) {
+    if (fields[k] && await q.get(`SELECT id FROM users WHERE ${k}=? AND id<>?`, fields[k], u.id)) throw new HttpError(409, ...taken[k]);
+  }
+  // Un email ou un numéro corrigé par l'équipe est considéré comme vérifié (pièce justificative contrôlée).
+  if (fields.email) fields.email_verified_at = now();
+  if (fields.phone) fields.phone_verified_at = now();
+  const cols = Object.keys(fields);
+  try {
+    await q.run(`UPDATE users SET ${cols.map((c) => `${c}=?`).join(',')} WHERE id=?`, ...cols.map((c) => fields[c]), u.id);
+  } catch (e) {
+    if (isUniqueViolation(e)) throw new HttpError(409, 'identifier_taken', 'Email, numéro ou identifiant déjà utilisé par un autre compte.');
+    throw e;
+  }
+  const changed = cols.filter((c) => !c.endsWith('_verified_at'));
+  await logAction(req, 'user.edit', u.id, { reason, changes: Object.fromEntries(changed.map((c) => [c, { from: u[c] ?? null, to: fields[c] }])) });
+  const LABEL = { full_name: 'Nom', email: 'Email', phone: 'Téléphone', handle: 'Identifiant @' };
+  notifyUser(u, 'security', 'Les informations de votre compte Pay243 ont été modifiées', `Notre équipe a modifié les informations de votre compte : ${changed.map((c) => LABEL[c]).join(', ')}.`, {
+    to: u.email || undefined,
+    paragraphs: ['À votre demande, notre équipe a corrigé les informations de votre compte Pay243.', 'Si vous n’êtes pas à l’origine de cette demande, contactez immédiatement le support.'],
+    details: changed.map((c) => [LABEL[c], fields[c] || '—']),
+  });
+  res.json({ user: userRow(await findUser(u.id)) });
+});
+
+/**
+ * Supprimer un compte : fermeture et effacement des données personnelles (nom, email, téléphone, identifiant, photo,
+ * adresses, cartes, comptes bancaires, appareils). L'historique financier et les pièces d'identité chiffrées restent
+ * conservés (obligations légales). Refusé tant qu'il reste de l'argent, une opération en cours ou un litige ouvert.
+ */
+backofficeRouter.post('/admin/users/:id/delete', can('users.delete'), async (req, res) => {
+  const u = await findUser(req.params.id);
+  if (u.status === 'closed' && u.full_name === 'Compte supprimé') throw new HttpError(409, 'already_deleted', 'Ce compte est déjà supprimé.');
+  const reason = reasonOf(req.body);
+  await tx(async () => {
+    await q.get('SELECT id FROM users WHERE id=? FOR UPDATE', u.id);
+    const m = await q.get('SELECT id FROM merchants WHERE owner_user_id=?', u.id);
+    const ws = await q.all("SELECT id, currency, balance FROM wallets WHERE (owner_type='user' AND owner_id=?) OR (owner_type='merchant' AND owner_id=?) FOR UPDATE", u.id, m?.id || '');
+    const left = ws.filter((w) => Number(w.balance) !== 0);
+    if (left.length) throw new HttpError(409, 'balance_not_zero', `Il reste ${left.map((w) => formatMoney(Number(w.balance), w.currency)).join(' et ')} sur ce compte : le client doit d'abord retirer ou envoyer son argent.`);
+    const ids = ws.map((w) => w.id);
+    if (ids.length) {
+      const marks = ids.map(() => '?').join(',');
+      const p = await q.get(`SELECT COUNT(*)::int AS n FROM transactions WHERE status='pending' AND (from_wallet IN (${marks}) OR to_wallet IN (${marks}))`, ...ids, ...ids);
+      if (p.n) throw new HttpError(409, 'pending_transactions', 'Des opérations sont encore en cours sur ce compte : attendez leur dénouement.');
+    }
+    const d = await q.get("SELECT COUNT(*)::int AS n FROM disputes WHERE status IN ('open','claim') AND (user_id=? OR merchant_id=?)", u.id, m?.id || '');
+    if (d.n) throw new HttpError(409, 'open_disputes', 'Un litige est en cours sur ce compte : tranchez-le avant de supprimer le compte.');
+    const secret = () => hashSecret(crypto.randomBytes(24).toString('hex'));
+    await q.run(`UPDATE users SET full_name='Compte supprimé', email=?, phone=NULL, handle=NULL, avatar=NULL, email_verified_at=NULL, phone_verified_at=NULL,
+                   notification_prefs=NULL, password_hash=?, pin_hash=?, status='closed', closed_at=COALESCE(closed_at, ?), sessions_valid_after=? WHERE id=?`,
+      `supprime-${u.id}@supprime.pay243.invalid`, await secret(), await secret(), now(), Date.now(), u.id);
+    for (const table of ['trusted_devices', 'addresses', 'cards', 'bank_accounts']) await q.run(`DELETE FROM ${table} WHERE user_id=?`, u.id);
+    if (m) {
+      await q.run('UPDATE merchants SET suspended_at=COALESCE(suspended_at, ?) WHERE id=?', now(), m.id);
+      await q.run('UPDATE api_keys SET revoked_at=? WHERE merchant_id=? AND revoked_at IS NULL', now(), m.id);
+    }
+  });
+  await logAction(req, 'user.delete', u.id, { reason });
+  // Dernier message à l'ancienne adresse, avant qu'elle ne soit effacée de nos fichiers.
+  notifyUser(u, 'account', 'Votre compte Pay243 a été supprimé', 'Votre compte Pay243 a été supprimé et vos données personnelles effacées.', {
+    paragraphs: ['Votre compte Pay243 a été fermé et vos données personnelles (nom, email, téléphone, adresses, cartes, comptes bancaires) ont été effacées.', 'L’historique de vos opérations est conservé le temps exigé par la réglementation financière. Vous pouvez créer un nouveau compte à tout moment.'],
+  });
+  res.json({ user: userRow(await findUser(u.id)) });
 });
 
 backofficeRouter.post('/admin/users/:id/kyc-level', can('users.kyc_override'), async (req, res) => {

@@ -655,9 +655,16 @@ async function openUser(id) {
   if (can('users.support') && u.pin_locked) acts.push('<button class="btn light sm" data-ua="unlock">Débloquer le PIN</button>');
   if (can('users.support')) acts.push('<button class="btn light sm" data-ua="sessions">Déconnecter partout</button>');
   if (can('users.kyc_override')) acts.push('<button class="btn light sm" data-ua="kyc">Changer le niveau KYC</button>');
+  const open = u.status !== 'closed';
+  if (open && can('users.edit')) acts.push('<button class="btn light sm" data-ua="edit">Modifier les infos</button>');
+  if (u.status === 'active' && u.email && can('users.support')) acts.push('<button class="btn light sm" data-ua="password">Réinitialiser le mot de passe</button>');
+  if (open && can('support.reply')) acts.push('<button class="btn light sm" data-ua="message">Envoyer un message</button>');
+  if (open && can('users.delete')) acts.push('<button class="btn danger sm" data-ua="delete">Supprimer le compte</button>');
+  if (!open) acts.length = 0; // compte fermé ou supprimé : plus aucune action
   $('#user-detail').innerHTML = `
     <div class="card"><h2>${esc(u.full_name)} ${pill(u.status)}</h2>
       ${u.status === 'suspended' ? `<div class="flag">Suspendu le ${dt(u.suspended_at)} — ${esc(u.suspended_reason || '')}</div>` : ''}
+      ${u.status === 'closed' ? `<div class="flag">Compte fermé le ${dt(u.closed_at)}${u.full_name === 'Compte supprimé' ? ' — données personnelles effacées, historique financier conservé' : ''}</div>` : ''}
       <dl class="kv" style="margin-top:12px">
         <dt>Identifiant</dt><dd class="mono">${esc(u.id)}</dd>
         <dt>Email</dt><dd>${esc(u.email || '—')} ${u.email ? (u.email_verified ? '<span class="pill ok">vérifié</span>' : '<span class="pill warn">non vérifié</span>') : ''}</dd>
@@ -680,15 +687,35 @@ async function openUser(id) {
     </div>
     <div class="card"><h2>Soldes</h2><div class="kpis" style="margin:0">${d.wallets.map((w) => `<div class="kpi" style="background:var(--soft)"><small>Wallet personnel · ${w.currency}</small><b style="font-size:22px">${fmt(w.balance, w.currency)}</b></div>`).join('')}${d.merchant ? (d.merchant_wallets.length ? d.merchant_wallets : [{ currency: 'CDF', balance: 0 }, { currency: 'USD', balance: 0 }]).map((w) => `<div class="kpi" style="background:var(--soft)"><small>Ventes ${esc(d.merchant.name)} · ${w.currency}</small><b style="font-size:22px">${fmt(w.balance, w.currency)}</b></div>`).join('') : ''}</div></div>
     <div class="card tbl"><h2>Dernières opérations</h2>${d.transactions.length ? `<table><tbody>${d.transactions.map((t) => `<tr><td>${esc(TYPE[t.type] || t.type)} ${pill(t.status)}<div class="muted">${esc(t.description || '')}${t.counterparty ? ' — ' + esc(t.counterparty) : ''}</div><div class="muted mono">${esc(t.id)} · ${dt(t.created_at)}</div></td><td class="num"><b>${t.direction === 'credit' ? '+' : t.direction === 'internal' ? '↔ ' : '−'}${fmt(t.amount, t.currency)}</b>${t.fee && t.direction === 'credit' ? `<div class="muted">commission ${fmt(t.fee, t.currency)}</div>` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Aucune opération.</p>'}</div>
+    ${can('users.notes') ? `<div class="card"><h2>Notes internes</h2><p class="muted" style="margin:-4px 0 10px">Visibles uniquement par l’équipe, jamais par le client.</p>
+      <form id="u-note"><textarea name="body" required minlength="3" maxlength="2000" placeholder="Ex : a appelé le 26/11, carte refusée, conseillé Mobile Money"></textarea><div class="actions" style="margin-top:8px"><button class="btn sm">Ajouter la note</button></div></form>
+      ${d.notes.length ? `<ul class="list" style="margin-top:12px">${d.notes.map((n) => `<li style="display:block"><div style="white-space:pre-wrap">${esc(n.body)}</div><div class="muted">${esc(n.author)} · ${dt(n.created_at)}</div></li>`).join('')}</ul>` : '<p class="muted" style="margin-top:10px">Aucune note.</p>'}</div>` : ''}
     ${d.kyc_submissions.length ? `<div class="card"><h2>Vérifications d'identité</h2><ul class="list">${d.kyc_submissions.map((k) => `<li><span>${pill(k.status)} ${esc(k.document_type)}</span><span class="muted">${dt(k.created_at)}${k.reviewer ? ' · ' + esc(k.reviewer) : ''}${k.review_note ? ' · ' + esc(k.review_note) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
   const after = async (msg) => { toast(msg); await loadUsers(); await openUser(id); };
   $('#u-merchant')?.addEventListener('click', () => { M_FILTER = { q: d.merchant.id, access: '' }; go('merchants'); });
+  const noteForm = $('#u-note');
+  if (noteForm) noteForm.onsubmit = (e) => { e.preventDefault(); run($('button', noteForm), async () => { await api('POST', `/users/${id}/notes`, { body: noteForm.body.value }); toast('Note ajoutée.'); await openUser(id); }); };
   $$('[data-ua]').forEach((b) => b.onclick = async () => {
     const a = b.dataset.ua;
     if (a === 'suspend') { const v = await dialog({ title: `Suspendre ${u.full_name} ?`, text: 'Le compte ne pourra plus se connecter ni effectuer d’opérations, et son espace marchand sera bloqué. L’utilisateur est prévenu par email.', fields: [reasonField()], confirm: 'Suspendre', danger: true }); if (v) run(b, async () => { await api('POST', `/users/${id}/suspend`, v); await after('Compte suspendu.'); }); }
     if (a === 'reactivate') { const v = await dialog({ title: `Réactiver ${u.full_name} ?`, fields: [reasonField()], confirm: 'Réactiver' }); if (v) run(b, async () => { await api('POST', `/users/${id}/reactivate`, v); await after('Compte réactivé.'); }); }
     if (a === 'unlock') { const v = await dialog({ title: 'Débloquer le PIN ?', text: 'Vérifiez d’abord l’identité de la personne (questions de sécurité, appel au numéro enregistré).', fields: [reasonField('Vérification effectuée')], confirm: 'Débloquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/unlock-pin`, v); await after('PIN débloqué.'); }); }
     if (a === 'sessions') { const v = await dialog({ title: 'Déconnecter toutes les sessions ?', text: 'Toutes les sessions sont fermées et les appareils de confiance oubliés : un code sera demandé à la prochaine connexion.', fields: [reasonField()], confirm: 'Déconnecter' }); if (v) run(b, async () => { await api('POST', `/users/${id}/revoke-sessions`, v); await after('Sessions fermées.'); }); }
+    if (a === 'edit') {
+      const v = await dialog({ title: `Modifier ${u.full_name}`, text: 'Le client est prévenu par email (à son ancienne adresse si elle change). Laissez un champ vide pour retirer le téléphone ou l’identifiant @.',
+        fields: [{ name: 'full_name', label: 'Nom complet', value: u.full_name, required: true }, { name: 'email', label: 'Email', type: 'email', value: u.email || '' }, { name: 'phone', label: 'Téléphone', value: u.phone || '' }, { name: 'handle', label: 'Identifiant @', value: u.handle || '' }, reasonField('Motif (journalisé), ex : correction demandée, pièce vérifiée')], confirm: 'Enregistrer' });
+      if (v) {
+        const body = { reason: v.reason };
+        if (v.full_name.trim() !== u.full_name) body.full_name = v.full_name;
+        if (v.email.trim().toLowerCase() !== (u.email || '')) body.email = v.email;
+        if (v.phone.trim() !== (u.phone || '')) body.phone = v.phone;
+        if (v.handle.trim().replace(/^@/, '') !== (u.handle || '')) body.handle = v.handle;
+        run(b, async () => { await api('PATCH', `/users/${id}`, body); await after('Informations modifiées, client prévenu.'); });
+      }
+    }
+    if (a === 'password') { const v = await dialog({ title: 'Réinitialiser le mot de passe ?', text: `Un code est envoyé à ${esc(u.email)} : le client choisit lui-même un nouveau mot de passe. Toutes ses sessions sont fermées.`, fields: [reasonField()], confirm: 'Envoyer le code' }); if (v) run(b, async () => { await api('POST', `/users/${id}/password-reset`, v); await after('Code envoyé, sessions fermées.'); }); }
+    if (a === 'message') { const v = await dialog({ title: `Écrire à ${u.full_name}`, text: 'Le message arrive dans son centre de messages et il est prévenu par email. Il peut vous répondre depuis son espace.', fields: [{ name: 'subject', label: 'Objet', required: true }, { name: 'message', label: 'Message', type: 'textarea', required: true }], confirm: 'Envoyer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/message`, v); await after('Message envoyé.'); }); }
+    if (a === 'delete') { const v = await dialog({ title: `Supprimer le compte de ${u.full_name} ?`, text: 'Le compte est fermé et ses données personnelles effacées (nom, email, téléphone, identifiant, adresses, cartes, comptes bancaires). L’historique financier et les pièces d’identité restent conservés (obligation légale). Impossible tant qu’il reste de l’argent, une opération en cours ou un litige ouvert. <b>Action définitive.</b>', fields: [reasonField()], confirm: 'Supprimer définitivement', danger: true }); if (v) run(b, async () => { await api('POST', `/users/${id}/delete`, v); await after('Compte supprimé.'); }); }
     if (a === 'kyc') { const v = await dialog({ title: 'Changer le niveau KYC', text: 'À utiliser exceptionnellement : la voie normale est la vérification d’identité. Niveau 2 ou plus : le compte est activé. Niveau 1 : le compte est désactivé jusqu’à une nouvelle vérification.', fields: [{ name: 'level', label: 'Niveau', type: 'select', value: String(u.kyc_level), options: [1, 2, 3].map((n) => ({ value: String(n), label: `Niveau ${n}` })) }, reasonField()], confirm: 'Appliquer' }); if (v) run(b, async () => { await api('POST', `/users/${id}/kyc-level`, { level: Number(v.level), reason: v.reason }); await after('Niveau KYC modifié.'); }); }
   });
 }
